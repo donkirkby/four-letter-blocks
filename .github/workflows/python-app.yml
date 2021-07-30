@@ -20,9 +20,12 @@ jobs:
           python-version: 3.9
       - name: Install dependencies
         run: |
+          sudo apt-get update
+          sudo apt-get install -y -q freeglut3-dev xvfb libxkbcommon-x11-0 xserver-xephyr
           python -m pip install --upgrade pip
           pip install pipenv
           pipenv install --dev
       - name: Test with pytest
         run: |
-          pipenv run python -m pytest
+          # Add QT_DEBUG_PLUGINS=1 before xvfb-run to debug Qt library problems.
+          xvfb-run -a pipenv run python -m pytest
