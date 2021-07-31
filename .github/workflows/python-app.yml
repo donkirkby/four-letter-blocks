@@ -25,11 +25,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install pipenv
           pipenv install --dev
+          pip install coverage # Extra copy for codecov upload.
       - name: Test with pytest
         run: |
           # Add QT_DEBUG_PLUGINS=1 before xvfb-run to debug Qt library problems.
           xvfb-run -a pipenv run python -m coverage run --source=four_letter_blocks -m pytest
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
-        with:
-          env_vars: PYTHON
+        uses: codecov/codecov-action@v2
