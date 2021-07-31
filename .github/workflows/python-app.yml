@@ -28,4 +28,8 @@ jobs:
       - name: Test with pytest
         run: |
           # Add QT_DEBUG_PLUGINS=1 before xvfb-run to debug Qt library problems.
-          xvfb-run -a pipenv run python -m pytest
+          xvfb-run -a pipenv run python -m coverage run --source=four_letter_blocks -m pytest
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          env_vars: PYTHON

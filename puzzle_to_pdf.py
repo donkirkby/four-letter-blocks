@@ -1,11 +1,9 @@
-import typing
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, FileType
-from itertools import chain
 
-from PySide6.QtGui import QPdfWriter, QPainter, QPageSize
+from PySide6.QtGui import QPdfWriter, QPageSize, QPainter
 from PySide6.QtWidgets import QApplication
 
-from four_letter_blocks.grid import Grid
+from four_letter_blocks.puzzle import Puzzle
 
 
 def parse_args():
@@ -32,36 +30,6 @@ def draw_grid(grid, painter):
             square.draw(painter)
 
 
-def parse_sections(source_file):
-    sections: typing.List[str] = []
-    lines: typing.List[str] = []
-    for line in chain(source_file, '\n'):
-        line = line.rstrip()
-        if line:
-            lines.append(line)
-        else:
-            section = '\n'.join(lines)
-            if section:
-                sections.append(section)
-            lines.clear()
-    section_count = len(sections)
-    if section_count != 4:
-        exit(f'Expected 4 sections, found {section_count}.')
-    return sections
-
-
-def parse_clues(text, label):
-    clues: typing.Dict[str, str] = {}
-    pairs = text.splitlines(keepends=False)
-    if pairs[0].lower() == label:
-        pairs.pop(0)
-    for pair in pairs:
-        word, clue = pair.split('-', maxsplit=1)
-        word = word.strip()
-        clues[word] = clue.strip()
-    return clues
-
-
 def draw_clues(across_clues, down_clues, painter):
     line_height = painter.window().height() / 40
     centre = painter.window().width() / 2
@@ -79,20 +47,16 @@ def draw_clues(across_clues, down_clues, painter):
 
 def main():
     args = parse_args()
-
-    sections = parse_sections(args.source)
-    grid = Grid(sections[0])
-    across_clues = parse_clues(sections[1], 'across')
-    down_clues = parse_clues(sections[2], 'down')
+    puzzle = Puzzle.parse(args.source)
 
     app = QApplication()
     pdf = QPdfWriter(args.target)
     pdf.setPageSize(QPageSize.Letter)
     painter = QPainter(pdf)
 
-    draw_grid(grid, painter)
+    draw_grid(puzzle.grid, painter)
     pdf.newPage()
-    draw_clues(across_clues, down_clues, painter)
+    draw_clues(puzzle.across_clues, puzzle.down_clues, painter)
     painter.end()
 
     print('Done.')
