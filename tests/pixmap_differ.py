@@ -91,6 +91,7 @@ class PixmapDiffer:
         painters, or call the end() method and create a new painter on the
         same device. Order matters, though!
         """
+        __tracebackhide__ = True
         assert name not in self.names, f'Duplicate name: {name!r}.'
         self.names.add(name)
         self.name = name
