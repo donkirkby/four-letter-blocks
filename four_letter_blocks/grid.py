@@ -1,4 +1,5 @@
 import typing
+from itertools import count
 
 from four_letter_blocks.square import Square
 
@@ -6,16 +7,44 @@ from four_letter_blocks.square import Square
 class Grid:
     def __init__(self, text: str):
         lines = text.splitlines()
-        height = len(lines)
-        width = max(len(line) for line in lines)
+        self.height = len(lines)
+        self.width = max(len(line) for line in lines)
         self.squares: typing.List[typing.List[typing.Optional[
-            Square]]] = [[None]*(width+2) for _ in range(height+2)]
+            Square]]] = [[None]*(self.width+2) for _ in range(self.height+2)]
         for y, line in enumerate(lines, 1):
             for x, letter in enumerate(line, 1):
                 if letter != '#':
                     square = Square(letter)
-                    row = self.squares[y]
-                    row[x] = square
+                    self.squares[y][x] = square
+        next_number = 1
+        for y1 in range(1, self.height+1):
+            for x1 in range(1, self.width+1):
+                square = self.squares[y1][x1]
+                if square is None:
+                    continue
+                above = self.squares[y1-1][x1]
+                if above is None:
+                    word = square.letter
+                    for y2 in count(y1+1):
+                        below = self.squares[y2][x1]
+                        if below is None:
+                            break
+                        word += below.letter
+                    if 1 < len(word):
+                        square.down_word = word
+                left = self.squares[y1][x1-1]
+                if left is None:
+                    word = square.letter
+                    for x2 in count(x1+1):
+                        right = self.squares[y1][x2]
+                        if right is None:
+                            break
+                        word += right.letter
+                    if 1 < len(word):
+                        square.across_word = word
+                if square.down_word is not None or square.across_word is not None:
+                    square.number = next_number
+                    next_number += 1
 
     def __getitem__(self, item):
         x, y = item

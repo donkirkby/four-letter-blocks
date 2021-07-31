@@ -11,6 +11,7 @@ class Square:
         self.number = number
         self.x = self.y = 0
         self.size = 100
+        self.across_word = self.down_word = None
 
     def __repr__(self):
         if self.number is None:
