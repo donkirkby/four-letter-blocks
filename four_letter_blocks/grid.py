@@ -15,6 +15,8 @@ class Grid:
             for x, letter in enumerate(line, 1):
                 if letter != '#':
                     square = Square(letter)
+                    square.x = x-1
+                    square.y = y-1
                     self.squares[y][x] = square
         next_number = 1
         for y1 in range(1, self.height+1):

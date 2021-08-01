@@ -10,7 +10,7 @@ class Square:
         self.letter = letter
         self.number = number
         self.x = self.y = 0
-        self.size = 100
+        self.size = 1
         self.across_word = self.down_word = None
 
     def __repr__(self):
@@ -20,19 +20,12 @@ class Square:
             number_repr = f", {self.number}"
         return f"Square({self.letter!r}{number_repr})"
 
-    def move_to(self, x: int, y: int):
-        self.x = x
-        self.y = y
-
-    def resize(self, size: int):
-        self.size = size
-
     def draw(self, painter: QPainter):
         pen = painter.pen()
         pen.setWidth(round(self.size/80))
         painter.setPen(pen)
-        rect = QRect(self.x - self.size//2,
-                     self.y - self.size//2,
+        rect = QRect(self.x,
+                     self.y,
                      self.size,
                      self.size)
         painter.drawRect(rect)

@@ -40,3 +40,6 @@ EXIT
     assert letter_x.number is None
     assert letter_w.number == 1
     assert letter_d.number == 2
+
+    assert letter_x.x == 1
+    assert letter_x.y == 3

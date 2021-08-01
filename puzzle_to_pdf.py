@@ -17,34 +17,6 @@ def parse_args():
     return parser.parse_args()
 
 
-def draw_grid(grid, painter):
-    square_size = painter.window().width() // 30
-    for x in range(grid.width):
-        for y in range(grid.height):
-            square = grid[x, y]
-            if square is None:
-                continue
-            square.resize(square_size)
-            square.move_to((x + 1) * square_size,
-                           (y + 1) * square_size)
-            square.draw(painter)
-
-
-def draw_clues(across_clues, down_clues, painter):
-    line_height = painter.window().height() / 40
-    centre = painter.window().width() / 2
-    painter.drawText(2 * line_height, line_height * 2, 'Across')
-    painter.drawText(2 * line_height + centre, line_height * 2, 'Down')
-    for number, (word, clue) in enumerate(across_clues.items(), 1):
-        painter.drawText(2 * line_height,
-                         line_height * (number + 2),
-                         f'{number}. {clue}')
-    for number, (word, clue) in enumerate(down_clues.items(), 1):
-        painter.drawText(2 * line_height + centre,
-                         line_height * (number + 2),
-                         f'{number}. {clue}')
-
-
 def main():
     args = parse_args()
     puzzle = Puzzle.parse(args.source)
@@ -54,9 +26,9 @@ def main():
     pdf.setPageSize(QPageSize.Letter)
     painter = QPainter(pdf)
 
-    draw_grid(puzzle.grid, painter)
+    puzzle.draw_pieces(painter)
     pdf.newPage()
-    draw_clues(puzzle.across_clues, puzzle.down_clues, painter)
+    puzzle.draw_clues(painter)
     painter.end()
 
     print('Done.')
