@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-pyside6 = "*"
+four-letter-blocks = {editable = true, path = "."}
 beautifulsoup4 = "*"
 
 [dev-packages]

@@ -8,16 +8,16 @@ from four_letter_blocks.grid import Grid
 from four_letter_blocks.square import Square
 
 
-class Piece:
+class Block:
     def __init__(self, *squares: Square):
         self.squares = squares
 
     def __repr__(self):
         squares = ', '.join(repr(square) for square in self.squares)
-        return f"Piece({squares})"
+        return f"Block({squares})"
 
     @staticmethod
-    def parse(text: str, grid: Grid) -> typing.List['Piece']:
+    def parse(text: str, grid: Grid) -> typing.List['Block']:
         square_lists = defaultdict(list)
         lines = text.splitlines()
         for y, line in enumerate(lines):
@@ -29,8 +29,8 @@ class Piece:
                 square.y = y
                 square_list = square_lists[letter]
                 square_list.append(square)
-        pieces = [Piece(*square_list) for square_list in square_lists.values()]
-        return pieces
+        blocks = [Block(*square_list) for square_list in square_lists.values()]
+        return blocks
 
     @property
     def x(self):

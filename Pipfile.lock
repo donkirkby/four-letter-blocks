@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "44fe8d45ea0b2f664741f83c6f684c7fe98431dbd4596be82cd390031c01edff"
+            "sha256": "9e8d7cbcf4ccf91ab23673e76cc04251e71bf7c9f3af5df84cf4240cc59a6c18"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -25,13 +25,17 @@
             "index": "pypi",
             "version": "==4.9.3"
         },
+        "four-letter-blocks": {
+            "editable": true,
+            "path": "."
+        },
         "pyside6": {
             "hashes": [
                 "sha256:2dda3467d56ec76031b36ce2571e931cf5f3b6682497edc8a004e0360436da5d",
                 "sha256:d95286a6d59f29f5cad18c4346166f94bfedff9a61056d9b30d641e7a6ee0b28",
                 "sha256:dab04edbde131d09a885fc2c945d9ea3f8e90e6d73546e66de5c2265c4731cf9"
             ],
-            "index": "pypi",
+            "markers": "python_version < '3.10' and python_version >= '3.6'",
             "version": "==6.1.2"
         },
         "shiboken6": {

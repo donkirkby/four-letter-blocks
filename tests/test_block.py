@@ -1,10 +1,10 @@
 from four_letter_blocks.grid import Grid
-from four_letter_blocks.piece import Piece
+from four_letter_blocks.block import Block
 from four_letter_blocks.square import Square
 from tests.test_square import PixmapDiffer
 
 
-def create_basic_piece():
+def create_basic_block():
     # (x, y) == (0, 50)
     # ABC
     # D
@@ -18,16 +18,16 @@ def create_basic_piece():
     square3.y = 50
     square4.x = 200
     square4.y = 50
-    piece = Piece(square1, square2, square3, square4)
-    for square in piece.squares:
+    block = Block(square1, square2, square3, square4)
+    for square in block.squares:
         square.size = 100
-    return piece
+    return block
 
 
 def test_repr():
-    piece = Piece(Square('W'), Square('O', 12))
+    block = Block(Square('W'), Square('O', 12))
 
-    assert repr(piece) == "Piece(Square('W'), Square('O', 12))"
+    assert repr(block) == "Block(Square('W'), Square('O', 12))"
 
 
 def test_parse():
@@ -37,7 +37,7 @@ I##A
 N##S
 EACH
 """
-    piece_text = """\
+    block_text = """\
 AABB
 A##B
 A##B
@@ -45,29 +45,29 @@ CCCC
 """
     grid = Grid(grid_text)
 
-    pieces = Piece.parse(piece_text, grid)
+    blocks = Block.parse(block_text, grid)
 
-    assert len(pieces) == 3
-    assert pieces[0].squares[1].letter == 'O'
-    assert pieces[0].squares[1].x == 1
-    assert pieces[0].squares[1].y == 0
+    assert len(blocks) == 3
+    assert blocks[0].squares[1].letter == 'O'
+    assert blocks[0].squares[1].x == 1
+    assert blocks[0].squares[1].y == 0
 
 
 def test_move():
-    piece = create_basic_piece()
-    square1, square2, square3, square4 = piece.squares
+    block = create_basic_block()
+    square1, square2, square3, square4 = block.squares
 
-    assert piece.x == 0
-    assert piece.y == 50
-    assert piece.width == 300
-    assert piece.height == 200
+    assert block.x == 0
+    assert block.y == 50
+    assert block.width == 300
+    assert block.height == 200
 
-    piece.x = 300
+    block.x = 300
 
     assert square1.x == 300
     assert square3.x == 400
 
-    piece.y = 100
+    block.y = 100
 
     assert square1.y == 100
     assert square2.y == 200
@@ -76,13 +76,13 @@ def test_move():
 def test_draw(pixmap_differ: PixmapDiffer):
     actual, expected = pixmap_differ.start(
         310, 260,
-        'test_piece_draw')
+        'test_block_draw')
 
-    piece = create_basic_piece()
+    block = create_basic_block()
 
-    for square in piece.squares:
+    for square in block.squares:
         square.draw(expected)
 
-    piece.draw(actual)
+    block.draw(actual)
 
     pixmap_differ.assert_equal()

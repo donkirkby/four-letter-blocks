@@ -30,7 +30,7 @@ jobs:
         run: |
           # Add QT_DEBUG_PLUGINS=1 before xvfb-run to debug Qt library problems.
           xvfb-run -a pipenv run python -m coverage run --source=four_letter_blocks -m pytest
-          ls -alh
-          ls -alh four*
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
+        with:
+          files: .coverage

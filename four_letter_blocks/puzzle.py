@@ -6,42 +6,42 @@ from random import shuffle
 from PySide6.QtGui import QPainter
 
 from four_letter_blocks.grid import Grid
-from four_letter_blocks.piece import Piece
+from four_letter_blocks.block import Block
 from four_letter_blocks.square import Square
 
 
 @dataclass
 class Puzzle:
     grid: Grid
+    all_clues: typing.Dict[str, str]
     across_clues: typing.List[str]
     down_clues: typing.List[str]
-    pieces: typing.List[Piece]
+    blocks: typing.List[Block]
 
     @staticmethod
     def parse(source_file: typing.IO) -> 'Puzzle':
         sections = parse_sections(source_file)
         grid = Grid(sections[0])
-        across_dict = parse_clues(sections[1], 'across')
-        down_dict = parse_clues(sections[2], 'down')
-        pieces = Piece.parse(sections[3], grid)
-        shuffle(pieces)
+        all_clues = parse_clues(sections[1])
+        blocks = Block.parse(sections[2], grid)
+        shuffle(blocks)
         next_number = 1
         across_clues = []
         down_clues = []
-        for piece in pieces:
-            for square in piece.squares:
+        for block in blocks:
+            for square in block.squares:
                 if square.number is not None:
                     square.number = next_number
                     next_number += 1
                     if square.across_word is not None:
-                        clue = across_dict[square.across_word]
+                        clue = all_clues[square.across_word]
                         clue = f"{square.number}. {clue}"
                         across_clues.append(clue)
                     if square.down_word is not None:
-                        clue = down_dict[square.down_word]
+                        clue = all_clues[square.down_word]
                         clue = f"{square.number}. {clue}"
                         down_clues.append(clue)
-        return Puzzle(grid, across_clues, down_clues, pieces)
+        return Puzzle(grid, all_clues, across_clues, down_clues, blocks)
 
     @property
     def square_size(self) -> int:
@@ -54,8 +54,8 @@ class Puzzle:
     def square_size(self, value: int):
         ratio = value / self.square_size
         all_squares = chain((square
-                             for piece in self.pieces
-                             for square in piece.squares),
+                             for block in self.blocks
+                             for square in block.squares),
                             (square
                              for row in self.grid.squares
                              for square in row))
@@ -65,7 +65,7 @@ class Puzzle:
                 square.x *= ratio
                 square.y *= ratio
 
-    def draw_pieces(self, painter: QPainter, square_size: int = None):
+    def draw_blocks(self, painter: QPainter, square_size: int = None):
         window_width = painter.window().width()
         if square_size is None:
             square_size = window_width // 16
@@ -74,16 +74,16 @@ class Puzzle:
         x = y = self.square_size
         line_height = 0
         x_limit = painter.window().width() - self.square_size
-        for piece in self.pieces:
-            if x_limit < x + piece.width:
+        for block in self.blocks:
+            if x_limit < x + block.width:
                 x = self.square_size
                 y += line_height + gap
                 line_height = 0
-            piece.x = x
-            piece.y = y
-            piece.draw(painter)
-            line_height = max(line_height, piece.height)
-            x += piece.width + gap
+            block.x = x
+            block.y = y
+            block.draw(painter)
+            line_height = max(line_height, block.height)
+            x += block.width + gap
 
     def draw_clues(self, painter: QPainter, square_size: int = None):
         window_width = painter.window().width()
@@ -103,6 +103,39 @@ class Puzzle:
         for i, clue in enumerate(self.down_clues, 2):
             painter.drawText(middle, i * letter_size, clue)
 
+    def format_grid(self) -> str:
+        rows = []
+        for y in range(self.grid.height):
+            row = []
+            for x in range(self.grid.width):
+                cell = self.grid[x, y]
+                if cell is None:
+                    letter = '#'
+                else:
+                    letter = cell.letter
+                row.append(letter)
+            rows.append(row)
+        grid_text = '\n'.join(''.join(row) for row in rows)
+
+        return grid_text
+
+    def format_clues(self) -> str:
+        return '\n'.join(f'{word} - {clue}'
+                         for word, clue in sorted(self.all_clues.items()))
+
+    def format_blocks(self) -> str:
+        rows = []
+        for y in range(self.grid.height):
+            rows.append(['#'] * self.grid.width)
+        ascii_start = ord('A')
+        for i, block in enumerate(self.blocks, ascii_start):
+            block_letter = chr(i)
+            for square in block.squares:
+                x = square.x
+                y = square.y
+                rows[y][x] = block_letter
+        return '\n'.join(''.join(row) for row in rows)
+
 
 def parse_sections(source_file):
     sections: typing.List[str] = []
@@ -117,16 +150,14 @@ def parse_sections(source_file):
                 sections.append(section)
             lines.clear()
     section_count = len(sections)
-    if section_count != 4:
-        exit(f'Expected 4 sections, found {section_count}.')
+    if section_count != 3:
+        raise ValueError(f'Expected 3 sections, found {section_count}.')
     return sections
 
 
-def parse_clues(text, label):
+def parse_clues(text):
     clues: typing.Dict[str, str] = {}
     pairs = text.splitlines(keepends=False)
-    if pairs[0].lower() == label:
-        pairs.pop(0)
     for pair in pairs:
         word, clue = pair.split('-', maxsplit=1)
         word = word.strip()
