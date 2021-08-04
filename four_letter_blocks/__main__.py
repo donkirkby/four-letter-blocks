@@ -31,6 +31,7 @@ class FourLetterBlocksWindow(QMainWindow):
         sys.excepthook = self.on_error
         self.file_path: typing.Optional[Path] = None
         self.settings = get_settings()
+        self.old_clues = {}
 
         font = QFont('Monospace')
         font.setStyleHint(QFont.TypeWriter)
@@ -145,7 +146,10 @@ class FourLetterBlocksWindow(QMainWindow):
         self.statusBar().showMessage(f'Exported to {file_path.name}.')
 
     def parse_puzzle(self):
-        puzzle = Puzzle.parse(StringIO(self.format_text()))
+        puzzle = Puzzle.parse_sections(self.ui.grid_text.toPlainText(),
+                                       self.ui.clues_text.toPlainText(),
+                                       self.ui.blocks_text.toPlainText(),
+                                       self.old_clues)
         return puzzle
 
     def grid_changed(self):

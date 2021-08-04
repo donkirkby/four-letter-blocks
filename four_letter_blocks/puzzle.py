@@ -20,32 +20,42 @@ class Puzzle:
 
     @staticmethod
     def parse(source_file: typing.IO) -> 'Puzzle':
-        sections = parse_sections(source_file)
-        grid = Grid(sections[0])
-        old_clues = parse_clues(sections[1])
+        sections = split_sections(source_file)
+        return Puzzle.parse_sections(sections[0], sections[1], sections[2])
+
+    @staticmethod
+    def parse_sections(grid_text: str,
+                       clues_text: str,
+                       blocks_text: str,
+                       old_clues: typing.Dict[str, str] = None) -> 'Puzzle':
+        if old_clues is None:
+            old_clues = {}
+        grid = Grid(grid_text)
+        parsed_clues = parse_clues(clues_text)
+        for word, clue in parsed_clues.items():
+            old_clues[word] = clue
         all_clues = {}
-        blocks = Block.parse(sections[2], grid)
+        blocks = Block.parse(blocks_text, grid)
         shuffle(blocks)
         next_number = 1
         across_clues = []
         down_clues = []
         for block in blocks:
             for square in block.squares:
-                if square.number is not None:
-                    square.number = next_number
-                    next_number += 1
-                    word = square.across_word
-                    if word is not None:
-                        clue = old_clues.get(word, '')
-                        all_clues[word] = clue
-                        formatted_clue = f"{square.number}. {clue}"
-                        across_clues.append(formatted_clue)
-                    word = square.down_word
-                    if word is not None:
-                        clue = old_clues.get(word, '')
-                        all_clues[word] = clue
-                        formatted_clue = f"{square.number}. {clue}"
-                        down_clues.append(formatted_clue)
+                if square.number is None:
+                    continue
+                square.number = next_number
+                next_number += 1
+                for word, clues in ((square.across_word, across_clues),
+                                    (square.down_word, down_clues),):
+
+                    if word is None:
+                        continue
+                    old_clue = old_clues.get(word, '')
+                    clue = parsed_clues.get(word, old_clue)
+                    all_clues[word] = clue
+                    formatted_clue = f"{square.number}. {clue}"
+                    clues.append(formatted_clue)
         return Puzzle(grid, all_clues, across_clues, down_clues, blocks)
 
     @property
@@ -161,7 +171,7 @@ class Puzzle:
         return ', '.join(display_terms)
 
 
-def parse_sections(source_file):
+def split_sections(source_file):
     sections: typing.List[str] = []
     lines: typing.List[str] = []
     for line in chain(source_file, '\n'):

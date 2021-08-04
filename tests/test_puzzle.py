@@ -126,8 +126,7 @@ BBCC
                                 'DASH': ''}
 
 
-def test_extra_definitions(monkeypatch):
-    monkeypatch.setattr(four_letter_blocks.puzzle, 'shuffle', reverse)
+def test_extra_definitions():
     source_file = StringIO("""\
 WORD
 I##A
@@ -151,6 +150,46 @@ BBCC
                                 'WORD': 'Part of a sentence',
                                 'WINE': 'Sour grapes',
                                 'DASH': 'Run between words'}
+
+
+def test_parse_updates_old_clues():
+    clues_text = """\
+WORD - Part of a sentence
+EACH - One at a time
+WINE - Sour grapes
+DASH - Run between words
+"""
+    old_clues = {}
+    Puzzle.parse_sections('', clues_text, '', old_clues)
+
+    assert old_clues == {'EACH': 'One at a time',
+                         'WORD': 'Part of a sentence',
+                         'WINE': 'Sour grapes',
+                         'DASH': 'Run between words'}
+
+
+def test_parse_includes_old_clues():
+    grid_text = """\
+WORD
+I##A
+N##S
+EACH
+"""
+    clues_text = """\
+WORD - Part of a sentence
+DASH - Run between words
+"""
+    old_clues = {'EACH': 'One at a time', 'OTHER': 'Unrelated'}
+    puzzle = Puzzle.parse_sections(grid_text, clues_text, '', old_clues)
+
+    assert old_clues == {'EACH': 'One at a time',
+                         'WORD': 'Part of a sentence',
+                         'DASH': 'Run between words',
+                         'OTHER': 'Unrelated'}
+    assert puzzle.all_clues == {'EACH': 'One at a time',
+                                'WORD': 'Part of a sentence',
+                                'DASH': 'Run between words',
+                                'WINE': ''}
 
 
 def test_resize():
