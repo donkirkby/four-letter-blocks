@@ -39,7 +39,9 @@ class FourLetterBlocksWindow(QMainWindow):
             field.setFont(font)
 
         ui.grid_text.textChanged.connect(self.grid_changed)
+        ui.grid_text.focused.connect(self.grid_changed)
         ui.blocks_text.textChanged.connect(self.blocks_changed)
+        ui.blocks_text.focused.connect(self.blocks_changed)
 
     def on_error(self, ex_type, value, tb):
         traceback.print_exception(ex_type, value, tb)
@@ -148,6 +150,7 @@ class FourLetterBlocksWindow(QMainWindow):
 
     def grid_changed(self):
         puzzle = self.parse_puzzle()
+        self.ui.clues_text.setPlainText(puzzle.format_clues())
         letter_count = puzzle.grid.letter_count
         remainder = letter_count % 4
         self.statusBar().showMessage(f'Grid has {letter_count} letters, '

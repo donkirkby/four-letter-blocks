@@ -73,11 +73,13 @@ WORD
 I##A
 N##S
 EACH
+
+-
 """)
     puzzle = Puzzle.parse(source_file)
 
-    assert len(puzzle.all_clues) == 0
-    assert len(puzzle.blocks) == 0
+    assert len(puzzle.all_clues) == 4
+    assert len(puzzle.blocks) == 1  # Unused
 
 
 def test_missing_definitions(monkeypatch):
@@ -118,7 +120,37 @@ BBCC
 """)
     puzzle = Puzzle.parse(source_file)
 
-    assert puzzle.all_clues == {'EACH': 'One at a time'}
+    assert puzzle.all_clues == {'EACH': 'One at a time',
+                                'WORD': '',
+                                'WINE': '',
+                                'DASH': ''}
+
+
+def test_extra_definitions(monkeypatch):
+    monkeypatch.setattr(four_letter_blocks.puzzle, 'shuffle', reverse)
+    source_file = StringIO("""\
+WORD
+I##A
+N##S
+EACH
+
+WORD - Part of a sentence
+EACH - One at a time
+WINE - Sour grapes
+DOOM - Will be removed
+DASH - Run between words
+
+AAAA
+B##C
+B##C
+BBCC
+""")
+    puzzle = Puzzle.parse(source_file)
+
+    assert puzzle.all_clues == {'EACH': 'One at a time',
+                                'WORD': 'Part of a sentence',
+                                'WINE': 'Sour grapes',
+                                'DASH': 'Run between words'}
 
 
 def test_resize():
@@ -157,7 +189,7 @@ def test_display_block_sizes_all_correct():
     source_file = StringIO("""\
 WORD
 I##A
-NO#S
+N##S
 EACH
 
 -
@@ -185,7 +217,28 @@ EACH
 
     block_sizes = puzzle.display_block_sizes()
 
-    assert block_sizes == ''
+    assert block_sizes == 'unused=13'
+
+
+def test_display_block_sizes_four_unused():
+    source_file = StringIO("""\
+WORD
+I##A
+N##S
+EACH
+
+-
+
+AAAA
+####
+####
+BBBB
+""")
+    puzzle = Puzzle.parse(source_file)
+
+    block_sizes = puzzle.display_block_sizes()
+
+    assert block_sizes == '2x4, unused=4'
 
 
 def test_draw_blocks(monkeypatch, pixmap_differ: PixmapDiffer):

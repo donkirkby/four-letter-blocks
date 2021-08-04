@@ -70,9 +70,11 @@ CCCC
 
     blocks = Block.parse(block_text, grid)
 
-    assert len(blocks) == 3
+    assert len(blocks) == 4
     assert blocks[1].marker == 'B'
     assert len(blocks[1].squares) == 3  # One of them didn't match with a square.
+    assert blocks[3].marker == 'unused'
+    assert len(blocks[3].squares) == 1
 
 
 def test_move():

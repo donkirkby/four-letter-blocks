@@ -12,6 +12,8 @@ from PySide6.QtCore import *  # type: ignore
 from PySide6.QtGui import *  # type: ignore
 from PySide6.QtWidgets import *  # type: ignore
 
+from four_letter_blocks.focused_plain_text_edit import FocusedPlainTextEdit
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -41,7 +43,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addWidget(self.grid_label)
 
-        self.grid_text = QPlainTextEdit(self.centralwidget)
+        self.grid_text = FocusedPlainTextEdit(self.centralwidget)
         self.grid_text.setObjectName(u"grid_text")
         self.grid_text.setTabChangesFocus(True)
 
@@ -63,7 +65,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addWidget(self.blocks_label)
 
-        self.blocks_text = QPlainTextEdit(self.centralwidget)
+        self.blocks_text = FocusedPlainTextEdit(self.centralwidget)
         self.blocks_text.setObjectName(u"blocks_text")
         self.blocks_text.setTabChangesFocus(True)
 

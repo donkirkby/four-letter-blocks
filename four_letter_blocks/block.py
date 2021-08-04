@@ -19,19 +19,27 @@ class Block:
 
     @staticmethod
     def parse(text: str, grid: Grid) -> typing.List['Block']:
+        unused_squares = {square
+                          for row in grid.squares
+                          for square in row
+                          if square is not None}
         square_lists = defaultdict(list)
         lines = text.splitlines()
         for y, line in enumerate(lines):
             for x, marker in enumerate(line):
                 if marker == '#':
                     continue
-                square = copy(grid[x, y])
-                if square is None:
+                old_square = grid[x, y]
+                if old_square is None:
                     continue
+                unused_squares.remove(old_square)
+                square = copy(old_square)
                 square.x = x
                 square.y = y
                 square_list = square_lists[marker]
                 square_list.append(square)
+        if unused_squares:
+            square_lists['unused'] = list(unused_squares)
         blocks = [Block(*square_list, marker=marker)
                   for marker, square_list in square_lists.items()]
         return blocks

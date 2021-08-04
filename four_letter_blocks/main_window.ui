@@ -23,7 +23,7 @@
      </widget>
     </item>
     <item>
-     <widget class="QPlainTextEdit" name="grid_text">
+     <widget class="FocusedPlainTextEdit" name="grid_text">
       <property name="tabChangesFocus">
        <bool>true</bool>
       </property>
@@ -54,7 +54,7 @@
      </widget>
     </item>
     <item>
-     <widget class="QPlainTextEdit" name="blocks_text">
+     <widget class="FocusedPlainTextEdit" name="blocks_text">
       <property name="tabChangesFocus">
        <bool>true</bool>
       </property>
@@ -157,6 +157,13 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>FocusedPlainTextEdit</class>
+   <extends>QPlainTextEdit</extends>
+   <header>four_letter_blocks.focused_plain_text_edit</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

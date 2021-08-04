@@ -22,7 +22,8 @@ class Puzzle:
     def parse(source_file: typing.IO) -> 'Puzzle':
         sections = parse_sections(source_file)
         grid = Grid(sections[0])
-        all_clues = parse_clues(sections[1])
+        old_clues = parse_clues(sections[1])
+        all_clues = {}
         blocks = Block.parse(sections[2], grid)
         shuffle(blocks)
         next_number = 1
@@ -33,14 +34,18 @@ class Puzzle:
                 if square.number is not None:
                     square.number = next_number
                     next_number += 1
-                    if square.across_word is not None:
-                        clue = all_clues.get(square.across_word, '')
-                        clue = f"{square.number}. {clue}"
-                        across_clues.append(clue)
-                    if square.down_word is not None:
-                        clue = all_clues.get(square.down_word, '')
-                        clue = f"{square.number}. {clue}"
-                        down_clues.append(clue)
+                    word = square.across_word
+                    if word is not None:
+                        clue = old_clues.get(word, '')
+                        all_clues[word] = clue
+                        formatted_clue = f"{square.number}. {clue}"
+                        across_clues.append(formatted_clue)
+                    word = square.down_word
+                    if word is not None:
+                        clue = old_clues.get(word, '')
+                        all_clues[word] = clue
+                        formatted_clue = f"{square.number}. {clue}"
+                        down_clues.append(formatted_clue)
         return Puzzle(grid, all_clues, across_clues, down_clues, blocks)
 
     @property
@@ -137,10 +142,14 @@ class Puzzle:
         return '\n'.join(''.join(row) for row in rows)
 
     def display_block_sizes(self) -> str:
-        correct_count = sum(len(block.squares) == 4 for block in self.blocks)
+        correct_markers = {block.marker
+                           for block in self.blocks
+                           if len(block.squares) == 4
+                           and len(block.marker) == 1}
+        correct_count = len(correct_markers)
         incorrect_counts = {block.marker: len(block.squares)
                             for block in self.blocks
-                            if len(block.squares) != 4}
+                            if block.marker not in correct_markers}
         incorrect_items = sorted(incorrect_counts.items())
         incorrect_display = ', '.join(f'{marker}={n}'
                                       for marker, n in incorrect_items)
@@ -180,5 +189,6 @@ def parse_clues(text):
         except ValueError:
             continue
         word = word.strip()
-        clues[word] = clue.strip()
+        if word:
+            clues[word] = clue.strip()
     return clues
