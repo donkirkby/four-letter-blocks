@@ -24,6 +24,9 @@
     </item>
     <item>
      <widget class="QPlainTextEdit" name="grid_text">
+      <property name="tabChangesFocus">
+       <bool>true</bool>
+      </property>
       <property name="plainText">
        <string/>
       </property>
@@ -37,7 +40,11 @@
      </widget>
     </item>
     <item>
-     <widget class="QPlainTextEdit" name="clues_text"/>
+     <widget class="QPlainTextEdit" name="clues_text">
+      <property name="tabChangesFocus">
+       <bool>true</bool>
+      </property>
+     </widget>
     </item>
     <item>
      <widget class="QLabel" name="blocks_label">
@@ -47,7 +54,11 @@
      </widget>
     </item>
     <item>
-     <widget class="QPlainTextEdit" name="blocks_text"/>
+     <widget class="QPlainTextEdit" name="blocks_text">
+      <property name="tabChangesFocus">
+       <bool>true</bool>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>

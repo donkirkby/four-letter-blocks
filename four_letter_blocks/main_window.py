@@ -43,6 +43,7 @@ class Ui_MainWindow(object):
 
         self.grid_text = QPlainTextEdit(self.centralwidget)
         self.grid_text.setObjectName(u"grid_text")
+        self.grid_text.setTabChangesFocus(True)
 
         self.verticalLayout.addWidget(self.grid_text)
 
@@ -53,6 +54,7 @@ class Ui_MainWindow(object):
 
         self.clues_text = QPlainTextEdit(self.centralwidget)
         self.clues_text.setObjectName(u"clues_text")
+        self.clues_text.setTabChangesFocus(True)
 
         self.verticalLayout.addWidget(self.clues_text)
 
@@ -63,6 +65,7 @@ class Ui_MainWindow(object):
 
         self.blocks_text = QPlainTextEdit(self.centralwidget)
         self.blocks_text.setObjectName(u"blocks_text")
+        self.blocks_text.setTabChangesFocus(True)
 
         self.verticalLayout.addWidget(self.blocks_text)
 

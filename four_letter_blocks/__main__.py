@@ -6,7 +6,7 @@ from io import StringIO
 from pathlib import Path
 
 from PySide6.QtCore import QSettings
-from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter
+from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, Qt
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog
 
 import four_letter_blocks
@@ -39,12 +39,22 @@ class FourLetterBlocksWindow(QMainWindow):
             field.setFont(font)
 
         ui.grid_text.textChanged.connect(self.grid_changed)
+        ui.blocks_text.textChanged.connect(self.blocks_changed)
 
     def on_error(self, ex_type, value, tb):
         traceback.print_exception(ex_type, value, tb)
         QMessageBox.warning(self,
                             str(ex_type.__name__),
                             str(value))
+
+    def keyPressEvent(self, event: QKeyEvent):
+        if event.key() != Qt.Key_Insert:
+            return
+        overwrite_mode = not self.ui.grid_text.overwriteMode()
+        for field in (self.ui.grid_text,
+                      self.ui.clues_text,
+                      self.ui.blocks_text):
+            field.setOverwriteMode(overwrite_mode)
 
     def about(self):
         QMessageBox.about(self,
@@ -103,7 +113,7 @@ class FourLetterBlocksWindow(QMainWindow):
         self.statusBar().showMessage(f'Saved to {self.file_path.name}.')
 
     def format_text(self) -> str:
-        return '\n\n'.join(field.toPlainText().strip()
+        return '\n\n'.join(field.toPlainText().strip() or '-'
                            for field in (self.ui.grid_text,
                                          self.ui.clues_text,
                                          self.ui.blocks_text))
@@ -142,6 +152,12 @@ class FourLetterBlocksWindow(QMainWindow):
         remainder = letter_count % 4
         self.statusBar().showMessage(f'Grid has {letter_count} letters, '
                                      f'remainder {remainder}.')
+
+    def blocks_changed(self):
+        puzzle = self.parse_puzzle()
+        block_summary = puzzle.display_block_sizes()
+        if block_summary:
+            self.statusBar().showMessage(f'Block sizes: {block_summary}.')
 
 
 def get_settings():

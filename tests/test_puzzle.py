@@ -80,6 +80,47 @@ EACH
     assert len(puzzle.blocks) == 0
 
 
+def test_missing_definitions(monkeypatch):
+    monkeypatch.setattr(four_letter_blocks.puzzle, 'shuffle', reverse)
+    source_file = StringIO("""\
+WORD
+I##A
+N##S
+EACH
+
+WORD - Part of a sentence
+
+AAAA
+B##C
+B##C
+BBCC
+""")
+    puzzle = Puzzle.parse(source_file)
+
+    assert puzzle.across_clues[0] == '1. '
+
+
+def test_bad_definitions(monkeypatch):
+    monkeypatch.setattr(four_letter_blocks.puzzle, 'shuffle', reverse)
+    source_file = StringIO("""\
+WORD
+I##A
+N##S
+EACH
+
+WORD = Part of a sentence
+EACH - One at a time
+
+AAAA
+B##C
+B##C
+BBCC
+""")
+    puzzle = Puzzle.parse(source_file)
+
+    assert puzzle.all_clues == {'EACH': 'One at a time'}
+
+
 def test_resize():
     puzzle = parse_basic_puzzle()
 
@@ -89,6 +130,62 @@ def test_resize():
     assert puzzle.grid[1, 0].x == 100
     assert puzzle.grid[0, 2].y == 200
     assert puzzle.blocks[0].squares[0].size == 100
+
+
+def test_display_block_sizes():
+    source_file = StringIO("""\
+WORD
+I##A
+NO#S
+EACH
+
+-
+
+AABB
+A##B
+DD#B
+CCCC
+""")
+    puzzle = Puzzle.parse(source_file)
+
+    block_sizes = puzzle.display_block_sizes()
+
+    assert block_sizes == '2x4, A=3, D=2'
+
+
+def test_display_block_sizes_all_correct():
+    source_file = StringIO("""\
+WORD
+I##A
+NO#S
+EACH
+
+-
+
+AABB
+A##B
+A##B
+CCCC
+""")
+    puzzle = Puzzle.parse(source_file)
+
+    block_sizes = puzzle.display_block_sizes()
+
+    assert block_sizes == '3x4'
+
+
+def test_display_block_sizes_no_blocks():
+    source_file = StringIO("""\
+WORD
+I##A
+NO#S
+EACH
+""")
+    puzzle = Puzzle.parse(source_file)
+
+    block_sizes = puzzle.display_block_sizes()
+
+    assert block_sizes == ''
 
 
 def test_draw_blocks(monkeypatch, pixmap_differ: PixmapDiffer):

@@ -9,8 +9,9 @@ from four_letter_blocks.square import Square
 
 
 class Block:
-    def __init__(self, *squares: Square):
+    def __init__(self, *squares: Square, marker: str = None):
         self.squares = squares
+        self.marker = marker
 
     def __repr__(self):
         squares = ', '.join(repr(square) for square in self.squares)
@@ -21,15 +22,18 @@ class Block:
         square_lists = defaultdict(list)
         lines = text.splitlines()
         for y, line in enumerate(lines):
-            for x, letter in enumerate(line):
-                if letter == '#':
+            for x, marker in enumerate(line):
+                if marker == '#':
                     continue
                 square = copy(grid[x, y])
+                if square is None:
+                    continue
                 square.x = x
                 square.y = y
-                square_list = square_lists[letter]
+                square_list = square_lists[marker]
                 square_list.append(square)
-        blocks = [Block(*square_list) for square_list in square_lists.values()]
+        blocks = [Block(*square_list, marker=marker)
+                  for marker, square_list in square_lists.items()]
         return blocks
 
     @property

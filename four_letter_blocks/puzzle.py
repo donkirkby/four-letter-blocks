@@ -34,11 +34,11 @@ class Puzzle:
                     square.number = next_number
                     next_number += 1
                     if square.across_word is not None:
-                        clue = all_clues[square.across_word]
+                        clue = all_clues.get(square.across_word, '')
                         clue = f"{square.number}. {clue}"
                         across_clues.append(clue)
                     if square.down_word is not None:
-                        clue = all_clues[square.down_word]
+                        clue = all_clues.get(square.down_word, '')
                         clue = f"{square.number}. {clue}"
                         down_clues.append(clue)
         return Puzzle(grid, all_clues, across_clues, down_clues, blocks)
@@ -136,6 +136,21 @@ class Puzzle:
                 rows[y][x] = block_letter
         return '\n'.join(''.join(row) for row in rows)
 
+    def display_block_sizes(self) -> str:
+        correct_count = sum(len(block.squares) == 4 for block in self.blocks)
+        incorrect_counts = {block.marker: len(block.squares)
+                            for block in self.blocks
+                            if len(block.squares) != 4}
+        incorrect_items = sorted(incorrect_counts.items())
+        incorrect_display = ', '.join(f'{marker}={n}'
+                                      for marker, n in incorrect_items)
+        display_terms = []
+        if correct_count:
+            display_terms.append(f'{correct_count}x4')
+        if incorrect_display:
+            display_terms.append(incorrect_display)
+        return ', '.join(display_terms)
+
 
 def parse_sections(source_file):
     sections: typing.List[str] = []
@@ -160,7 +175,10 @@ def parse_clues(text):
     clues: typing.Dict[str, str] = {}
     pairs = text.splitlines(keepends=False)
     for pair in pairs:
-        word, clue = pair.split('-', maxsplit=1)
+        try:
+            word, clue = pair.split('-', maxsplit=1)
+        except ValueError:
+            continue
         word = word.strip()
         clues[word] = clue.strip()
     return clues

@@ -53,6 +53,28 @@ CCCC
     assert blocks[0].squares[1].y == 0
 
 
+def test_parse_mismatch():
+    grid_text = """\
+WORD
+I##A
+N##S
+EACH
+"""
+    block_text = """\
+AAB#
+A#BB
+A##B
+CCCC
+"""
+    grid = Grid(grid_text)
+
+    blocks = Block.parse(block_text, grid)
+
+    assert len(blocks) == 3
+    assert blocks[1].marker == 'B'
+    assert len(blocks[1].squares) == 3  # One of them didn't match with a square.
+
+
 def test_move():
     block = create_basic_block()
     square1, square2, square3, square4 = block.squares
