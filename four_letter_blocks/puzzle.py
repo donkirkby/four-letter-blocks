@@ -150,8 +150,9 @@ def parse_sections(source_file):
                 sections.append(section)
             lines.clear()
     section_count = len(sections)
-    if section_count != 3:
+    if 3 < section_count:
         raise ValueError(f'Expected 3 sections, found {section_count}.')
+    sections.extend([''] * (3 - section_count))
     return sections
 
 

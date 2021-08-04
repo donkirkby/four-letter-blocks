@@ -8,7 +8,7 @@ class Grid:
     def __init__(self, text: str):
         lines = text.splitlines()
         self.height = len(lines)
-        self.width = max(len(line) for line in lines)
+        self.width = self.height and max(len(line) for line in lines)
         self.squares: typing.List[typing.List[typing.Optional[
             Square]]] = [[None]*(self.width+2) for _ in range(self.height+2)]
         for y, line in enumerate(lines, 1):
@@ -51,3 +51,9 @@ class Grid:
     def __getitem__(self, item):
         x, y = item
         return self.squares[y+1][x+1]
+
+    @property
+    def letter_count(self) -> int:
+        return sum(square is not None
+                   for row in self.squares
+                   for square in row)

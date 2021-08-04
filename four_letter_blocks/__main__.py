@@ -38,6 +38,8 @@ class FourLetterBlocksWindow(QMainWindow):
         for field in (ui.grid_text, ui.clues_text, ui.blocks_text):
             field.setFont(font)
 
+        ui.grid_text.textChanged.connect(self.grid_changed)
+
     def on_error(self, ex_type, value, tb):
         traceback.print_exception(ex_type, value, tb)
         QMessageBox.warning(self,
@@ -122,13 +124,24 @@ class FourLetterBlocksWindow(QMainWindow):
         pdf.setPageSize(QPageSize.Letter)
         painter = QPainter(pdf)
 
-        puzzle = Puzzle.parse(StringIO(self.format_text()))
+        puzzle = self.parse_puzzle()
         puzzle.draw_blocks(painter)
         pdf.newPage()
         puzzle.draw_clues(painter)
         painter.end()
 
         self.statusBar().showMessage(f'Exported to {file_path.name}.')
+
+    def parse_puzzle(self):
+        puzzle = Puzzle.parse(StringIO(self.format_text()))
+        return puzzle
+
+    def grid_changed(self):
+        puzzle = self.parse_puzzle()
+        letter_count = puzzle.grid.letter_count
+        remainder = letter_count % 4
+        self.statusBar().showMessage(f'Grid has {letter_count} letters, '
+                                     f'remainder {remainder}.')
 
 
 def get_settings():

@@ -8,8 +8,7 @@ four-letter-blocks = {editable = true, path = "."}
 beautifulsoup4 = "*"
 
 [dev-packages]
-pytest = "*"
-coverage = "*"
+four-letter-blocks = {editable = true, extras = ["dev"], path = "."}
 
 [requires]
 python_version = "3.9"

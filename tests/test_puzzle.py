@@ -44,7 +44,7 @@ def test_parse(monkeypatch):
     assert puzzle.all_clues['EACH'] == 'One at a time'
 
 
-def test_missing_section():
+def test_extra_section():
     source_file = StringIO("""\
 WORD
 I##A
@@ -55,9 +55,29 @@ WORD - Part of a sentence
 EACH - One at a time
 WINE - Sour grapes
 DASH - Run between words
+
+AAAA
+B##C
+B##C
+BBCC
+
+Lorem ipsum
 """)
-    with pytest.raises(ValueError, match='Expected 3 sections, found 2.'):
+    with pytest.raises(ValueError, match='Expected 3 sections, found 4.'):
         Puzzle.parse(source_file)
+
+
+def test_fewer_sections():
+    source_file = StringIO("""\
+WORD
+I##A
+N##S
+EACH
+""")
+    puzzle = Puzzle.parse(source_file)
+
+    assert len(puzzle.all_clues) == 0
+    assert len(puzzle.blocks) == 0
 
 
 def test_resize():

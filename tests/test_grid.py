@@ -43,3 +43,16 @@ EXIT
 
     assert letter_x.x == 1
     assert letter_x.y == 3
+
+
+def test_letter_count():
+    text = """\
+WORD
+I##R
+R##A
+EXIT
+"""
+
+    grid = Grid(text)
+
+    assert grid.letter_count == 12

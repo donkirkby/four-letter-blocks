@@ -30,7 +30,8 @@ setup(name='four_letter_blocks',
       keywords='puzzle wordgame crossword',
       packages=setuptools.find_packages(),
       install_requires=['PySide6'],
-      extras_require={},
+      extras_require={'dev': ['pytest',
+                              'coverage']},
       entry_points={
           'gui_scripts': [
               'four_letter_blocks=four_letter_blocks.__main__:main']},
