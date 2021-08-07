@@ -33,7 +33,7 @@ class Grid:
                             break
                         word += below.letter
                     if 1 < len(word):
-                        square.down_word = word
+                        square.down_word = word.strip()
                 left = self.squares[y1][x1-1]
                 if left is None:
                     word = square.letter
@@ -43,7 +43,7 @@ class Grid:
                             break
                         word += right.letter
                     if 1 < len(word):
-                        square.across_word = word
+                        square.across_word = word.strip()
                 if square.down_word is not None or square.across_word is not None:
                     square.number = next_number
                     next_number += 1

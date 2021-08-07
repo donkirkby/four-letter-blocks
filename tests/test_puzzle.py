@@ -325,7 +325,7 @@ def test_draw_clues(monkeypatch, pixmap_differ: PixmapDiffer):
     expected.drawText(200, 30, down_clue1)
     expected.drawText(200, 45, down_clue2)
 
-    puzzle.draw_clues(actual, square_size=20)
+    puzzle.draw_clues(actual, square_size=30)
 
     pixmap_differ.assert_equal()
 

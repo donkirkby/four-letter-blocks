@@ -2,11 +2,10 @@ import os
 import sys
 import traceback
 import typing
-from io import StringIO
 from pathlib import Path
 
 from PySide6.QtCore import QSettings
-from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, Qt
+from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, Qt, QCloseEvent
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog
 
 import four_letter_blocks
@@ -32,6 +31,7 @@ class FourLetterBlocksWindow(QMainWindow):
         self.file_path: typing.Optional[Path] = None
         self.settings = get_settings()
         self.old_clues = {}
+        self.base_title = self.windowTitle()
 
         font = QFont('Monospace')
         font.setStyleHint(QFont.TypeWriter)
@@ -43,6 +43,51 @@ class FourLetterBlocksWindow(QMainWindow):
         ui.grid_text.focused.connect(self.grid_changed)
         ui.blocks_text.textChanged.connect(self.blocks_changed)
         ui.blocks_text.focused.connect(self.blocks_changed)
+        ui.clues_text.textChanged.connect(self.clues_changed)
+
+        self.state_fields = (self.ui.grid_text,
+                             self.ui.clues_text,
+                             self.ui.blocks_text)
+        self.clean_state = self.current_state = self.build_current_state()
+
+    def closeEvent(self, event: QCloseEvent):
+        if not self.is_state_dirty():
+            return  # Default behaviour: window will close.
+        choice = QMessageBox.warning(self,
+                                     'Unsaved Changes',
+                                     'Changes have not been saved. Are you '
+                                     'sure you want to quit?',
+                                     QMessageBox.Ok | QMessageBox.Cancel)
+        if choice == QMessageBox.Cancel:
+            event.ignore()
+
+    def build_current_state(self) -> typing.Dict[str, str]:
+        state = {}
+        for field in self.state_fields:
+            state[field.objectName()] = field.toPlainText()
+        return state
+
+    def is_state_changed(self) -> bool:
+        """ Has the state changed since the last time this was called?
+
+        Also mark the window title with an asterisk if the state has changed
+        since the file was saved.
+        """
+        new_state = self.build_current_state()
+        suffix = '*' if new_state != self.clean_state else ''
+        self.setWindowTitle(self.base_title + suffix)
+
+        if new_state == self.current_state:
+            return False
+
+        self.current_state = new_state
+        return True
+
+    def is_state_dirty(self) -> bool:
+        """ Has the state changed since it was saved? """
+        self.is_state_changed()  # Update current state.
+
+        return self.current_state != self.clean_state
 
     def on_error(self, ex_type, value, tb):
         traceback.print_exception(ex_type, value, tb)
@@ -83,6 +128,11 @@ class FourLetterBlocksWindow(QMainWindow):
         self.ui.grid_text.setPlainText(puzzle.format_grid())
         self.ui.clues_text.setPlainText(puzzle.format_clues())
         self.ui.blocks_text.setPlainText(puzzle.format_blocks())
+        self.record_clean_state()
+
+    def record_clean_state(self):
+        self.clean_state = self.build_current_state()
+        self.is_state_changed()  # Update dirty display.
 
     def save_as(self):
         save_dir = self.get_save_dir()
@@ -114,6 +164,7 @@ class FourLetterBlocksWindow(QMainWindow):
 
         self.file_path.write_text(self.format_text())
         self.statusBar().showMessage(f'Saved to {self.file_path.name}.')
+        self.record_clean_state()
 
     def format_text(self) -> str:
         return '\n\n'.join(field.toPlainText().strip() or '-'
@@ -153,6 +204,8 @@ class FourLetterBlocksWindow(QMainWindow):
         return puzzle
 
     def grid_changed(self):
+        if not self.is_state_changed():
+            return
         puzzle = self.parse_puzzle()
         self.ui.clues_text.setPlainText(puzzle.format_clues())
         letter_count = puzzle.grid.letter_count
@@ -161,10 +214,16 @@ class FourLetterBlocksWindow(QMainWindow):
                                      f'remainder {remainder}.')
 
     def blocks_changed(self):
+        if not self.is_state_changed():
+            return
         puzzle = self.parse_puzzle()
         block_summary = puzzle.display_block_sizes()
         if block_summary:
             self.statusBar().showMessage(f'Block sizes: {block_summary}.')
+
+    def clues_changed(self):
+        if not self.is_state_changed():
+            return
 
 
 def get_settings():

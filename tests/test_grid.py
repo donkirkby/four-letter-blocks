@@ -45,6 +45,21 @@ EXIT
     assert letter_x.y == 3
 
 
+def test_spaces_break_words():
+    text = """\
+WO #
+I##R
+R##A
+EXIT
+"""
+
+    grid = Grid(text)
+
+    letter_w = grid[0, 0]
+
+    assert letter_w.across_word == 'WO'
+
+
 def test_letter_count():
     text = """\
 WORD

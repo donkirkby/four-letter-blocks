@@ -105,7 +105,7 @@ class Puzzle:
         if square_size is None:
             square_size = window_width // 16
         self.square_size = square_size
-        letter_size = round(square_size * 0.75)
+        letter_size = round(square_size * 0.5)
         font = painter.font()
         font.setPixelSize(round(letter_size * Square.LETTER_SIZE))
         painter.setFont(font)
