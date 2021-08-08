@@ -16,6 +16,16 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
+     <widget class="QLabel" name="title_label">
+      <property name="text">
+       <string>Title</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLineEdit" name="title_text"/>
+    </item>
+    <item>
      <widget class="QLabel" name="grid_label">
       <property name="text">
        <string>Grid</string>

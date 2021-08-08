@@ -29,7 +29,10 @@ class Block:
             for x, marker in enumerate(line):
                 if marker == '#':
                     continue
-                old_square = grid[x, y]
+                try:
+                    old_square = grid[x, y]
+                except IndexError:
+                    continue
                 if old_square is None:
                     continue
                 unused_squares.remove(old_square)

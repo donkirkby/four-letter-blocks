@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from itertools import chain
 from random import shuffle
 
-from PySide6.QtGui import QPainter
+from PySide6.QtGui import QPainter, Qt
 
 from four_letter_blocks.grid import Grid
 from four_letter_blocks.block import Block
@@ -12,6 +12,7 @@ from four_letter_blocks.square import Square
 
 @dataclass
 class Puzzle:
+    title: str
     grid: Grid
     all_clues: typing.Dict[str, str]
     across_clues: typing.List[str]
@@ -21,10 +22,11 @@ class Puzzle:
     @staticmethod
     def parse(source_file: typing.IO) -> 'Puzzle':
         sections = split_sections(source_file)
-        return Puzzle.parse_sections(sections[0], sections[1], sections[2])
+        return Puzzle.parse_sections(*sections)
 
     @staticmethod
-    def parse_sections(grid_text: str,
+    def parse_sections(title: str,
+                       grid_text: str,
                        clues_text: str,
                        blocks_text: str,
                        old_clues: typing.Dict[str, str] = None) -> 'Puzzle':
@@ -56,7 +58,7 @@ class Puzzle:
                     all_clues[word] = clue
                     formatted_clue = f"{square.number}. {clue}"
                     clues.append(formatted_clue)
-        return Puzzle(grid, all_clues, across_clues, down_clues, blocks)
+        return Puzzle(title, grid, all_clues, across_clues, down_clues, blocks)
 
     @property
     def square_size(self) -> int:
@@ -106,16 +108,27 @@ class Puzzle:
             square_size = window_width // 16
         self.square_size = square_size
         letter_size = round(square_size * 0.5)
+
         font = painter.font()
+        font.setPixelSize(round(square_size * Square.LETTER_SIZE))
+        painter.setFont(font)
+        painter.drawText(0, 0,
+                         window_width, square_size,
+                         Qt.AlignHCenter,
+                         self.title)
+
         font.setPixelSize(round(letter_size * Square.LETTER_SIZE))
         painter.setFont(font)
-        painter.drawText(letter_size, letter_size, 'Across')
-        for i, clue in enumerate(self.across_clues, 2):
+        painter.drawText(letter_size, letter_size*3,
+                         'Clue numbers are shuffled: 1 Across might not be in '
+                         'the top left.')
+        painter.drawText(letter_size, letter_size*4, 'Across')
+        for i, clue in enumerate(self.across_clues, 5):
             painter.drawText(letter_size, i * letter_size, clue)
 
         middle = window_width // 2
-        painter.drawText(middle, letter_size, 'Down')
-        for i, clue in enumerate(self.down_clues, 2):
+        painter.drawText(middle, letter_size*4, 'Down')
+        for i, clue in enumerate(self.down_clues, 5):
             painter.drawText(middle, i * letter_size, clue)
 
     def format_grid(self) -> str:
@@ -184,9 +197,9 @@ def split_sections(source_file):
                 sections.append(section)
             lines.clear()
     section_count = len(sections)
-    if 3 < section_count:
-        raise ValueError(f'Expected 3 sections, found {section_count}.')
-    sections.extend([''] * (3 - section_count))
+    if 4 < section_count:
+        raise ValueError(f'Expected 4 sections, found {section_count}.')
+    sections.extend([''] * (4 - section_count))
     return sections
 
 

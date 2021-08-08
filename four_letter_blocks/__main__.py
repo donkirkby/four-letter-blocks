@@ -125,6 +125,7 @@ class FourLetterBlocksWindow(QMainWindow):
         with file_path.open() as source_file:
             puzzle = Puzzle.parse(source_file)
         self.file_path = file_path
+        self.ui.title_text.setText(puzzle.title)
         self.ui.grid_text.setPlainText(puzzle.format_grid())
         self.ui.clues_text.setPlainText(puzzle.format_clues())
         self.ui.blocks_text.setPlainText(puzzle.format_blocks())
@@ -167,10 +168,12 @@ class FourLetterBlocksWindow(QMainWindow):
         self.record_clean_state()
 
     def format_text(self) -> str:
-        return '\n\n'.join(field.toPlainText().strip() or '-'
-                           for field in (self.ui.grid_text,
-                                         self.ui.clues_text,
-                                         self.ui.blocks_text))
+        sections = [self.ui.title_text.text().strip() or 'Untitled']
+        sections.extend(field.toPlainText().strip() or '-'
+                        for field in (self.ui.grid_text,
+                                      self.ui.clues_text,
+                                      self.ui.blocks_text))
+        return '\n\n'.join(sections)
 
     def export(self):
         save_dir = self.get_save_dir()
@@ -197,7 +200,8 @@ class FourLetterBlocksWindow(QMainWindow):
         self.statusBar().showMessage(f'Exported to {file_path.name}.')
 
     def parse_puzzle(self):
-        puzzle = Puzzle.parse_sections(self.ui.grid_text.toPlainText(),
+        puzzle = Puzzle.parse_sections(self.ui.title_text.text(),
+                                       self.ui.grid_text.toPlainText(),
                                        self.ui.clues_text.toPlainText(),
                                        self.ui.blocks_text.toPlainText(),
                                        self.old_clues)

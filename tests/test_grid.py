@@ -16,6 +16,21 @@ DOLL
     assert letter_i.letter == 'I'
 
 
+def test_black_square():
+    text = """\
+WORD
+I##E
+L##A
+DOLL
+"""
+
+    grid = Grid(text)
+
+    square = grid[1, 1]
+
+    assert square is None
+
+
 def test_words():
     text = """\
 WORD

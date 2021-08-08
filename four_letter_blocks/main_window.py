@@ -38,6 +38,16 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
         self.verticalLayout.setObjectName(u"verticalLayout")
+        self.title_label = QLabel(self.centralwidget)
+        self.title_label.setObjectName(u"title_label")
+
+        self.verticalLayout.addWidget(self.title_label)
+
+        self.title_text = QLineEdit(self.centralwidget)
+        self.title_text.setObjectName(u"title_text")
+
+        self.verticalLayout.addWidget(self.title_text)
+
         self.grid_label = QLabel(self.centralwidget)
         self.grid_label.setObjectName(u"grid_label")
 
@@ -137,6 +147,7 @@ class Ui_MainWindow(object):
         self.export_action.setShortcut(QCoreApplication.translate("MainWindow", u"Alt+X", None))
 #endif // QT_CONFIG(shortcut)
         self.exit_action.setText(QCoreApplication.translate("MainWindow", u"E&xit", None))
+        self.title_label.setText(QCoreApplication.translate("MainWindow", u"Title", None))
         self.grid_label.setText(QCoreApplication.translate("MainWindow", u"Grid", None))
         self.grid_text.setPlainText("")
         self.clues_label.setText(QCoreApplication.translate("MainWindow", u"Clues", None))

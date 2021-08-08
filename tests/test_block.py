@@ -77,6 +77,27 @@ CCCC
     assert len(blocks[3].squares) == 1
 
 
+def test_parse_blocks_bigger_than_grid():
+    grid_text = """\
+WORD
+I##A
+N##S
+EACH
+"""
+    block_text = """\
+AABBDE
+A##BDE
+A##BDE
+CCCCDE
+"""
+    grid = Grid(grid_text)
+
+    blocks = Block.parse(block_text, grid)
+
+    assert len(blocks) == 3
+    assert blocks[1].marker == 'B'
+
+
 def test_move():
     block = create_basic_block()
     square1, square2, square3, square4 = block.squares

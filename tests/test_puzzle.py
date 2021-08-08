@@ -1,6 +1,7 @@
 from io import StringIO
 
 import pytest
+from PySide6.QtCore import Qt
 
 from four_letter_blocks.puzzle import Puzzle
 import four_letter_blocks.puzzle
@@ -13,6 +14,8 @@ def reverse(a: list):
 
 def parse_basic_puzzle():
     source_file = StringIO("""\
+Basic Puzzle
+
 WORD
 I##A
 N##S
@@ -36,6 +39,7 @@ def test_parse(monkeypatch):
     monkeypatch.setattr(four_letter_blocks.puzzle, 'shuffle', reverse)
     puzzle = parse_basic_puzzle()
 
+    assert puzzle.title == 'Basic Puzzle'
     assert puzzle.grid[0, 0].letter == 'W'
     assert puzzle.blocks[0].squares[0].letter == 'E'
     assert puzzle.blocks[0].squares[0].across_word == 'EACH'
@@ -46,6 +50,8 @@ def test_parse(monkeypatch):
 
 def test_extra_section():
     source_file = StringIO("""\
+Puzzle With Extra
+
 WORD
 I##A
 N##S
@@ -63,12 +69,14 @@ BBCC
 
 Lorem ipsum
 """)
-    with pytest.raises(ValueError, match='Expected 3 sections, found 4.'):
+    with pytest.raises(ValueError, match='Expected 4 sections, found 5.'):
         Puzzle.parse(source_file)
 
 
 def test_fewer_sections():
     source_file = StringIO("""\
+Puzzle With Fewer
+
 WORD
 I##A
 N##S
@@ -105,6 +113,8 @@ BBCC
 def test_bad_definitions(monkeypatch):
     monkeypatch.setattr(four_letter_blocks.puzzle, 'shuffle', reverse)
     source_file = StringIO("""\
+Bad Defs
+
 WORD
 I##A
 N##S
@@ -128,6 +138,8 @@ BBCC
 
 def test_extra_definitions():
     source_file = StringIO("""\
+Extra Defs
+
 WORD
 I##A
 N##S
@@ -160,7 +172,7 @@ WINE - Sour grapes
 DASH - Run between words
 """
     old_clues = {}
-    Puzzle.parse_sections('', clues_text, '', old_clues)
+    Puzzle.parse_sections('', '', clues_text, '', old_clues)
 
     assert old_clues == {'EACH': 'One at a time',
                          'WORD': 'Part of a sentence',
@@ -180,7 +192,7 @@ WORD - Part of a sentence
 DASH - Run between words
 """
     old_clues = {'EACH': 'One at a time', 'OTHER': 'Unrelated'}
-    puzzle = Puzzle.parse_sections(grid_text, clues_text, '', old_clues)
+    puzzle = Puzzle.parse_sections('', grid_text, clues_text, '', old_clues)
 
     assert old_clues == {'EACH': 'One at a time',
                          'WORD': 'Part of a sentence',
@@ -205,6 +217,8 @@ def test_resize():
 
 def test_display_block_sizes():
     source_file = StringIO("""\
+Title
+
 WORD
 I##A
 NO#S
@@ -226,6 +240,8 @@ CCCC
 
 def test_display_block_sizes_all_correct():
     source_file = StringIO("""\
+Title
+
 WORD
 I##A
 N##S
@@ -247,6 +263,8 @@ CCCC
 
 def test_display_block_sizes_no_blocks():
     source_file = StringIO("""\
+Title
+
 WORD
 I##A
 NO#S
@@ -261,6 +279,8 @@ EACH
 
 def test_display_block_sizes_four_unused():
     source_file = StringIO("""\
+Title
+
 WORD
 I##A
 N##S
@@ -316,14 +336,21 @@ def test_draw_clues(monkeypatch, pixmap_differ: PixmapDiffer):
     down_clue1, down_clue2 = puzzle.down_clues
 
     font = expected.font()
+    font.setPixelSize(22)
+    expected.setFont(font)
+    expected.drawText(0, 0, 400, 30, Qt.AlignHCenter, 'Basic Puzzle')
     font.setPixelSize(11)
     expected.setFont(font)
-    expected.drawText(15, 15, 'Across')
-    expected.drawText(15, 30, across_clue1)
-    expected.drawText(15, 45, across_clue2)
-    expected.drawText(200, 15, 'Down')
-    expected.drawText(200, 30, down_clue1)
-    expected.drawText(200, 45, down_clue2)
+    expected.drawText(15,
+                      45,
+                      'Clue numbers are shuffled: 1 Across might not be in the '
+                      'top left.')
+    expected.drawText(15, 60, 'Across')
+    expected.drawText(15, 75, across_clue1)
+    expected.drawText(15, 90, across_clue2)
+    expected.drawText(200, 60, 'Down')
+    expected.drawText(200, 75, down_clue1)
+    expected.drawText(200, 90, down_clue2)
 
     puzzle.draw_clues(actual, square_size=30)
 
