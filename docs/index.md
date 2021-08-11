@@ -1,4 +1,7 @@
-# Four-Letter Blocks
+---
+title: Four-Letter Blocks
+subtitle: Crossword puzzles to assemble
+---
 
 This is a program for building a new type of puzzle I designed: a crossword
 puzzle cut up into blocks of four letters. The solver gets the blocks plus a
@@ -17,4 +20,3 @@ to put the blocks together. Here are a few ideas for how to make the blocks:
    the blocks bump gently against each other.
 
 Whatever technique you use, glue sticks are easier to work with than white glue.
-

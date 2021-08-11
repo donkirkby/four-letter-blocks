@@ -104,6 +104,7 @@ class Puzzle:
 
     def draw_clues(self, painter: QPainter, square_size: int = None):
         window_width = painter.window().width()
+        window_height = painter.window().height()
         if square_size is None:
             square_size = window_width // 16
         self.square_size = square_size
@@ -130,6 +131,11 @@ class Puzzle:
         painter.drawText(middle, letter_size*4, 'Down')
         for i, clue in enumerate(self.down_clues, 5):
             painter.drawText(middle, i * letter_size, clue)
+
+        painter.drawText(0, window_height-square_size,
+                         window_width, square_size,
+                         Qt.AlignHCenter,
+                         'https://donkirkby.github.io/four-letter-blocks')
 
     def format_grid(self) -> str:
         rows = []

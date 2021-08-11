@@ -352,6 +352,11 @@ def test_draw_clues(monkeypatch, pixmap_differ: PixmapDiffer):
     expected.drawText(200, 75, down_clue1)
     expected.drawText(200, 90, down_clue2)
 
+    expected.drawText(0, 150,
+                      400, 30,
+                      Qt.AlignHCenter,
+                      'https://donkirkby.github.io/four-letter-blocks')
+
     puzzle.draw_clues(actual, square_size=30)
 
     pixmap_differ.assert_equal()
