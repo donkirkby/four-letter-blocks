@@ -121,12 +121,12 @@ Y###
 ## Untitled
 Clue numbers are shuffled: 1 Across might not be in the top left.
 
-Across
-* 1. Clue for abcd
+Across@@
+**1.** Clue for abcd@@
 
-Down
-* 1. Clue for aefgh
-'''
+Down@@
+**1.** Clue for aefgh@@
+'''.replace('@', ' ')
     md_path = tmp_path / 'output.md'
 
     window = FourLetterBlocksWindow()

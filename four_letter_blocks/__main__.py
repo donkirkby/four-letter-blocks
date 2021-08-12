@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import traceback
 import typing
@@ -233,13 +234,15 @@ class FourLetterBlocksWindow(QMainWindow):
             print(f'## {puzzle.title}', file=file)
             print(Puzzle.HINT, file=file)
             print(file=file)
-            print('Across', file=file)
+            print('Across  ', file=file)
             for clue in puzzle.across_clues:
-                print(f'* {clue}', file=file)
+                formatted_clue = re.sub(r'(^\d+\.)', r'**\1**', clue) + '  '
+                print(formatted_clue, file=file)
             print(file=file)
-            print('Down', file=file)
+            print('Down  ', file=file)
             for clue in puzzle.down_clues:
-                print(f'* {clue}', file=file)
+                formatted_clue = re.sub(r'(^\d+\.)', r'**\1**', clue) + '  '
+                print(formatted_clue, file=file)
 
     def parse_puzzle(self):
         puzzle = Puzzle.parse_sections(self.ui.title_text.text(),
