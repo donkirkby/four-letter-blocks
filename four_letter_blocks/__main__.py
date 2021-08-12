@@ -27,6 +27,8 @@ class FourLetterBlocksWindow(QMainWindow):
         ui.save_as_action.triggered.connect(self.save_as)
         ui.export_action.triggered.connect(self.export)
 
+        ui.shuffle_action.triggered.connect(self.shuffle)
+
         sys.excepthook = self.on_error
         self.file_path: typing.Optional[Path] = None
         self.settings = get_settings()
@@ -206,9 +208,9 @@ class FourLetterBlocksWindow(QMainWindow):
         painter = QPainter(pdf)
 
         puzzle = self.parse_puzzle()
-        puzzle.draw_blocks(painter)
-        pdf.newPage()
         puzzle.draw_clues(painter)
+        pdf.newPage()
+        puzzle.draw_blocks(painter)
         painter.end()
 
         self.statusBar().showMessage(f'Exported to {file_path.name}.')
@@ -246,6 +248,11 @@ class FourLetterBlocksWindow(QMainWindow):
                                        self.ui.blocks_text.toPlainText(),
                                        self.old_clues)
         return puzzle
+
+    def shuffle(self):
+        puzzle = self.parse_puzzle()
+        puzzle.shuffle()
+        self.ui.blocks_text.setPlainText(puzzle.format_blocks())
 
     def grid_changed(self):
         if not self.is_state_changed():

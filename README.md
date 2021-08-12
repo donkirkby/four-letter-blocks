@@ -1,5 +1,8 @@
 # Four-Letter Blocks
 
+[starter]: docs/images/starter.png
+[PDF]: docs/images/starter.pdf
+
 This is a program for building a new type of puzzle I designed: a crossword
 puzzle cut up into blocks of four letters. The solver gets the blocks plus a
 set of standard crossword clues. Unfortunately, the clues aren't numbered in
@@ -18,3 +21,34 @@ to put the blocks together. Here are a few ideas for how to make the blocks:
 
 Whatever technique you use, glue sticks are easier to work with than white glue.
 
+Here's a small starter puzzle to see how they work. You can also print out the
+[PDF].
+
+## Famous Puzzles
+Clue numbers are shuffled: 1 Across might not be in the top left.
+
+Across
+* 1. Lamb's mother
+* 2. Polka you can't dance to
+* 3. Small gear
+* 5. ___ and Knaves
+* 7. English marshland
+* 8. Go out, like the tide
+* 9. "We ___ Family"
+* 10. Seven-piece puzzle
+* 13. Desperately request
+* 15. League of higher learning
+
+Down
+* 4. Sweaty spot
+* 5. Finger lickin' good
+* 6. The One from The Matrix
+* 8. Consume
+* 11. Upper underwear
+* 12. Unstraightening
+* 13. Brought to life
+* 14. WALL·E's love interest
+* 16. A couple
+* 17. Tennis games
+
+[![starter]][starter]

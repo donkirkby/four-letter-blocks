@@ -1,5 +1,5 @@
 import typing
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from itertools import chain
 from random import shuffle
 
@@ -17,9 +17,9 @@ class Puzzle:
     title: str
     grid: Grid
     all_clues: typing.Dict[str, str]
-    across_clues: typing.List[str]
-    down_clues: typing.List[str]
     blocks: typing.List[Block]
+    across_clues: typing.List[str] = field(init=False)
+    down_clues: typing.List[str] = field(init=False)
 
     @staticmethod
     def parse(source_file: typing.IO) -> 'Puzzle':
@@ -40,27 +40,41 @@ class Puzzle:
             old_clues[word] = clue
         all_clues = {}
         blocks = Block.parse(blocks_text, grid)
-        shuffle(blocks)
-        next_number = 1
-        across_clues = []
-        down_clues = []
         for block in blocks:
             for square in block.squares:
                 if square.number is None:
                     continue
-                square.number = next_number
-                next_number += 1
-                for word, clues in ((square.across_word, across_clues),
-                                    (square.down_word, down_clues),):
-
+                for word in (square.across_word, square.down_word):
                     if word is None:
                         continue
                     old_clue = old_clues.get(word, '')
                     clue = parsed_clues.get(word, old_clue)
                     all_clues[word] = clue
+        return Puzzle(title, grid, all_clues, blocks)
+
+    def __post_init__(self):
+        self.across_clues = []
+        self.down_clues = []
+        self.number_clues()
+
+    def number_clues(self):
+        self.across_clues.clear()
+        self.down_clues.clear()
+        next_number = 1
+        for block in self.blocks:
+            for square in block.squares:
+                if square.number is None:
+                    continue
+                square.number = next_number
+                next_number += 1
+                for word, clues in ((square.across_word, self.across_clues),
+                                    (square.down_word, self.down_clues),):
+
+                    if word is None:
+                        continue
+                    clue = self.all_clues[word]
                     formatted_clue = f"{square.number}. {clue}"
                     clues.append(formatted_clue)
-        return Puzzle(title, grid, all_clues, across_clues, down_clues, blocks)
 
     @property
     def square_size(self) -> int:
@@ -191,6 +205,10 @@ class Puzzle:
         if incorrect_display:
             display_terms.append(incorrect_display)
         return ', '.join(display_terms)
+
+    def shuffle(self):
+        shuffle(self.blocks)
+        self.number_clues()
 
 
 def split_sections(source_file):

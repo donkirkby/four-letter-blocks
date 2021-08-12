@@ -44,7 +44,7 @@ class Block:
         if unused_squares:
             square_lists['unused'] = list(unused_squares)
         blocks = [Block(*square_list, marker=marker)
-                  for marker, square_list in square_lists.items()]
+                  for marker, square_list in sorted(square_lists.items())]
         return blocks
 
     @property

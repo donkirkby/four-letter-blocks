@@ -34,6 +34,8 @@ class Ui_MainWindow(object):
         self.export_action.setObjectName(u"export_action")
         self.exit_action = QAction(MainWindow)
         self.exit_action.setObjectName(u"exit_action")
+        self.shuffle_action = QAction(MainWindow)
+        self.shuffle_action.setObjectName(u"shuffle_action")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
@@ -89,12 +91,15 @@ class Ui_MainWindow(object):
         self.file_menu.setObjectName(u"file_menu")
         self.help_menu = QMenu(self.menubar)
         self.help_menu.setObjectName(u"help_menu")
+        self.edit_menu = QMenu(self.menubar)
+        self.edit_menu.setObjectName(u"edit_menu")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
         MainWindow.setStatusBar(self.statusbar)
 
         self.menubar.addAction(self.file_menu.menuAction())
+        self.menubar.addAction(self.edit_menu.menuAction())
         self.menubar.addAction(self.help_menu.menuAction())
         self.file_menu.addAction(self.new_action)
         self.file_menu.addAction(self.open_action)
@@ -105,6 +110,7 @@ class Ui_MainWindow(object):
         self.file_menu.addSeparator()
         self.file_menu.addAction(self.exit_action)
         self.help_menu.addAction(self.about_action)
+        self.edit_menu.addAction(self.shuffle_action)
 
         self.retranslateUi(MainWindow)
 
@@ -147,6 +153,10 @@ class Ui_MainWindow(object):
         self.export_action.setShortcut(QCoreApplication.translate("MainWindow", u"Alt+X", None))
 #endif // QT_CONFIG(shortcut)
         self.exit_action.setText(QCoreApplication.translate("MainWindow", u"E&xit", None))
+        self.shuffle_action.setText(QCoreApplication.translate("MainWindow", u"&Shuffle", None))
+#if QT_CONFIG(shortcut)
+        self.shuffle_action.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+F", None))
+#endif // QT_CONFIG(shortcut)
         self.title_label.setText(QCoreApplication.translate("MainWindow", u"Title", None))
         self.grid_label.setText(QCoreApplication.translate("MainWindow", u"Grid", None))
         self.grid_text.setPlainText("")
@@ -154,5 +164,6 @@ class Ui_MainWindow(object):
         self.blocks_label.setText(QCoreApplication.translate("MainWindow", u"Blocks", None))
         self.file_menu.setTitle(QCoreApplication.translate("MainWindow", u"&File", None))
         self.help_menu.setTitle(QCoreApplication.translate("MainWindow", u"&Help", None))
+        self.edit_menu.setTitle(QCoreApplication.translate("MainWindow", u"&Edit", None))
     # retranslateUi
 

@@ -35,16 +35,15 @@ CCCC
     return puzzle
 
 
-def test_parse(monkeypatch):
-    monkeypatch.setattr(four_letter_blocks.puzzle, 'shuffle', reverse)
+def test_parse():
     puzzle = parse_basic_puzzle()
 
     assert puzzle.title == 'Basic Puzzle'
     assert puzzle.grid[0, 0].letter == 'W'
-    assert puzzle.blocks[0].squares[0].letter == 'E'
-    assert puzzle.blocks[0].squares[0].across_word == 'EACH'
-    assert puzzle.blocks[0].squares[0].number == 1
-    assert puzzle.across_clues[0] == '1. One at a time'
+    assert puzzle.blocks[2].squares[0].letter == 'E'
+    assert puzzle.blocks[2].squares[0].across_word == 'EACH'
+    assert puzzle.blocks[2].squares[0].number == 3
+    assert puzzle.across_clues[1] == '3. One at a time'
     assert puzzle.all_clues['EACH'] == 'One at a time'
 
 
@@ -90,9 +89,10 @@ EACH
     assert len(puzzle.blocks) == 1  # Unused
 
 
-def test_missing_definitions(monkeypatch):
-    monkeypatch.setattr(four_letter_blocks.puzzle, 'shuffle', reverse)
+def test_missing_definitions():
     source_file = StringIO("""\
+Title
+
 WORD
 I##A
 N##S
@@ -107,11 +107,10 @@ BBCC
 """)
     puzzle = Puzzle.parse(source_file)
 
-    assert puzzle.across_clues[0] == '1. '
+    assert puzzle.across_clues[1] == '3. '
 
 
-def test_bad_definitions(monkeypatch):
-    monkeypatch.setattr(four_letter_blocks.puzzle, 'shuffle', reverse)
+def test_bad_definitions():
     source_file = StringIO("""\
 Bad Defs
 
@@ -300,18 +299,17 @@ BBBB
     assert block_sizes == '2x4, unused=4'
 
 
-def test_draw_blocks(monkeypatch, pixmap_differ: PixmapDiffer):
+def test_draw_blocks(pixmap_differ: PixmapDiffer):
     actual, expected = pixmap_differ.start(
         180, 180,
         'test_puzzle_draw_blocks')
-    monkeypatch.setattr(four_letter_blocks.puzzle, 'shuffle', reverse)
 
     puzzle1 = parse_basic_puzzle()
     puzzle1.square_size = 20
     block1, block2, block3 = puzzle1.blocks
     block1.x = 20
     block1.y = 20
-    block2.x = 110
+    block2.x = 70
     block2.y = 20
     block3.x = 20
     block3.y = 90
@@ -325,11 +323,10 @@ def test_draw_blocks(monkeypatch, pixmap_differ: PixmapDiffer):
     pixmap_differ.assert_equal()
 
 
-def test_draw_clues(monkeypatch, pixmap_differ: PixmapDiffer):
+def test_draw_clues(pixmap_differ: PixmapDiffer):
     actual, expected = pixmap_differ.start(
         400, 180,
         'test_puzzle_draw_clues')
-    monkeypatch.setattr(four_letter_blocks.puzzle, 'shuffle', reverse)
 
     puzzle = parse_basic_puzzle()
     across_clue1, across_clue2 = puzzle.across_clues
@@ -388,7 +385,20 @@ WORD - Part of a sentence"""
     assert grid_text == expected_text
 
 
-def test_format_blocks(monkeypatch):
+def test_format_blocks():
+    puzzle = parse_basic_puzzle()
+    expected_text = """\
+AABB
+A##B
+A##B
+CCCC"""
+
+    grid_text = puzzle.format_blocks()
+
+    assert grid_text == expected_text
+
+
+def test_shuffle(monkeypatch):
     monkeypatch.setattr(four_letter_blocks.puzzle, 'shuffle', reverse)
     puzzle = parse_basic_puzzle()
     expected_text = """\
@@ -397,6 +407,7 @@ C##B
 C##B
 AAAA"""
 
+    puzzle.shuffle()
     grid_text = puzzle.format_blocks()
 
     assert grid_text == expected_text

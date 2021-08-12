@@ -100,7 +100,14 @@
     </property>
     <addaction name="about_action"/>
    </widget>
+   <widget class="QMenu" name="edit_menu">
+    <property name="title">
+     <string>&amp;Edit</string>
+    </property>
+    <addaction name="shuffle_action"/>
+   </widget>
    <addaction name="file_menu"/>
+   <addaction name="edit_menu"/>
    <addaction name="help_menu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -164,6 +171,14 @@
   <action name="exit_action">
    <property name="text">
     <string>E&amp;xit</string>
+   </property>
+  </action>
+  <action name="shuffle_action">
+   <property name="text">
+    <string>&amp;Shuffle</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+F</string>
    </property>
   </action>
  </widget>

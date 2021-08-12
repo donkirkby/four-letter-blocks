@@ -53,6 +53,29 @@ CCCC
     assert blocks[0].squares[1].y == 0
 
 
+def test_parse_sorted_by_marker():
+    grid_text = """\
+WORD
+I##A
+N##S
+EACH
+"""
+    block_text = """\
+XXBB
+X##B
+X##B
+AAAA
+"""
+    grid = Grid(grid_text)
+
+    blocks = Block.parse(block_text, grid)
+
+    assert len(blocks) == 3
+    assert blocks[2].squares[1].letter == 'O'
+    assert blocks[2].squares[1].x == 1
+    assert blocks[2].squares[1].y == 0
+
+
 def test_parse_mismatch():
     grid_text = """\
 WORD
