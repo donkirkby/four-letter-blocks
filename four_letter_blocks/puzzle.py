@@ -12,6 +12,8 @@ from four_letter_blocks.square import Square
 
 @dataclass
 class Puzzle:
+    HINT = 'Clue numbers are shuffled: 1 Across might not be in the top left.'
+
     title: str
     grid: Grid
     all_clues: typing.Dict[str, str]
@@ -82,7 +84,8 @@ class Puzzle:
                 square.x *= ratio
                 square.y *= ratio
 
-    def draw_blocks(self, painter: QPainter, square_size: int = None):
+    def draw_blocks(self, painter: QPainter, square_size: int = None) -> int:
+        """ Draw all blocks on a painter. Return the height of the image. """
         window_width = painter.window().width()
         if square_size is None:
             square_size = window_width // 16
@@ -101,6 +104,8 @@ class Puzzle:
             block.draw(painter)
             line_height = max(line_height, block.height)
             x += block.width + gap
+        y += line_height + self.square_size
+        return y
 
     def draw_clues(self, painter: QPainter, square_size: int = None):
         window_width = painter.window().width()
@@ -120,9 +125,7 @@ class Puzzle:
 
         font.setPixelSize(round(letter_size * Square.LETTER_SIZE))
         painter.setFont(font)
-        painter.drawText(letter_size, letter_size*3,
-                         'Clue numbers are shuffled: 1 Across might not be in '
-                         'the top left.')
+        painter.drawText(letter_size, letter_size * 3, self.HINT)
         painter.drawText(letter_size, letter_size*4, 'Across')
         for i, clue in enumerate(self.across_clues, 5):
             painter.drawText(letter_size, i * letter_size, clue)

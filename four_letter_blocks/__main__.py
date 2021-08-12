@@ -5,7 +5,7 @@ import typing
 from pathlib import Path
 
 from PySide6.QtCore import QSettings
-from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, Qt, QCloseEvent
+from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, Qt, QCloseEvent, QPixmap, QColor
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog
 
 import four_letter_blocks
@@ -120,8 +120,10 @@ class FourLetterBlocksWindow(QMainWindow):
         if not file_name:
             return
 
-        file_path = Path(file_name)
-        self.settings.setValue('save_path', str(file_path))
+        self.settings.setValue('save_path', file_name)
+        self.open_file(Path(file_name))
+
+    def open_file(self, file_path: Path):
         with file_path.open() as source_file:
             puzzle = Puzzle.parse(source_file)
         self.file_path = file_path
@@ -178,15 +180,27 @@ class FourLetterBlocksWindow(QMainWindow):
     def export(self):
         save_dir = self.get_save_dir()
         kwargs = get_file_dialog_options()
-        file_name, _ = QFileDialog.getSaveFileName(self,
-                                                   'Export puzzle',
-                                                   dir=save_dir,
-                                                   filter='PDF files (*.pdf)',
-                                                   **kwargs)
+        file_name, _ = QFileDialog.getSaveFileName(
+            self,
+            'Export puzzle',
+            dir=save_dir,
+            filter=';;'.join(('PDF blocks and clues (*.pdf)',
+                              'PNG blocks (*.png)',
+                              'Markdown text clues (*.md)')),
+            **kwargs)
         if not file_name:
             return
-        file_path = Path(file_name)
         self.settings.setValue('save_path', file_name)
+        file_path = Path(file_name)
+        if file_path.suffix.lower() == '.pdf':
+            self.export_pdf(file_path)
+        elif file_path.suffix.lower() == '.png':
+            self.export_png(file_path)
+        else:
+            self.export_md(file_path)
+
+    def export_pdf(self, file_path: Path):
+        file_name = str(file_path)
         pdf = QPdfWriter(file_name)
         pdf.setPageSize(QPageSize.Letter)
         painter = QPainter(pdf)
@@ -198,6 +212,32 @@ class FourLetterBlocksWindow(QMainWindow):
         painter.end()
 
         self.statusBar().showMessage(f'Exported to {file_path.name}.')
+
+    def export_png(self, file_path: Path):
+        puzzle = self.parse_puzzle()
+        width, height = 640, 1000
+        pixmap = QPixmap(width, height)
+        white = QColor('white')
+        pixmap.fill(white)
+        painter = QPainter(pixmap)
+        height = puzzle.draw_blocks(painter)
+        painter.end()
+        cropped = pixmap.copy(0, 0, width, height)
+        cropped.toImage().save(str(file_path), 'png')
+
+    def export_md(self, file_path: Path):
+        puzzle = self.parse_puzzle()
+        with file_path.open('w') as file:
+            print(f'## {puzzle.title}', file=file)
+            print(Puzzle.HINT, file=file)
+            print(file=file)
+            print('Across', file=file)
+            for clue in puzzle.across_clues:
+                print(f'* {clue}', file=file)
+            print(file=file)
+            print('Down', file=file)
+            for clue in puzzle.down_clues:
+                print(f'* {clue}', file=file)
 
     def parse_puzzle(self):
         puzzle = Puzzle.parse_sections(self.ui.title_text.text(),
