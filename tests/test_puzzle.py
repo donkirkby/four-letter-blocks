@@ -380,9 +380,9 @@ EACH - One at a time
 WINE - Sour grapes
 WORD - Part of a sentence"""
 
-    grid_text = puzzle.format_clues()
+    clues_text = puzzle.format_clues()
 
-    assert grid_text == expected_text
+    assert clues_text == expected_text
 
 
 def test_format_blocks():
@@ -393,9 +393,34 @@ A##B
 A##B
 CCCC"""
 
-    grid_text = puzzle.format_blocks()
+    blocks_text = puzzle.format_blocks()
 
-    assert grid_text == expected_text
+    assert blocks_text == expected_text
+
+
+def test_format_blocks_unused(monkeypatch):
+    source_file = StringIO("""\
+Title
+
+WORD
+I##A
+N##S
+EACH
+
+-
+
+AAAA
+""")
+    puzzle = Puzzle.parse(source_file)
+    expected_text = """\
+AAAA
+?##?
+?##?
+????"""
+
+    blocks_text = puzzle.format_blocks()
+
+    assert blocks_text == expected_text
 
 
 def test_shuffle(monkeypatch):

@@ -9,6 +9,8 @@ from four_letter_blocks.square import Square
 
 
 class Block:
+    UNUSED = 'unused'
+
     def __init__(self, *squares: Square, marker: str = None):
         self.squares = squares
         self.marker = marker
@@ -27,7 +29,7 @@ class Block:
         lines = text.splitlines()
         for y, line in enumerate(lines):
             for x, marker in enumerate(line):
-                if marker == '#':
+                if marker in '#?':
                     continue
                 try:
                     old_square = grid[x, y]
@@ -42,7 +44,7 @@ class Block:
                 square_list = square_lists[marker]
                 square_list.append(square)
         if unused_squares:
-            square_lists['unused'] = list(unused_squares)
+            square_lists[Block.UNUSED] = list(unused_squares)
         blocks = [Block(*square_list, marker=marker)
                   for marker, square_list in sorted(square_lists.items())]
         return blocks

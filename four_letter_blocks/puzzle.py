@@ -180,7 +180,7 @@ class Puzzle:
             rows.append(['#'] * self.grid.width)
         ascii_start = ord('A')
         for i, block in enumerate(self.blocks, ascii_start):
-            block_letter = chr(i)
+            block_letter = '?' if block.marker == Block.UNUSED else chr(i)
             for square in block.squares:
                 x = square.x
                 y = square.y

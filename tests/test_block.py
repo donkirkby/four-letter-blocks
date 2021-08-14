@@ -121,6 +121,27 @@ CCCCDE
     assert blocks[1].marker == 'B'
 
 
+def test_parse_blocks_smaller_than_grid():
+    grid_text = """\
+WORD
+I##A
+N##S
+EACH
+"""
+    block_text = """\
+AA??
+A##?
+A##?
+"""
+    grid = Grid(grid_text)
+
+    blocks = Block.parse(block_text, grid)
+
+    assert len(blocks) == 2
+    assert blocks[1].marker == Block.UNUSED
+    assert len(blocks[1].squares) == 8
+
+
 def test_move():
     block = create_basic_block()
     square1, square2, square3, square4 = block.squares

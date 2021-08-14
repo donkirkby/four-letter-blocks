@@ -31,10 +31,10 @@ Across
 **1.** Lamb's mother  
 **2.** Polka you can't dance to  
 **3.** Small gear  
-**5.** ___ and Knaves  
+**5.** __ and Knaves  
 **7.** English marshland  
 **8.** Go out, like the tide  
-**9.** "We ___ Family"  
+**9.** "We __ Family"  
 **10.** Seven-piece puzzle  
 **13.** Desperately request  
 **15.** League of higher learning

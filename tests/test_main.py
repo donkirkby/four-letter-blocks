@@ -37,7 +37,7 @@ ABC
 
 ABC -
 
--'''
+???'''
 
     window = FourLetterBlocksWindow()
 

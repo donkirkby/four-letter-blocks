@@ -262,6 +262,7 @@ class FourLetterBlocksWindow(QMainWindow):
             return
         puzzle = self.parse_puzzle()
         self.ui.clues_text.setPlainText(puzzle.format_clues())
+        self.ui.blocks_text.setPlainText(puzzle.format_blocks())
         letter_count = puzzle.grid.letter_count
         remainder = letter_count % 4
         self.statusBar().showMessage(f'Grid has {letter_count} letters, '
