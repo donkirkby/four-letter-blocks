@@ -5,8 +5,9 @@ import traceback
 import typing
 from pathlib import Path
 
-from PySide6.QtCore import QSettings
-from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, Qt, QCloseEvent, QPixmap, QColor
+from PySide6.QtCore import QSettings, QSize
+from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, Qt, QCloseEvent, QPixmap, QColor, \
+    QTextDocument
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog
 
 import four_letter_blocks
@@ -206,13 +207,22 @@ class FourLetterBlocksWindow(QMainWindow):
         file_name = str(file_path)
         pdf = QPdfWriter(file_name)
         pdf.setPageSize(QPageSize.Letter)
-        painter = QPainter(pdf)
 
         puzzle = self.parse_puzzle()
-        puzzle.draw_clues(painter)
-        pdf.newPage()
+        painter = QPainter(pdf)
         puzzle.draw_blocks(painter)
         painter.end()
+
+        pdf.newPage()
+
+        document = QTextDocument()
+        document.setPageSize(QSize(pdf.width(), pdf.height()))
+        font = document.defaultFont()
+        font.setPixelSize(pdf.height()//60)
+        document.setDefaultFont(font)
+
+        puzzle.build_clues(document)
+        document.print_(pdf)
 
         self.statusBar().showMessage(f'Exported to {file_path.name}.')
 

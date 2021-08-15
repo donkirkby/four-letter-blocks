@@ -1,7 +1,7 @@
 from io import StringIO
 
 import pytest
-from PySide6.QtCore import Qt
+from PySide6.QtGui import QTextDocument
 
 from four_letter_blocks.puzzle import Puzzle
 import four_letter_blocks.puzzle
@@ -329,32 +329,55 @@ def test_draw_clues(pixmap_differ: PixmapDiffer):
         'test_puzzle_draw_clues')
 
     puzzle = parse_basic_puzzle()
-    across_clue1, across_clue2 = puzzle.across_clues
-    down_clue1, down_clue2 = puzzle.down_clues
+    puzzle.across_clues[0] = ('1. Part of a long run-on sentence that really '
+                              'needs to wrap')
 
-    font = expected.font()
-    font.setPixelSize(22)
-    expected.setFont(font)
-    expected.drawText(0, 0, 400, 30, Qt.AlignHCenter, 'Basic Puzzle')
-    font.setPixelSize(11)
-    expected.setFont(font)
-    expected.drawText(15,
-                      45,
-                      'Clue numbers are shuffled: 1 Across might not be in the '
-                      'top left.')
-    expected.drawText(15, 60, 'Across')
-    expected.drawText(15, 75, across_clue1)
-    expected.drawText(15, 90, across_clue2)
-    expected.drawText(200, 60, 'Down')
-    expected.drawText(200, 75, down_clue1)
-    expected.drawText(200, 90, down_clue2)
+    expected_doc = QTextDocument()
+    expected_doc.setPageSize(expected.window().size())
+    font = expected_doc.defaultFont()
+    font.setPixelSize(10)
+    expected_doc.setDefaultFont(font)
+    expected_doc.setDefaultStyleSheet("""\
+h1 {text-align: center}
+hr.footer {line-height:10px}
+td {padding: 2px}
+td.num {text-align: right}
+a {color: black}
+""")
+    expected_doc.setHtml("""\
+<h1>Basic Puzzle</h1>
+<p>Clue numbers are shuffled: 1 Across might not be in the top left.</p>
+<hr>
+<table>
+<tr><td>Across</td><td>Down</td></tr>
+<tr><td>
+  <table>
+  <tr><td class="num">1.</td>
+    <td>Part of a long run-on sentence that really needs to wrap</td></tr>
+  <tr><td class="num">3.</td>
+    <td>One at a time</td></tr>
+  </table>
+</td><td>
+  <table>
+  <tr><td class="num">1.</td>
+    <td>Sour grapes</td></tr>
+  <tr><td class="num">2.</td>
+    <td>Run between words</td></tr>
+  </table>
+</td></tr>
+</table>
+<hr class="footer">
+<center><a href="#">https://donkirkby.github.io/four-letter-blocks</a></center>
+""")
+    expected_doc.drawContents(expected)
 
-    expected.drawText(0, 150,
-                      400, 30,
-                      Qt.AlignHCenter,
-                      'https://donkirkby.github.io/four-letter-blocks')
+    actual_doc = QTextDocument()
+    actual_doc.setDefaultFont(font)
+    actual_doc.setPageSize(actual.window().size())
 
-    puzzle.draw_clues(actual, square_size=30)
+    puzzle.build_clues(actual_doc)
+
+    actual_doc.drawContents(actual)
 
     pixmap_differ.assert_equal()
 
@@ -398,7 +421,7 @@ CCCC"""
     assert blocks_text == expected_text
 
 
-def test_format_blocks_unused(monkeypatch):
+def test_format_blocks_unused():
     source_file = StringIO("""\
 Title
 

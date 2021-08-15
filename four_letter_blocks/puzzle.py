@@ -1,9 +1,10 @@
 import typing
 from dataclasses import dataclass, field
+from html import escape
 from itertools import chain
 from random import shuffle
 
-from PySide6.QtGui import QPainter, Qt
+from PySide6.QtGui import QPainter, Qt, QTextDocument
 
 from four_letter_blocks.grid import Grid
 from four_letter_blocks.block import Block
@@ -209,6 +210,61 @@ class Puzzle:
     def shuffle(self):
         shuffle(self.blocks)
         self.number_clues()
+
+    def build_clues(self, document: QTextDocument):
+        font_size = document.defaultFont().pixelSize()
+        padding = font_size // 5
+        document.setDefaultStyleSheet(f"""\
+h1 {{text-align: center}}
+hr.footer {{line-height:10px}}
+td {{padding: {padding} }}
+td.num {{text-align: right}}
+a {{color: black}}
+""")
+        """
+<tr><td>
+  <table>
+  <tr><td class="num">1.</td>
+    <td>Part of a long run-on sentence that really needs to wrap.</td></tr>
+  <tr><td class="num">3.</td>
+    <td>One at a time</td></tr>
+  </table>
+</td><td>
+  <table>
+  <tr><td class="num">1.</td>
+    <td>Sour grapes</td></tr>
+  <tr><td class="num">2.</td>
+    <td>Run between words</td></tr>
+  </table>
+</td></tr>
+"""
+        across_table = build_clue_table(self.across_clues)
+        down_table = build_clue_table(self.down_clues)
+        document.setHtml(f"""\
+<h1>{escape(self.title)}</h1>
+<p>{escape(self.HINT)}</p>
+<hr>
+<table>
+<tr><td>Across</td><td>Down</td></tr>
+<tr><td>
+{across_table}
+</td><td>
+{down_table}
+</td></tr>
+</table>
+<hr class="footer">
+<center><a href="https://donkirkby.github.io/four-letter-blocks"
+>https://donkirkby.github.io/four-letter-blocks</a></center>
+""")
+
+
+def build_clue_table(clues: typing.Sequence[str]) -> str:
+    rows = []
+    for clue in clues:
+        number, text = clue.split('.', 1)
+        rows.append(f'<tr><td class="num">{number}.</td>'
+                    f'<td>{escape(text)}</td></tr>')
+    return f'<table>{"".join(rows)}</table>'
 
 
 def split_sections(source_file):
