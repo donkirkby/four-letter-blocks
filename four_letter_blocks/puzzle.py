@@ -221,23 +221,6 @@ td {{padding: {padding} }}
 td.num {{text-align: right}}
 a {{color: black}}
 """)
-        """
-<tr><td>
-  <table>
-  <tr><td class="num">1.</td>
-    <td>Part of a long run-on sentence that really needs to wrap.</td></tr>
-  <tr><td class="num">3.</td>
-    <td>One at a time</td></tr>
-  </table>
-</td><td>
-  <table>
-  <tr><td class="num">1.</td>
-    <td>Sour grapes</td></tr>
-  <tr><td class="num">2.</td>
-    <td>Run between words</td></tr>
-  </table>
-</td></tr>
-"""
         across_table = build_clue_table(self.across_clues)
         down_table = build_clue_table(self.down_clues)
         document.setHtml(f"""\

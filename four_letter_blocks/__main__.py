@@ -210,19 +210,19 @@ class FourLetterBlocksWindow(QMainWindow):
 
         puzzle = self.parse_puzzle()
         painter = QPainter(pdf)
-        puzzle.draw_blocks(painter)
-        painter.end()
-
-        pdf.newPage()
 
         document = QTextDocument()
         document.setPageSize(QSize(pdf.width(), pdf.height()))
         font = document.defaultFont()
         font.setPixelSize(pdf.height()//60)
         document.setDefaultFont(font)
-
         puzzle.build_clues(document)
-        document.print_(pdf)
+        document.drawContents(painter)
+
+        pdf.newPage()
+
+        puzzle.draw_blocks(painter)
+        painter.end()
 
         self.statusBar().showMessage(f'Exported to {file_path.name}.')
 
