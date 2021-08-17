@@ -2,11 +2,12 @@ remote_theme: chrisrhymes/bulma-clean-theme
 title: Four-Letter Blocks
 google_analytics: UA-4644630-2
 
-#defaults:
-#  - scope:
-#      path: ""
-#    values:
-#      hero_image: images/index_hero.jpg
-#      twitter:
-#        card: summary_large_image
-#      image: images/index_hero.jpg
+defaults:
+  - scope:
+      path: ""
+    values:
+      hero_image: images/index_hero.jpg
+      hero_darken: True
+      twitter:
+        card: summary_large_image
+      image: images/index_hero.jpg
