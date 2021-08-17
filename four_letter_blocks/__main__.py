@@ -43,13 +43,15 @@ class FourLetterBlocksWindow(QMainWindow):
         for field in (ui.grid_text, ui.clues_text, ui.blocks_text):
             field.setFont(font)
 
+        ui.title_text.textChanged.connect(self.title_changed)
         ui.grid_text.textChanged.connect(self.grid_changed)
         ui.grid_text.focused.connect(self.grid_changed)
         ui.blocks_text.textChanged.connect(self.blocks_changed)
         ui.blocks_text.focused.connect(self.blocks_changed)
         ui.clues_text.textChanged.connect(self.clues_changed)
 
-        self.state_fields = (self.ui.grid_text,
+        self.state_fields = (self.ui.title_text,
+                             self.ui.grid_text,
                              self.ui.clues_text,
                              self.ui.blocks_text)
         self.clean_state = self.current_state = self.build_current_state()
@@ -68,7 +70,10 @@ class FourLetterBlocksWindow(QMainWindow):
     def build_current_state(self) -> typing.Dict[str, str]:
         state = {}
         for field in self.state_fields:
-            state[field.objectName()] = field.toPlainText()
+            text_func = getattr(field, 'text', None)
+            if text_func is None:
+                text_func = field.toPlainText
+            state[field.objectName()] = text_func()
         return state
 
     def is_state_changed(self) -> bool:
@@ -116,11 +121,12 @@ class FourLetterBlocksWindow(QMainWindow):
     def open(self):
         save_dir = self.get_save_dir()
         kwargs = get_file_dialog_options()
-        file_name, _ = QFileDialog.getOpenFileName(self,
-                                                   'Open puzzle',
-                                                   dir=save_dir,
-                                                   filter='Text files (*.txt)',
-                                                   **kwargs)
+        file_name, _ = QFileDialog.getOpenFileName(
+            self,
+            'Open puzzle',
+            dir=save_dir,
+            filter='Text files (*.txt);;All files (*.*)',
+            **kwargs)
         if not file_name:
             return
 
@@ -144,11 +150,12 @@ class FourLetterBlocksWindow(QMainWindow):
     def save_as(self):
         save_dir = self.get_save_dir()
         kwargs = get_file_dialog_options()
-        file_name, _ = QFileDialog.getSaveFileName(self,
-                                                   'Save puzzle',
-                                                   dir=save_dir,
-                                                   filter='Text files (*.txt)',
-                                                   **kwargs)
+        file_name, _ = QFileDialog.getSaveFileName(
+            self,
+            'Save puzzle',
+            dir=save_dir,
+            filter='Text files (*.txt);;All files (*.*)',
+            **kwargs)
         if not file_name:
             return
         self.file_path = Path(file_name)
@@ -190,7 +197,8 @@ class FourLetterBlocksWindow(QMainWindow):
             dir=save_dir,
             filter=';;'.join(('PDF blocks and clues (*.pdf)',
                               'PNG blocks (*.png)',
-                              'Markdown text clues (*.md)')),
+                              'Markdown text clues (*.md)',
+                              'All files (*.*)')),
             **kwargs)
         if not file_name:
             return
@@ -287,6 +295,10 @@ class FourLetterBlocksWindow(QMainWindow):
             self.statusBar().showMessage(f'Block sizes: {block_summary}.')
 
     def clues_changed(self):
+        if not self.is_state_changed():
+            return
+
+    def title_changed(self):
         if not self.is_state_changed():
             return
 
