@@ -47,6 +47,78 @@ def test_parse():
     assert puzzle.all_clues['EACH'] == 'One at a time'
 
 
+def test_parse_clue_with_reference():
+    source_file = StringIO("""\
+Basic Puzzle
+
+WORD
+I##A
+N##S
+EACH
+
+WORD - Part of a sentence
+EACH - One at a time
+WINE - Sour grapes
+DASH - Run between WORD and a neighbour
+
+AABB
+A##B
+A##B
+CCCC
+""")
+    puzzle = Puzzle.parse(source_file)
+
+    assert puzzle.down_clues[1] == '2. Run between 1 Across and a neighbour'
+
+
+def test_parse_clue_with_unknown_reference():
+    source_file = StringIO("""\
+Basic Puzzle
+
+WORD
+I##A
+N##S
+EACH
+
+WORD - Part of a sentence
+EACH - One at a time
+WINE - Sour grapes
+DASH - Run between WHAT and a neighbour
+
+AABB
+A##B
+A##B
+CCCC
+""")
+    puzzle = Puzzle.parse(source_file)
+
+    assert puzzle.down_clues[1] == '2. Run between WHAT and a neighbour'
+
+
+def test_parse_clue_with_two_references():
+    source_file = StringIO("""\
+Basic Puzzle
+
+WORD
+I##A
+N##S
+EACH
+
+WORD - Part of a sentence
+EACH - One at a time
+WINE - Sour grapes
+DASH - Run between WORD and WINE
+
+AABB
+A##B
+A##B
+CCCC
+""")
+    puzzle = Puzzle.parse(source_file)
+
+    assert puzzle.down_clues[1] == '2. Run between 1 Across and 1 Down'
+
+
 def test_extra_section():
     source_file = StringIO("""\
 Puzzle With Extra

@@ -1,3 +1,4 @@
+import re
 import typing
 from dataclasses import dataclass, field
 from html import escape
@@ -61,6 +62,7 @@ class Puzzle:
     def number_clues(self):
         self.across_clues.clear()
         self.down_clues.clear()
+        references = {}  # {word: reference} e.g., {'FOO': '1 Across'}
         next_number = 1
         for block in self.blocks:
             for square in block.squares:
@@ -68,14 +70,31 @@ class Puzzle:
                     continue
                 square.number = next_number
                 next_number += 1
-                for word, clues in ((square.across_word, self.across_clues),
-                                    (square.down_word, self.down_clues),):
+                for word, clues, direction in (
+                        (square.across_word, self.across_clues, 'Across'),
+                        (square.down_word, self.down_clues, 'Down')):
 
                     if word is None:
                         continue
                     clue = self.all_clues[word]
+                    references[word] = f'{square.number} {direction}'
                     formatted_clue = f"{square.number}. {clue}"
                     clues.append(formatted_clue)
+        for clues in (self.across_clues, self.down_clues):
+            for i, clue in enumerate(clues):
+                matches = list(re.finditer(r'[A-Z]{2,}', clue))
+                if not matches:
+                    continue
+                matches.reverse()
+                clue_chars = list(clue)
+                for match in matches:
+                    word = match.group(0)
+                    try:
+                        reference = references[word]
+                    except KeyError:
+                        continue
+                    clue_chars[match.start():match.end()] = reference
+                clues[i] = ''.join(clue_chars)
 
     @property
     def square_size(self) -> int:
