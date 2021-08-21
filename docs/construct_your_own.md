@@ -25,12 +25,33 @@ The grid size should be between 7x7 and 11x11. Anything bigger than 11x11
 becomes too frustrating to solve, and it takes too long to find a piece with the
 right clue number.
 
-### Splitting Up the Grid
-Download the source code for this project, and install it with a command like
-`pip install .` If you haven't installed Python packages before, read Brett
-Cannon's [quick-and-dirty guide].
+### Installing the Software
+The next step happens in the Four-Letter Blocks program, so install it with
+`pip install four-letter-blocks`. If you haven't installed Python packages
+before, read Brett Cannon's [quick-and-dirty guide].
 
-Then run it with the `four_letter_blocks` command. Start by filling in the title
+Then run it with the `four_letter_blocks` command.
+
+The default installation generates some errors about `bdist_wheel` that don't
+seem to actually cause any problems. You can either ignore them, or install
+`wheel` before installing Four-Letter Blocks.
+
+    pip install wheel
+    pip install four-letter-blocks
+    four_letter_blocks
+
+Known bug on Ubuntu 20.04:
+
+> ImportError: libOpenGL.so.0: cannot open shared object file: No such file or
+> directory
+
+This is a [PySide6 bug] that is missing some dependencies. You can work around
+it by installing those dependencies like this:
+
+    sudo apt-get install freeglut3 freeglut3-dev
+
+### Splitting Up the Grid
+Start by filling in the title
 and grid. Use the `#` character for black squares. As you type, the bottom of
 the window will display the number of letters. If the remainder is zero, then
 they will divide evenly into blocks of four. Save your progress by typing
@@ -74,4 +95,5 @@ discussions constructive and polite.
 [manual]: https://www.quinapalus.com/qxw-guide-20200708.pdf
 [Phil grid builder]: https://www.keiranking.com/apps/phil/
 [quick-and-dirty guide]: https://snarky.ca/a-quick-and-dirty-guide-on-how-to-install-packages-for-python/
+[PySide6 bug]: https://bugreports.qt.io/browse/PYSIDE-1547
 [Show and Tell]: https://github.com/donkirkby/four-letter-blocks/discussions/categories/show-and-tell

@@ -236,7 +236,7 @@ class FourLetterBlocksWindow(QMainWindow):
 
     def export_png(self, file_path: Path):
         puzzle = self.parse_puzzle()
-        width, height = 640, 1000
+        width, height = 640, 2000
         pixmap = QPixmap(width, height)
         white = QColor('white')
         pixmap.fill(white)

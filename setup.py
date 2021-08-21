@@ -9,20 +9,21 @@ from os import path
 import four_letter_blocks
 
 here = path.abspath(path.dirname(__file__))
+project_url = 'https://donkirkby.github.io/four-letter-blocks/'
 
 # Get the long description from the README file
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
-    long_description = f.read()
+    long_description = f.read().replace(']: docs/', ']: ' + project_url)
 
 setup(name='four_letter_blocks',
       version=four_letter_blocks.__version__,
       description='Crossword puzzle assembled from blocks of four letters',
       long_description=long_description,
       long_description_content_type='text/markdown',
-      url='https://donkirkby.github.io/four-letter-blocks/',
+      url=project_url,
       author='Don Kirkby',
       classifiers=[  # https://pypi.org/classifiers/
-          'Development Status :: 3 - Alpha',
+          'Development Status :: 4 - Beta',
           'Intended Audience :: End Users/Desktop',
           'Topic :: Games/Entertainment :: Puzzle Games',
           'License :: OSI Approved :: MIT License',
