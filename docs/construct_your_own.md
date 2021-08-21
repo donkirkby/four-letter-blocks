@@ -64,6 +64,9 @@ like this:
 
 > WORD - A clue for the word
 
+If you want one clue to refer to another, place the target word in your clue,
+in all caps. The word will be replaced with its clue number.
+
 A word of advice: make the clues easier than you think you should. Because of
 the extra challenges in this type of puzzle, at least half the clues should be
 very easy so the solver can make some progress. Once you've written all the
