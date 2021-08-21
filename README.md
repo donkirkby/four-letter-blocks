@@ -6,9 +6,9 @@
 
 This is a program for building a new type of puzzle I designed: a crossword
 puzzle cut up into blocks of four letters. The solver gets the blocks plus a
-set of standard crossword clues. Unfortunately, the clues aren't numbered in
-the normal way - 1 Across might not be in the top left. To make up for that
-nasty trick, every word has at least the first letter given.
+set of standard crossword clues and has to assemble the grid. The bad news is
+that the clues aren't numbered in the normal way - 1 Across might not be in the
+top left. The good new is that every word has at least the first letter given.
 
 Here's a small starter puzzle to see how they work. You can also print out the
 [PDF].

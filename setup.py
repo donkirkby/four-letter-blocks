@@ -6,6 +6,7 @@ https://github.com/pypa/sampleproject
 import setuptools
 from setuptools import setup
 from os import path
+import re
 import four_letter_blocks
 
 here = path.abspath(path.dirname(__file__))
@@ -13,7 +14,12 @@ project_url = 'https://donkirkby.github.io/four-letter-blocks/'
 
 # Get the long description from the README file
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
-    long_description = f.read().replace(']: docs/', ']: ' + project_url)
+    readme = f.read()
+    # Replace relative path with URL, and drop .md suffix.
+    long_description = re.sub(r']:\s*docs/(.*?)(\.md)?$',
+                              r']: ' + project_url + r'\1',
+                              readme,
+                              flags=re.MULTILINE)
 
 setup(name='four_letter_blocks',
       version=four_letter_blocks.__version__,
