@@ -238,8 +238,8 @@ class FourLetterBlocksWindow(QMainWindow):
         puzzle = self.parse_puzzle()
         width, height = 640, 2000
         pixmap = QPixmap(width, height)
-        white = QColor('white')
-        pixmap.fill(white)
+        transparent = QColor(255, 255, 255, 0)
+        pixmap.fill(transparent)
         painter = QPainter(pixmap)
         height = puzzle.draw_blocks(painter)
         painter.end()

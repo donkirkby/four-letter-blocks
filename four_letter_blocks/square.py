@@ -1,5 +1,5 @@
 from PySide6.QtCore import QRect, Qt
-from PySide6.QtGui import QPainter
+from PySide6.QtGui import QPainter, QColor, QBrush
 
 
 class Square:
@@ -28,6 +28,8 @@ class Square:
                      self.y,
                      self.size,
                      self.size)
+        white = QColor('white')
+        painter.setBrush(QBrush(white))
         painter.drawRect(rect)
         font = painter.font()
         number_shift = round(self.size / 20)

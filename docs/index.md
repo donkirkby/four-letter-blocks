@@ -57,6 +57,8 @@ to put the blocks together. Here are a few ideas for how to make the blocks:
    the blocks bump gently against each other.
 
 Whatever technique you use, glue sticks are easier to work with than white glue.
+If you don't want to print it out, you can also download the image and move the
+pieces around in a paint program.
 
 ## Constructing Your Own
 To construct your own puzzle, you have to construct the crossword puzzle, split
