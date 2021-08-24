@@ -83,6 +83,16 @@ easier to solve.
 When you've assigned all the blocks, choose Shuffle from the Edit menu to mix
 up the order of the clue numbers.
 
+### Testing
+Export the puzzle to a PNG file, and then try to solve it, assuming you don't
+know the answers to the hardest clues. Check for easy clues where there are
+several possible blocks to continue the word. It can be frustrating for solvers
+if that happens with too many clues.
+
+If possible, get someone who doesn't know the answers to try solving it before
+you publish. You might be surprised that some clues were harder than you
+expected, or they might find a problem that you didn't notice.
+
 ### Publishing
 You may publish your puzzle wherever you like, and you're welcome to post it
 in this project's [Show and Tell] discussion. Choose Export... from the File

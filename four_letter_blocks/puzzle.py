@@ -60,16 +60,37 @@ class Puzzle:
         self.number_clues()
 
     def number_clues(self):
+        use_suits = 121 < self.grid.width * self.grid.height
         self.across_clues.clear()
         self.down_clues.clear()
         references = {}  # {word: reference} e.g., {'FOO': '1 Across'}
         next_number = 1
+        suits = list('CDHS')
+        suit_order = [None] * 4
+        x_mid = self.grid.width / 2
+        y_mid = self.grid.height / 2
         for block in self.blocks:
             for square in block.squares:
                 if square.number is None:
                     continue
                 square.number = next_number
                 next_number += 1
+                if not use_suits:
+                    suit_slot = None
+                elif square.x <= x_mid and square.y < y_mid:
+                    suit_slot = 0
+                elif x_mid < square.x and square.y <= y_mid:
+                    suit_slot = 1
+                elif x_mid <= square.x and y_mid < square.y:
+                    suit_slot = 2
+                else:
+                    suit_slot = 3
+                if suit_slot is not None:
+                    if suit_order[suit_slot] is None:
+                        suit_order[suit_slot] = suits.pop(0)
+                    square.suit = suit_order[suit_slot]
+                    self.grid[square.x, square.y].suit = square.suit
+
                 for word, clues, direction in (
                         (square.across_word, self.across_clues, 'Across'),
                         (square.down_word, self.down_clues, 'Down')):
@@ -77,8 +98,8 @@ class Puzzle:
                     if word is None:
                         continue
                     clue = self.all_clues[word]
-                    references[word] = f'{square.number} {direction}'
-                    formatted_clue = f"{square.number}. {clue}"
+                    references[word] = f'{square.display_number()} {direction}'
+                    formatted_clue = f"{square.display_number()}. {clue}"
                     clues.append(formatted_clue)
         for clues in (self.across_clues, self.down_clues):
             for i, clue in enumerate(clues):

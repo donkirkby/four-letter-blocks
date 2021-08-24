@@ -61,3 +61,25 @@ def test_paint_with_number(pixmap_differ: PixmapDiffer):
 
     square.draw(actual)
     pixmap_differ.assert_equal()
+
+
+def test_paint_with_number_and_suit(pixmap_differ: PixmapDiffer):
+    actual, expected = pixmap_differ.start(
+        180, 180,
+        'test_square_paint_with_number_and_suit')
+    font = expected.font()
+    font.setPixelSize(20)
+    expected.setFont(font)
+    expected.drawRect(20, 20, 80, 80)
+    expected.drawText(24, 20, 80, 80, 0, '12♡')
+    font.setPixelSize(60)
+    expected.setFont(font)
+    expected.drawText(20, 30, 80, 80, Qt.AlignHCenter, 'W')
+
+    square = Square('W', 12, 'H')
+    square.x = 20
+    square.y = 20
+    square.size = 80
+
+    square.draw(actual)
+    pixmap_differ.assert_equal()

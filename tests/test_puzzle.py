@@ -119,6 +119,44 @@ CCCC
     assert puzzle.down_clues[1] == '2. Run between 1 Across and 1 Down'
 
 
+def test_parse_with_suits():
+    source_file = StringIO("""\
+Title
+
+ABCDEFGHIJKL
+A##########L
+B##########M
+B##########M
+C##########N
+C##########N
+D##########O
+D##########O
+E##########P
+E##########P
+F##########Q
+FGHIJKLMNOPQ
+
+ABCDEFGHIJKL - Half an alphabet?
+
+AAAABBBBCCCC
+K##########D
+K##########D
+K##########D
+K##########D
+J##########E
+J##########E
+J##########E
+J##########E
+I##########F
+I##########F
+IIHHHHGGGGFF
+""")
+    puzzle = Puzzle.parse(source_file)
+
+    assert puzzle.grid[0, 0].suit == 'C'
+    assert puzzle.across_clues[0] == '1♣. Half an alphabet?'
+
+
 def test_extra_section():
     source_file = StringIO("""\
 Puzzle With Extra
