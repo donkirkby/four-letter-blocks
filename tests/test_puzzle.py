@@ -473,12 +473,13 @@ def test_draw_clues(pixmap_differ: PixmapDiffer):
     expected_doc = QTextDocument()
     expected_doc.setPageSize(expected.window().size())
     font = expected_doc.defaultFont()
-    font.setPixelSize(10)
+    font.setPixelSize(9)
     expected_doc.setDefaultFont(font)
     expected_doc.setDefaultStyleSheet("""\
 h1 {text-align: center}
 hr.footer {line-height:10px}
-td {padding: 2px}
+p.footer {page-break-after: always}
+td {padding: 1px }
 td.num {text-align: right}
 a {color: black}
 """)
@@ -505,7 +506,8 @@ a {color: black}
 </td></tr>
 </table>
 <hr class="footer">
-<center><a href="#">https://donkirkby.github.io/four-letter-blocks</a></center>
+<p><center><a href="#">https://donkirkby.github.io/four-letter-blocks</a></center></p>
+<p></p>
 """)
     expected_doc.drawContents(expected)
 

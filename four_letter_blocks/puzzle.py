@@ -281,7 +281,8 @@ class Puzzle:
         document.setDefaultStyleSheet(f"""\
 h1 {{text-align: center}}
 hr.footer {{line-height:10px}}
-p.footer {{page-break-after: always}}td {{padding: {padding} }}
+p.footer {{page-break-after: always}}
+td {{padding: {padding} }}
 td.num {{text-align: right}}
 a {{color: black}}
 """)
