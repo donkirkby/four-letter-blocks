@@ -1,18 +1,22 @@
 import os
-import re
 import sys
 import traceback
 import typing
 from pathlib import Path
 
-from PySide6.QtCore import QSettings, QSize
-from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, Qt, QCloseEvent, QPixmap, QColor, \
-    QTextDocument
+from PySide6.QtCore import QSettings, QSize, QSizeF, QObject, QRectF
+from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, \
+    Qt, QCloseEvent, QPixmap, QColor, QTextDocument, QTextFormat, QTextCursor, \
+    QTextCharFormat, QPyTextObject
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog
 
 import four_letter_blocks
 from four_letter_blocks.main_window import Ui_MainWindow
 from four_letter_blocks.puzzle import Puzzle
+
+DIAGRAM_TEXT_FORMAT = QTextFormat.UserObject + 1
+DIAGRAM_DATA = 1
+OBJECT_REPLACEMENT = chr(0xfffc)
 
 
 class FourLetterBlocksWindow(QMainWindow):
@@ -217,7 +221,6 @@ class FourLetterBlocksWindow(QMainWindow):
         pdf.setPageSize(QPageSize.Letter)
 
         puzzle = self.parse_puzzle()
-        painter = QPainter(pdf)
 
         document = QTextDocument()
         document.setPageSize(QSize(pdf.width(), pdf.height()))
@@ -225,12 +228,24 @@ class FourLetterBlocksWindow(QMainWindow):
         font.setPixelSize(pdf.height()//60)
         document.setDefaultFont(font)
         puzzle.build_clues(document)
-        document.drawContents(painter)
 
-        pdf.newPage()
+        diagram_handler = BlockDiagram(puzzle)
+        doc_layout = document.documentLayout()
+        doc_layout.registerHandler(DIAGRAM_TEXT_FORMAT, diagram_handler)
 
-        puzzle.draw_blocks(painter)
-        painter.end()
+        cursor = QTextCursor(document)
+        cursor.movePosition(cursor.End)
+        cursor.insertText('\n')
+
+        diagram_format = QTextCharFormat()
+        diagram_format.setObjectType(DIAGRAM_TEXT_FORMAT)
+
+        for i in range(len(puzzle.row_heights())):
+            diagram_format.setProperty(DIAGRAM_DATA, i)
+            cursor.insertText(OBJECT_REPLACEMENT, diagram_format)
+            cursor.insertText('\n')
+
+        document.print_(pdf)
 
         self.statusBar().showMessage(f'Exported to {file_path.name}.')
 
@@ -254,12 +269,12 @@ class FourLetterBlocksWindow(QMainWindow):
             print(file=file)
             print('Across  ', file=file)
             for clue in puzzle.across_clues:
-                formatted_clue = re.sub(r'(^\d+\.)', r'**\1**', clue) + '  '
+                formatted_clue = f'**{clue.format_number()}.** {clue.text}  '
                 print(formatted_clue, file=file)
             print(file=file)
             print('Down  ', file=file)
             for clue in puzzle.down_clues:
-                formatted_clue = re.sub(r'(^\d+\.)', r'**\1**', clue) + '  '
+                formatted_clue = f'**{clue.format_number()}.** {clue.text}  '
                 print(formatted_clue, file=file)
 
     def parse_puzzle(self):
@@ -301,6 +316,35 @@ class FourLetterBlocksWindow(QMainWindow):
     def title_changed(self):
         if not self.is_state_changed():
             return
+
+
+class BlockDiagram(QPyTextObject):
+    def __init__(self, puzzle: Puzzle, parent: QObject = None):
+        super().__init__(parent)
+        self.puzzle = puzzle
+
+    # noinspection PyPep8Naming,PyShadowingBuiltins
+    def intrinsicSize(self,
+                      doc: QTextDocument,
+                      posInDocument: int,
+                      format: QTextFormat) -> QSizeF:
+        row_index = format.property(DIAGRAM_DATA)
+        row_heights = self.puzzle.row_heights(doc.textWidth())
+        row_height = row_heights[row_index]
+        return QSizeF(doc.textWidth(), row_height)
+
+    # noinspection PyPep8Naming,PyShadowingBuiltins
+    def drawObject(self,
+                   painter: QPainter,
+                   rect: QRectF,
+                   doc: QTextDocument,
+                   posInDocument: int,
+                   format: QTextFormat):
+        row_index = format.property(DIAGRAM_DATA)
+        self.puzzle.draw_blocks(painter,
+                                row_index=row_index,
+                                x=rect.x(),
+                                y=rect.y())
 
 
 def get_settings():

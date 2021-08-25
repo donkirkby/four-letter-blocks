@@ -1,27 +1,30 @@
 import re
 import typing
+from collections import Counter
 from dataclasses import dataclass, field
 from html import escape
 from itertools import chain
+from operator import attrgetter
 from random import shuffle
 
-from PySide6.QtGui import QPainter, Qt, QTextDocument
+from PySide6.QtGui import QPainter, QTextDocument
 
+from four_letter_blocks.clue import Clue
 from four_letter_blocks.grid import Grid
 from four_letter_blocks.block import Block
-from four_letter_blocks.square import Square
 
 
 @dataclass
 class Puzzle:
     HINT = 'Clue numbers are shuffled: 1 Across might not be in the top left.'
+    DEFAULT_ROW_LENGTH = 16  # Number of squares across a diagram.
 
     title: str
     grid: Grid
-    all_clues: typing.Dict[str, str]
+    all_clues: typing.Dict[str, Clue]
     blocks: typing.List[Block]
-    across_clues: typing.List[str] = field(init=False)
-    down_clues: typing.List[str] = field(init=False)
+    across_clues: typing.List[Clue] = field(init=False)
+    down_clues: typing.List[Clue] = field(init=False)
 
     @staticmethod
     def parse(source_file: typing.IO) -> 'Puzzle':
@@ -33,7 +36,7 @@ class Puzzle:
                        grid_text: str,
                        clues_text: str,
                        blocks_text: str,
-                       old_clues: typing.Dict[str, str] = None) -> 'Puzzle':
+                       old_clues: typing.Dict[str, Clue] = None) -> 'Puzzle':
         if old_clues is None:
             old_clues = {}
         grid = Grid(grid_text)
@@ -49,7 +52,7 @@ class Puzzle:
                 for word in (square.across_word, square.down_word):
                     if word is None:
                         continue
-                    old_clue = old_clues.get(word, '')
+                    old_clue = old_clues.get(word, Clue(''))
                     clue = parsed_clues.get(word, old_clue)
                     all_clues[word] = clue
         return Puzzle(title, grid, all_clues, blocks)
@@ -64,7 +67,7 @@ class Puzzle:
         self.across_clues.clear()
         self.down_clues.clear()
         references = {}  # {word: reference} e.g., {'FOO': '1 Across'}
-        next_number = 1
+        used_numbers = Counter()  # {suit: used_number}
         suits = list('CDHS')
         suit_order = [None] * 4
         x_mid = self.grid.width / 2
@@ -73,8 +76,6 @@ class Puzzle:
             for square in block.squares:
                 if square.number is None:
                     continue
-                square.number = next_number
-                next_number += 1
                 if not use_suits:
                     suit_slot = None
                 elif square.x <= x_mid and square.y < y_mid:
@@ -85,6 +86,10 @@ class Puzzle:
                     suit_slot = 2
                 else:
                     suit_slot = 3
+                used_number = used_numbers[suit_slot]
+                used_number += 1
+                square.number = used_number
+                used_numbers[suit_slot] = used_number
                 if suit_slot is not None:
                     if suit_order[suit_slot] is None:
                         suit_order[suit_slot] = suits.pop(0)
@@ -98,16 +103,17 @@ class Puzzle:
                     if word is None:
                         continue
                     clue = self.all_clues[word]
+                    clue.number = square.number
+                    clue.suit = square.suit
                     references[word] = f'{square.display_number()} {direction}'
-                    formatted_clue = f"{square.display_number()}. {clue}"
-                    clues.append(formatted_clue)
+                    clues.append(clue)
         for clues in (self.across_clues, self.down_clues):
             for i, clue in enumerate(clues):
-                matches = list(re.finditer(r'[A-Z]{2,}', clue))
+                matches = list(re.finditer(r'[A-Z]{2,}', clue.text))
                 if not matches:
                     continue
                 matches.reverse()
-                clue_chars = list(clue)
+                clue_chars = list(clue.text)
                 for match in matches:
                     word = match.group(0)
                     try:
@@ -115,7 +121,10 @@ class Puzzle:
                     except KeyError:
                         continue
                     clue_chars[match.start():match.end()] = reference
-                clues[i] = ''.join(clue_chars)
+                clue.text = ''.join(clue_chars)
+        clue_key = attrgetter('suit', 'number')
+        self.across_clues.sort(key=clue_key)
+        self.down_clues.sort(key=clue_key)
 
     @property
     def square_size(self) -> int:
@@ -139,61 +148,76 @@ class Puzzle:
                 square.x *= ratio
                 square.y *= ratio
 
-    def draw_blocks(self, painter: QPainter, square_size: int = None) -> int:
+    def draw_blocks(self,
+                    painter: QPainter,
+                    square_size: int = None,
+                    row_index: int = None,
+                    x: int = 0,
+                    y: int = 0) -> int:
         """ Draw all blocks on a painter. Return the height of the image. """
         window_width = painter.window().width()
         if square_size is None:
-            square_size = window_width // 16
+            square_size = window_width // self.DEFAULT_ROW_LENGTH
         self.square_size = square_size
         gap = square_size / 2
-        x = y = self.square_size
+        x_start = x
+        x += self.square_size
+        if row_index is None:
+            y += square_size
+        else:
+            y += gap
         line_height = 0
+        row_count = 0
         x_limit = painter.window().width() - self.square_size
+        is_active_row = False
+        for block in self.blocks:
+            if x_limit < x + block.width - x_start:
+                x = self.square_size
+                if is_active_row:
+                    y += line_height + gap
+                row_count += 1
+                line_height = 0
+            is_active_row = row_index is None or row_index == row_count
+            if is_active_row:
+                block.x = x
+                block.y = y
+                block.draw(painter)
+            line_height = max(line_height, block.height)
+            x += block.width + gap
+        if row_index is None:
+            y += line_height + square_size
+        elif is_active_row:
+            y += line_height
+        return y
+
+    def row_heights(self,
+                    window_width: int = None,
+                    square_size: int = None) -> typing.List[int]:
+        """ Height needed to draw each row of blocks. """
+        row_heights = []
+        if square_size is None and window_width is not None:
+            square_size = window_width // self.DEFAULT_ROW_LENGTH
+        elif square_size is not None and window_width is None:
+            window_width = square_size * self.DEFAULT_ROW_LENGTH
+        elif window_width is None:
+            square_size = self.square_size
+            window_width = square_size * self.DEFAULT_ROW_LENGTH
+        self.square_size = square_size
+        gap = self.square_size / 2
+        x = self.square_size
+        line_height = 0
+        x_limit = window_width - square_size
         for block in self.blocks:
             if x_limit < x + block.width:
                 x = self.square_size
-                y += line_height + gap
+                row_heights.append(line_height + gap)
                 line_height = 0
-            block.x = x
-            block.y = y
-            block.draw(painter)
             line_height = max(line_height, block.height)
             x += block.width + gap
-        y += line_height + self.square_size
-        return y
-
-    def draw_clues(self, painter: QPainter, square_size: int = None):
-        window_width = painter.window().width()
-        window_height = painter.window().height()
-        if square_size is None:
-            square_size = window_width // 16
-        self.square_size = square_size
-        letter_size = round(square_size * 0.5)
-
-        font = painter.font()
-        font.setPixelSize(round(square_size * Square.LETTER_SIZE))
-        painter.setFont(font)
-        painter.drawText(0, 0,
-                         window_width, square_size,
-                         Qt.AlignHCenter,
-                         self.title)
-
-        font.setPixelSize(round(letter_size * Square.LETTER_SIZE))
-        painter.setFont(font)
-        painter.drawText(letter_size, letter_size * 3, self.HINT)
-        painter.drawText(letter_size, letter_size*4, 'Across')
-        for i, clue in enumerate(self.across_clues, 5):
-            painter.drawText(letter_size, i * letter_size, clue)
-
-        middle = window_width // 2
-        painter.drawText(middle, letter_size*4, 'Down')
-        for i, clue in enumerate(self.down_clues, 5):
-            painter.drawText(middle, i * letter_size, clue)
-
-        painter.drawText(0, window_height-square_size,
-                         window_width, square_size,
-                         Qt.AlignHCenter,
-                         'https://donkirkby.github.io/four-letter-blocks')
+        if 0 < line_height:
+            # Count final row
+            row_heights.append(line_height + gap)
+        return row_heights
 
     def format_grid(self) -> str:
         rows = []
@@ -212,7 +236,7 @@ class Puzzle:
         return grid_text
 
     def format_clues(self) -> str:
-        return '\n'.join(f'{word} - {clue}'
+        return '\n'.join(f'{word} - {clue.text}'
                          for word, clue in sorted(self.all_clues.items()))
 
     def format_blocks(self) -> str:
@@ -257,7 +281,7 @@ class Puzzle:
         document.setDefaultStyleSheet(f"""\
 h1 {{text-align: center}}
 hr.footer {{line-height:10px}}
-td {{padding: {padding} }}
+p.footer {{page-break-after: always}}td {{padding: {padding} }}
 td.num {{text-align: right}}
 a {{color: black}}
 """)
@@ -276,17 +300,17 @@ a {{color: black}}
 </td></tr>
 </table>
 <hr class="footer">
-<center><a href="https://donkirkby.github.io/four-letter-blocks"
->https://donkirkby.github.io/four-letter-blocks</a></center>
+<p class="footer"><center><a href="https://donkirkby.github.io/four-letter-blocks"
+>https://donkirkby.github.io/four-letter-blocks</a></center></p>
+<p></p>
 """)
 
 
-def build_clue_table(clues: typing.Sequence[str]) -> str:
+def build_clue_table(clues: typing.Sequence[Clue]) -> str:
     rows = []
     for clue in clues:
-        number, text = clue.split('.', 1)
-        rows.append(f'<tr><td class="num">{number}.</td>'
-                    f'<td>{escape(text)}</td></tr>')
+        rows.append(f'<tr><td class="num">{clue.format_number()}.</td>'
+                    f'<td>{escape(clue.text)}</td></tr>')
     return f'<table>{"".join(rows)}</table>'
 
 
@@ -309,15 +333,15 @@ def split_sections(source_file):
     return sections
 
 
-def parse_clues(text):
-    clues: typing.Dict[str, str] = {}
+def parse_clues(text) -> typing.Dict[str, Clue]:
+    clues: typing.Dict[str, Clue] = {}
     pairs = text.splitlines(keepends=False)
     for pair in pairs:
         try:
-            word, clue = pair.split('-', maxsplit=1)
+            word, clue_text = pair.split('-', maxsplit=1)
         except ValueError:
             continue
         word = word.strip()
         if word:
-            clues[word] = clue.strip()
+            clues[word] = Clue(clue_text.strip())
     return clues

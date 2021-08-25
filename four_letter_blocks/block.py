@@ -1,6 +1,7 @@
 import typing
 from collections import defaultdict
 from copy import copy
+from operator import attrgetter
 
 from PySide6.QtGui import QPainter
 
@@ -44,7 +45,9 @@ class Block:
                 square_list = square_lists[marker]
                 square_list.append(square)
         if unused_squares:
-            square_lists[Block.UNUSED] = list(unused_squares)
+            square_list = list(unused_squares)
+            square_list.sort(key=attrgetter('y', 'x'))
+            square_lists[Block.UNUSED] = square_list
         blocks = [Block(*square_list, marker=marker)
                   for marker, square_list in sorted(square_lists.items())]
         return blocks
