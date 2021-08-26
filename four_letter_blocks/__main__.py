@@ -265,7 +265,7 @@ class FourLetterBlocksWindow(QMainWindow):
         puzzle = self.parse_puzzle()
         with file_path.open('w') as file:
             print(f'## {puzzle.title}', file=file)
-            print(Puzzle.HINT, file=file)
+            print(puzzle.build_hints(), file=file)
             print(file=file)
             print('Across  ', file=file)
             for clue in puzzle.across_clues:

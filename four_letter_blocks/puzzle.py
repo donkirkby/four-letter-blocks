@@ -17,6 +17,7 @@ from four_letter_blocks.block import Block
 @dataclass
 class Puzzle:
     HINT = 'Clue numbers are shuffled: 1 Across might not be in the top left.'
+    SUIT_HINT = "Each corner uses a different suit."
     DEFAULT_ROW_LENGTH = 16  # Number of squares across a diagram.
 
     title: str
@@ -25,6 +26,7 @@ class Puzzle:
     blocks: typing.List[Block]
     across_clues: typing.List[Clue] = field(init=False)
     down_clues: typing.List[Clue] = field(init=False)
+    use_suits: bool = False
 
     @staticmethod
     def parse(source_file: typing.IO) -> 'Puzzle':
@@ -60,10 +62,10 @@ class Puzzle:
     def __post_init__(self):
         self.across_clues = []
         self.down_clues = []
+        self.use_suits = 121 < self.grid.width * self.grid.height
         self.number_clues()
 
     def number_clues(self):
-        use_suits = 121 < self.grid.width * self.grid.height
         self.across_clues.clear()
         self.down_clues.clear()
         references = {}  # {word: reference} e.g., {'FOO': '1 Across'}
@@ -76,7 +78,7 @@ class Puzzle:
             for square in block.squares:
                 if square.number is None:
                     continue
-                if not use_suits:
+                if not self.use_suits:
                     suit_slot = None
                 elif square.x <= x_mid and square.y < y_mid:
                     suit_slot = 0
@@ -288,9 +290,10 @@ a {{color: black}}
 """)
         across_table = build_clue_table(self.across_clues)
         down_table = build_clue_table(self.down_clues)
+        hints = self.build_hints()
         document.setHtml(f"""\
 <h1>{escape(self.title)}</h1>
-<p>{escape(self.HINT)}</p>
+<p>{escape(hints)}</p>
 <hr>
 <table>
 <tr><td>Across</td><td>Down</td></tr>
@@ -305,6 +308,13 @@ a {{color: black}}
 >https://donkirkby.github.io/four-letter-blocks</a></center></p>
 <p></p>
 """)
+
+    def build_hints(self):
+        hints = self.HINT
+        if self.use_suits:
+            hints += ' '
+            hints += self.SUIT_HINT
+        return hints
 
 
 def build_clue_table(clues: typing.Sequence[Clue]) -> str:

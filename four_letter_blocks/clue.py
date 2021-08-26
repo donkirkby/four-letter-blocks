@@ -13,5 +13,5 @@ class Clue:
         return f'{self.format_number()}. {self.text}'
 
     def format_number(self):
-        suit_display = Square.SUIT_DISPLAYS.get(self.suit, '')
-        return f'{self.number}{suit_display}'
+        suit_display = Square.SUIT_DISPLAYS[self.suit]
+        return f'{self.number}{suit_display.display}'

@@ -1,14 +1,17 @@
 from PySide6.QtCore import QRect, Qt
 from PySide6.QtGui import QPainter, QColor, QBrush
 
+from four_letter_blocks.suit import Suit
+
 
 class Square:
     NUMBER_SIZE = 0.25
     LETTER_SIZE = 0.75
-    SUIT_DISPLAYS = {'C': '♣',
-                     'D': '♢',
-                     'H': '♡',
-                     'S': '♠'}
+    SUIT_DISPLAYS = {'C': Suit('♣'),
+                     'D': Suit('♢', '♦'),
+                     'H': Suit('♡', '♥'),
+                     'S': Suit('♠'),
+                     None: Suit('')}
 
     def __init__(self, letter: str, number: int = None, suit: str = None):
         self.letter = letter
@@ -41,17 +44,28 @@ class Square:
         letter_shift = round(self.size * (1 - self.LETTER_SIZE)/2)
         rect.translate(number_shift, 0)
         if self.number is not None:
-            number_display = self.display_number()
             font.setPixelSize(self.size * self.NUMBER_SIZE)
             painter.setFont(font)
-            painter.drawText(rect, 0, number_display)
+            painter.drawText(rect, 0, str(self.number))
         rect.translate(-number_shift, letter_shift)
 
         font.setPixelSize(self.size * self.LETTER_SIZE)
         painter.setFont(font)
         painter.drawText(rect, Qt.AlignHCenter, self.letter)
 
+        rect.translate(0, -letter_shift)
+        if self.suit is not None:
+            suit_display = self.SUIT_DISPLAYS[self.suit]
+            font.setPixelSize(self.size)
+            painter.setFont(font)
+            old_pen = painter.pen()
+            painter.setPen(QColor(0, 0, 0, 30))
+            painter.drawText(rect, Qt.AlignHCenter, suit_display.filled)
+            painter.setPen(QColor(0, 0, 0, 70))
+            painter.drawText(rect, Qt.AlignHCenter, suit_display.display)
+            painter.setPen(old_pen)
+
     def display_number(self):
-        suit_display = self.SUIT_DISPLAYS.get(self.suit, '')
-        number_display = f'{self.number}{suit_display}'
+        suit_display = self.SUIT_DISPLAYS[self.suit]
+        number_display = f'{self.number}{suit_display.display}'
         return number_display

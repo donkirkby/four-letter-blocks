@@ -1,4 +1,5 @@
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QPen, QColor
 
 from four_letter_blocks.square import Square
 from tests.pixmap_differ import PixmapDiffer
@@ -41,6 +42,7 @@ def test_paint(pixmap_differ: PixmapDiffer):
     pixmap_differ.assert_equal()
 
 
+# noinspection DuplicatedCode
 def test_paint_with_number(pixmap_differ: PixmapDiffer):
     actual, expected = pixmap_differ.start(
         180, 180,
@@ -63,6 +65,7 @@ def test_paint_with_number(pixmap_differ: PixmapDiffer):
     pixmap_differ.assert_equal()
 
 
+# noinspection DuplicatedCode
 def test_paint_with_number_and_suit(pixmap_differ: PixmapDiffer):
     actual, expected = pixmap_differ.start(
         180, 180,
@@ -71,10 +74,16 @@ def test_paint_with_number_and_suit(pixmap_differ: PixmapDiffer):
     font.setPixelSize(20)
     expected.setFont(font)
     expected.drawRect(20, 20, 80, 80)
-    expected.drawText(24, 20, 80, 80, 0, '12♡')
+    expected.drawText(24, 20, 80, 80, 0, '12')
     font.setPixelSize(60)
     expected.setFont(font)
     expected.drawText(20, 30, 80, 80, Qt.AlignHCenter, 'W')
+    font.setPixelSize(80)
+    expected.setFont(font)
+    expected.setPen(QPen(QColor(0, 0, 0, 30)))
+    expected.drawText(20, 20, 80, 80, Qt.AlignHCenter, '♥')
+    expected.setPen(QPen(QColor(0, 0, 0, 70)))
+    expected.drawText(20, 20, 80, 80, Qt.AlignHCenter, '♡')
 
     square = Square('W', 12, 'H')
     square.x = 20
