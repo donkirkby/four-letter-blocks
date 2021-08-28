@@ -3,14 +3,14 @@
 ################################################################################
 ## Form generated from reading UI file 'main_window.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.1.2
+## Created by: Qt User Interface Compiler version 6.0.2
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide6.QtCore import *  # type: ignore
-from PySide6.QtGui import *  # type: ignore
-from PySide6.QtWidgets import *  # type: ignore
+from PySide6.QtCore import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
 
 from four_letter_blocks.focused_plain_text_edit import FocusedPlainTextEdit
 
@@ -36,6 +36,8 @@ class Ui_MainWindow(object):
         self.exit_action.setObjectName(u"exit_action")
         self.shuffle_action = QAction(MainWindow)
         self.shuffle_action.setObjectName(u"shuffle_action")
+        self.options_action = QAction(MainWindow)
+        self.options_action.setObjectName(u"options_action")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
@@ -93,6 +95,8 @@ class Ui_MainWindow(object):
         self.help_menu.setObjectName(u"help_menu")
         self.edit_menu = QMenu(self.menubar)
         self.edit_menu.setObjectName(u"edit_menu")
+        self.tools_menu = QMenu(self.menubar)
+        self.tools_menu.setObjectName(u"tools_menu")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
@@ -100,6 +104,7 @@ class Ui_MainWindow(object):
 
         self.menubar.addAction(self.file_menu.menuAction())
         self.menubar.addAction(self.edit_menu.menuAction())
+        self.menubar.addAction(self.tools_menu.menuAction())
         self.menubar.addAction(self.help_menu.menuAction())
         self.file_menu.addAction(self.new_action)
         self.file_menu.addAction(self.open_action)
@@ -111,6 +116,7 @@ class Ui_MainWindow(object):
         self.file_menu.addAction(self.exit_action)
         self.help_menu.addAction(self.about_action)
         self.edit_menu.addAction(self.shuffle_action)
+        self.tools_menu.addAction(self.options_action)
 
         self.retranslateUi(MainWindow)
 
@@ -157,6 +163,7 @@ class Ui_MainWindow(object):
 #if QT_CONFIG(shortcut)
         self.shuffle_action.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+F", None))
 #endif // QT_CONFIG(shortcut)
+        self.options_action.setText(QCoreApplication.translate("MainWindow", u"&Options...", None))
         self.title_label.setText(QCoreApplication.translate("MainWindow", u"Title", None))
         self.grid_label.setText(QCoreApplication.translate("MainWindow", u"Grid", None))
         self.grid_text.setPlainText("")
@@ -165,5 +172,6 @@ class Ui_MainWindow(object):
         self.file_menu.setTitle(QCoreApplication.translate("MainWindow", u"&File", None))
         self.help_menu.setTitle(QCoreApplication.translate("MainWindow", u"&Help", None))
         self.edit_menu.setTitle(QCoreApplication.translate("MainWindow", u"&Edit", None))
+        self.tools_menu.setTitle(QCoreApplication.translate("MainWindow", u"&Tools", None))
     # retranslateUi
 

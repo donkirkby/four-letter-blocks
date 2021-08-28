@@ -21,9 +21,10 @@ that you have to make the central square black. It will still work if you don't
 use a multiple of four squares, you'll just have to make the blocks different
 sizes.
 
-The grid size should be between 7x7 and 11x11. Anything bigger than 11x11
-becomes too frustrating to solve, and it takes too long to find a piece with the
-right clue number.
+The grid size should be between 7x7 and 15x15. Anything bigger than 11x11 gets
+the card suits to help solvers work on one corner at a time, and anything
+bigger than 15x15 becomes too frustrating to solve. It takes too long to find
+a piece with the right clue number.
 
 ### Installing the Software
 The next step happens in the Four-Letter Blocks program, so install it with
@@ -96,8 +97,7 @@ expected, or they might find a problem that you didn't notice.
 ### Publishing
 You may publish your puzzle wherever you like, and you're welcome to post it
 in this project's [Show and Tell] discussion. Choose Export... from the File
-menu to write PDF, PNG, and markdown files for publishing. Check the PDF to make
-sure all the blocks fit on one page. If not, try shuffling and exporting again.
+menu to write PDF, PNG, and markdown files for publishing.
 
 If you are going to publish in Show and Tell, please keep the words and clue
 topics light and entertaining. If you get feedback from solvers, please keep

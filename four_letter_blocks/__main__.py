@@ -8,7 +8,7 @@ from PySide6.QtCore import QSettings, QSize, QSizeF, QObject, QRectF
 from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, \
     Qt, QCloseEvent, QPixmap, QColor, QTextDocument, QTextFormat, QTextCursor, \
     QTextCharFormat, QPyTextObject
-from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog
+from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog, QInputDialog
 
 import four_letter_blocks
 from four_letter_blocks.main_window import Ui_MainWindow
@@ -28,24 +28,20 @@ class FourLetterBlocksWindow(QMainWindow):
         ui.about_action.triggered.connect(self.about)
         ui.exit_action.triggered.connect(self.close)
 
+        ui.new_action.triggered.connect(self.new_file)
         ui.open_action.triggered.connect(self.open)
         ui.save_action.triggered.connect(self.save)
         ui.save_as_action.triggered.connect(self.save_as)
         ui.export_action.triggered.connect(self.export)
 
         ui.shuffle_action.triggered.connect(self.shuffle)
+        ui.options_action.triggered.connect(self.choose_font)
 
         sys.excepthook = self.on_error
         self.file_path: typing.Optional[Path] = None
         self.settings = get_settings()
         self.old_clues = {}
         self.base_title = self.windowTitle()
-
-        font = QFont('Monospace')
-        font.setStyleHint(QFont.TypeWriter)
-        font.setPointSize(self.ui.grid_text.font().pointSize())
-        for field in (ui.grid_text, ui.clues_text, ui.blocks_text):
-            field.setFont(font)
 
         ui.title_text.textChanged.connect(self.title_changed)
         ui.grid_text.textChanged.connect(self.grid_changed)
@@ -59,17 +55,27 @@ class FourLetterBlocksWindow(QMainWindow):
                              self.ui.clues_text,
                              self.ui.blocks_text)
         self.clean_state = self.current_state = self.build_current_state()
+        self.update_font()
 
     def closeEvent(self, event: QCloseEvent):
-        if not self.is_state_dirty():
+        if self.can_abandon('quit'):
             return  # Default behaviour: window will close.
+        event.ignore()
+
+    def can_abandon(self, action: str):
+        """ Confirm with the user that it's OK to lose current changes.
+
+        :param action: describes the action the user asked for.
+        :returns: True if the user confirmed or if there are no changes.
+        """
+        if not self.is_state_dirty():
+            return True
         choice = QMessageBox.warning(self,
                                      'Unsaved Changes',
-                                     'Changes have not been saved. Are you '
-                                     'sure you want to quit?',
+                                     f'Changes have not been saved. Are you '
+                                     f'sure you want to {action}?',
                                      QMessageBox.Ok | QMessageBox.Cancel)
-        if choice == QMessageBox.Cancel:
-            event.ignore()
+        return choice == QMessageBox.Ok
 
     def build_current_state(self) -> typing.Dict[str, str]:
         state = {}
@@ -87,7 +93,8 @@ class FourLetterBlocksWindow(QMainWindow):
         since the file was saved.
         """
         new_state = self.build_current_state()
-        suffix = '*' if new_state != self.clean_state else ''
+        suffix = (' - ' + self.file_path.name) if self.file_path else ''
+        suffix += '*' if new_state != self.clean_state else ''
         self.setWindowTitle(self.base_title + suffix)
 
         if new_state == self.current_state:
@@ -122,7 +129,19 @@ class FourLetterBlocksWindow(QMainWindow):
                           'About Four-Letter Blocks',
                           f'Version {four_letter_blocks.__version__}')
 
+    def new_file(self):
+        if not self.can_abandon('start a new file'):
+            return
+        self.file_path = None
+        self.ui.title_text.clear()
+        self.ui.grid_text.clear()
+        self.ui.clues_text.clear()
+        self.ui.blocks_text.clear()
+        self.record_clean_state()
+
     def open(self):
+        if not self.can_abandon('open a file'):
+            return
         save_dir = self.get_save_dir()
         kwargs = get_file_dialog_options()
         file_name, _ = QFileDialog.getOpenFileName(
@@ -316,6 +335,33 @@ class FourLetterBlocksWindow(QMainWindow):
     def title_changed(self):
         if not self.is_state_changed():
             return
+
+    def choose_font(self):
+        font_size = self.settings.value('font_size', 11, int)
+        font_size, is_ok = QInputDialog.getInt(self,
+                                               'Set Font Size',
+                                               'Font size:',
+                                               font_size,
+                                               minValue=1)
+        if is_ok:
+            self.settings.setValue('font_size', font_size)
+            self.update_font()
+
+    def update_font(self):
+        font_size = self.settings.value('font_size', 11, int)
+        font = self.font()
+        font.setPointSize(font_size)
+        # for child in self.ui.menubar.children():
+        #     child.setFont(font)
+        self.setFont(font)
+
+        font = QFont('Monospace')
+        font.setStyleHint(QFont.TypeWriter)
+        font.setPointSize(font_size)
+        for target in (self.ui.grid_text,
+                       self.ui.clues_text,
+                       self.ui.blocks_text):
+            target.setFont(font)
 
 
 class BlockDiagram(QPyTextObject):
