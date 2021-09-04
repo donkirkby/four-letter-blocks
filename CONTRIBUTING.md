@@ -22,37 +22,38 @@ Four-Letter Blocks with pip. Releasing a new version means publishing it on the
 [Python package index] where pip can find it. The details are at
 [packaging.python.org], but the main steps are:
 
-1. Update the version number in `four_letter_blocks/__init__.py` and
+1. Pull to make sure you have the latest source code.
+2. Update the version number in `four_letter_blocks/__init__.py` and
    development status in `setup.py`.
-2. Activate the project's Python virtual environment.
+3. Activate the project's Python virtual environment.
 
         pipenv shell
 
-3. Temporarily install the build tools using pip, not pipenv.
+4. Temporarily install the build tools using pip, not pipenv.
 
         python -m pip install --upgrade setuptools wheel twine
 
-4. Build the release files.
+5. Build the release files.
 
         python setup.py sdist bdist_wheel
 
-5. Upload the release to PyPI. You'll need a user name and password.
+6. Upload the release to PyPI. You'll need a user name and password.
 
         ls dist/*
         twine upload dist/*
 
-6. Check that the new version is on the [package page], and try installing it.
+7. Check that the new version is on the [package page], and try installing it.
 
         pip install --no-cache four-letter-blocks
 
-7. Remove the uploaded files, deactivate the virtual environment, and recreate
+8. Remove the uploaded files, deactivate the virtual environment, and recreate
    it.
 
         rm dist/*
         exit
         pipenv clean
 
-8. Commit the version number changes, push, and create a release on GitHub.
+9. Commit the version number changes, push, and create a release on GitHub.
 
 [packaging.python.org]: https://packaging.python.org/tutorials/packaging-projects/
 [package page]: https://pypi.org/project/four-letter-blocks/

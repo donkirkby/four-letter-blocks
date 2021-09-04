@@ -227,12 +227,14 @@ class FourLetterBlocksWindow(QMainWindow):
             return
         self.settings.setValue('save_path', file_name)
         file_path = Path(file_name)
-        if file_path.suffix.lower() == '.pdf':
+        file_suffix = file_path.suffix.lower()
+        if file_suffix == '.pdf':
             self.export_pdf(file_path)
-        elif file_path.suffix.lower() == '.png':
+        elif file_suffix == '.png':
             self.export_png(file_path)
         else:
             self.export_md(file_path)
+        self.statusBar().showMessage(f'Exported to {file_path.name}.')
 
     def export_pdf(self, file_path: Path):
         file_name = str(file_path)
@@ -265,8 +267,6 @@ class FourLetterBlocksWindow(QMainWindow):
             cursor.insertText('\n')
 
         document.print_(pdf)
-
-        self.statusBar().showMessage(f'Exported to {file_path.name}.')
 
     def export_png(self, file_path: Path):
         puzzle = self.parse_puzzle()
