@@ -9,7 +9,7 @@ it up into blocks of four letters, and then publish it.
 ### Constructing the Crossword
 There are a few articles around on how to construct a crossword puzzle, start
 with the series by the [New York Times]. You could use graph paper and a pencil,
-but I strongly recommend [QXW builder] and its [manual]. It's very helpful,
+but I strongly recommend [Qxw builder] and its [manual]. It's very helpful,
 because it shows you which squares you should fill in first, because they have
 the fewest feasible letters. [Phil grid builder] makes a good companion, and it
 has the advantage that it runs in a web browser.
@@ -19,12 +19,41 @@ two-letter words, and so on. The only additional guide is that you should have a
 multiple of four letters. In squares of an odd number, the standard, that means
 that you have to make the central square black. It will still work if you don't
 use a multiple of four squares, you'll just have to make the blocks different
-sizes.
+sizes. In Qxw builder, choose Show Statistics from the Edit menu, and leave it
+open. It will show you if you have any two-letter words. It also tells you the
+total number of grid cells, so you can check that it's a multiple of four.
 
 The grid size should be between 7x7 and 15x15. Anything bigger than 11x11 gets
 the card suits to help solvers work on one corner at a time, and anything
 bigger than 15x15 becomes too frustrating to solve. It takes too long to find
 a piece with the right clue number.
+
+#### Advanced Construction
+I found the basic features of Qxw builder were good enough for the smaller
+grids, but I kept getting stuck when I tried to construct a 15x15 grid with
+four theme entries. To get that to work, I read through the manual and learned
+how to select lights and override dictionaries. Then I used the following steps:
+
+1. Write a custom dictionary just with theme entries that you want to choose
+from. It can include entries that are multiple words, like ANEXAMPLE. I tried to
+include about twice as many entries as I needed for each length in the grid.
+The more you include, the easier it will be to fill the grid.
+2. Start laying out the grid in Qxw builder by adding blocks, making sure that
+you include lights of the right length for your theme entries.
+3. Select all the lights where you want theme entries, and override the light
+properties to use the custom dictionary instead of the regular dictionary.
+4. Try running autofill just to see if it's possible. You won't keep this grid,
+it's just to test whether your theme entries and blocks are too hard to fill.
+5. If the autofill fails, try to make things easier. You can either add more
+theme entries to choose from in the custom dictionary, or you can change the
+blocks so the theme lights aren't so tightly connected.
+6. Once the autofill works, move the mouse to clear out the autofill hints. Then
+look at the red blocks to see which cells are hardest to fill, and run autofill
+a few times to see which words are possible through those cells.
+7. If the autofill always produces the same grid, check that the autofill
+preferences are highly randomised and prevent duplicates.
+8. Pick one of the words you like from the autofill choices, and type it in.
+Then go back to step 6.
 
 ### Installing the Software
 The next step happens in the Four-Letter Blocks program, so install it with
@@ -58,7 +87,10 @@ the window will display the number of letters. If the remainder is zero, then
 they will divide evenly into blocks of four. Save your progress by typing
 <kbd>Ctrl</kbd>+<kbd>S</kbd>.
 
-All the words from the grid are displayed in the list of clues, so fill in the
+All the words from the grid are displayed in the list of clues, so take a
+quick scan through looking for words that are too similar. Sometimes the
+autofill will suggest different spellings of the same word or singular and
+plural versions of the same word, and you might not notice. Then fill in the
 clues. Don't worry about clue numbers, those will be assigned after you split
 up the grid and shuffle the blocks. Each line in the clues field should look
 like this:
@@ -104,7 +136,7 @@ topics light and entertaining. If you get feedback from solvers, please keep
 discussions constructive and polite.
 
 [New York Times]: https://www.nytimes.com/2018/09/14/crosswords/how-to-make-a-crossword-puzzle-the-series.html
-[QXW builder]: https://www.quinapalus.com/qxw.html
+[Qxw builder]: https://www.quinapalus.com/qxw.html
 [manual]: https://www.quinapalus.com/qxw-guide-20200708.pdf
 [Phil grid builder]: https://www.keiranking.com/apps/phil/
 [quick-and-dirty guide]: https://snarky.ca/a-quick-and-dirty-guide-on-how-to-install-packages-for-python/
