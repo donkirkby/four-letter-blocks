@@ -123,7 +123,7 @@ class Puzzle:
                     except KeyError:
                         continue
                     clue_chars[match.start():match.end()] = reference
-                clue.text = ''.join(clue_chars)
+                clue.text_with_reference = ''.join(clue_chars)
         clue_key = attrgetter('suit', 'number')
         self.across_clues.sort(key=clue_key)
         self.down_clues.sort(key=clue_key)
@@ -321,7 +321,7 @@ def build_clue_table(clues: typing.Sequence[Clue]) -> str:
     rows = []
     for clue in clues:
         rows.append(f'<tr><td class="num">{clue.format_number()}.</td>'
-                    f'<td>{escape(clue.text)}</td></tr>')
+                    f'<td>{escape(clue.format_text())}</td></tr>')
     return f'<table>{"".join(rows)}</table>'
 
 

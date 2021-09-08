@@ -288,13 +288,13 @@ class FourLetterBlocksWindow(QMainWindow):
             print(file=file)
             print('Across  ', file=file)
             for clue in puzzle.across_clues:
-                formatted_clue = f'**{clue.format_number()}.** {clue.text}  '
-                print(formatted_clue, file=file)
+                print(f'**{clue.format_number()}.** {clue.format_text()}  ',
+                      file=file)
             print(file=file)
             print('Down  ', file=file)
             for clue in puzzle.down_clues:
-                formatted_clue = f'**{clue.format_number()}.** {clue.text}  '
-                print(formatted_clue, file=file)
+                print(f'**{clue.format_number()}.** {clue.format_text()}  ',
+                      file=file)
 
     def parse_puzzle(self):
         puzzle = Puzzle.parse_sections(self.ui.title_text.text(),

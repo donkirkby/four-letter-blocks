@@ -138,3 +138,49 @@ Down@@
     markdown = md_path.read_text()
 
     assert markdown == expected_markdown
+
+
+# noinspection PyUnusedLocal
+def test_save_md_with_reference(qt_application: QApplication, tmp_path: Path):
+    text_path = tmp_path / 'input.txt'
+    text_path.write_text('''
+Basic Puzzle
+
+WORD
+I##A
+N##S
+EACH
+
+WORD - Part of a sentence
+EACH - One at a time
+WINE - Sour grapes
+DASH - Run between WORD and a neighbour
+
+AABB
+A##B
+A##B
+CCCC
+''')
+    expected_markdown = '''\
+## Basic Puzzle
+Clue numbers are shuffled: 1 Across might not be in the top left.
+
+Across@@
+**1.** Part of a sentence@@
+**3.** One at a time@@
+
+Down@@
+**1.** Sour grapes@@
+**2.** Run between 1 Across and a neighbour@@
+'''.replace('@', ' ')
+    md_path = tmp_path / 'output.md'
+
+    window = FourLetterBlocksWindow()
+
+    window.open_file(text_path)
+
+    window.export_md(md_path)
+
+    markdown = md_path.read_text()
+
+    assert markdown == expected_markdown

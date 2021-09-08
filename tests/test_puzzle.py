@@ -467,7 +467,7 @@ def test_draw_clues(pixmap_differ: PixmapDiffer):
 
     puzzle = parse_basic_puzzle()
     puzzle.across_clues[0] = Clue('Part of a long run-on sentence that really '
-                                  'needs to wrap',
+                                  'desperately needs to wrap',
                                   1)
 
     expected_doc = QTextDocument()
@@ -492,7 +492,7 @@ a {color: black}
 <tr><td>
   <table>
   <tr><td class="num">1.</td>
-    <td>Part of a long run-on sentence that really needs to wrap</td></tr>
+    <td>Part of a long run-on sentence that really desperately needs to wrap</td></tr>
   <tr><td class="num">3.</td>
     <td>One at a time</td></tr>
   </table>
@@ -502,6 +502,83 @@ a {color: black}
     <td>Sour grapes</td></tr>
   <tr><td class="num">2.</td>
     <td>Run between words</td></tr>
+  </table>
+</td></tr>
+</table>
+<hr class="footer">
+<p><center><a href="#">https://donkirkby.github.io/four-letter-blocks</a></center></p>
+<p></p>
+""")
+    expected_doc.drawContents(expected)
+
+    actual_doc = QTextDocument()
+    actual_doc.setDefaultFont(font)
+    actual_doc.setPageSize(actual.window().size())
+
+    puzzle.build_clues(actual_doc)
+
+    actual_doc.drawContents(actual)
+
+    pixmap_differ.assert_equal()
+
+
+def test_draw_clues_with_reference(pixmap_differ: PixmapDiffer):
+    actual, expected = pixmap_differ.start(
+        400, 180,
+        'test_puzzle_draw_clues_with_reference')
+
+    source_file = StringIO("""\
+Basic Puzzle
+
+WORD
+I##A
+N##S
+EACH
+
+WORD - Part of a sentence
+EACH - One at a time
+WINE - Sour grapes
+DASH - Run between WORD and a neighbour
+
+AABB
+A##B
+A##B
+CCCC
+""")
+    puzzle = Puzzle.parse(source_file)
+
+    expected_doc = QTextDocument()
+    expected_doc.setPageSize(expected.window().size())
+    font = expected_doc.defaultFont()
+    font.setPixelSize(9)
+    expected_doc.setDefaultFont(font)
+    expected_doc.setDefaultStyleSheet("""\
+h1 {text-align: center}
+hr.footer {line-height:10px}
+p.footer {page-break-after: always}
+td {padding: 1px }
+td.num {text-align: right}
+a {color: black}
+""")
+    expected_doc.setHtml("""\
+<h1>Basic Puzzle</h1>
+<p>Clue numbers are shuffled: 1 Across might not be in the top left.</p>
+<hr>
+<table>
+<tr><td>Across</td><td>Down</td></tr>
+<tr><td>
+  <table>
+  <tr><td class="num">1.</td>
+    <td>Part of a sentence</td></tr>
+  <tr><td class="num">3.</td>
+    <td>One at a time</td></tr>
+  </table>
+</td><td>
+  <table>
+  <tr><td class="num">1.</td>
+    <td>Sour grapes</td></tr>
+  <tr><td class="num">2.</td>
+    <td>Run between 1 Across and a neighbour</td></tr>
   </table>
 </td></tr>
 </table>
@@ -542,6 +619,37 @@ DASH - Run between words
 EACH - One at a time
 WINE - Sour grapes
 WORD - Part of a sentence"""
+
+    clues_text = puzzle.format_clues()
+
+    assert clues_text == expected_text
+
+
+def test_format_clues_with_reference():
+    source_file = StringIO("""\
+Basic Puzzle
+
+WORD
+I##A
+N##S
+EACH
+
+WORD - Part of a sentence
+EACH - One at a time
+WINE - Sour grapes
+DASH - Run between WORD and a neighbour
+
+AABB
+A##B
+A##B
+CCCC
+""")
+    expected_text = """\
+DASH - Run between WORD and a neighbour
+EACH - One at a time
+WINE - Sour grapes
+WORD - Part of a sentence"""
+    puzzle = Puzzle.parse(source_file)
 
     clues_text = puzzle.format_clues()
 
