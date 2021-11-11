@@ -40,7 +40,10 @@ class Square:
         painter.setBrush(QBrush(white))
         painter.drawRect(rect)
         font = painter.font()
-        number_shift = round(self.size / 20)
+
+        # Intentional bug:
+        number_shift = round(-self.size / 20)
+
         letter_shift = round(self.size * (1 - self.LETTER_SIZE)/2)
         rect.translate(number_shift, 0)
         if self.number is not None:

@@ -38,7 +38,8 @@ setup(name='four_letter_blocks',
       packages=setuptools.find_packages(),
       install_requires=['PySide6'],
       extras_require={'dev': ['pytest',
-                              'coverage']},
+                              'coverage',
+                              'space-tracer @ git+git://github.com/donkirkby/live-py-plugin.git@v4.5.rc2']},
       entry_points={
           'gui_scripts': [
               'four_letter_blocks=four_letter_blocks.__main__:main']},

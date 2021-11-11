@@ -1,89 +1,50 @@
 import typing
 from contextlib import contextmanager
 from pathlib import Path
-import turtle
 
 from PySide6.QtCore import QByteArray, QBuffer, QIODevice
-from PySide6.QtGui import QPixmap, QPainter, QColor, QImage
+from PySide6.QtGui import QPixmap, QPainter, QColor
+from space_tracer import LiveImageDiffer, LivePainter
+from space_tracer.live_image import LiveImage
 
 
-def display_diff(actual_image: QImage,
-                 diff_image: QImage,
-                 expected_image: QImage,
-                 diff_count: int):
-    # Display image when in live turtle mode.
-    display_image = getattr(turtle.Turtle, 'display_image', None)
-    if display_image is None:
-        return
-    t = turtle.Turtle()
-    # noinspection PyUnresolvedReferences
-    screen = t.screen  # type: ignore
-    w = screen.cv.cget('width')
-    h = screen.cv.cget('height')
-    ox, oy = w / 2, h / 2
-    text_space = (h - actual_image.height() - diff_image.height() -
-                  expected_image.height())
-    text_height = max(20, text_space // 3)
-    font = ('Arial', text_height // 2, 'Normal')
-    t.penup()
-    t.goto(-ox, oy)
-    t.right(90)
-    t.forward(text_height)
-    t.write(f'Actual', font=font)
-    display_image(ox + t.xcor(), oy - t.ycor(),
-                  image=encode_image(actual_image))
-    t.forward(actual_image.height())
-    t.forward(text_height)
-    t.write(f'Diff ({diff_count} pixels)', font=font)
-    display_image(ox + t.xcor(), oy - t.ycor(),
-                  image=encode_image(diff_image))
-    t.forward(diff_image.height())
-    t.forward(text_height)
-    t.write('Expected', font=font)
-    display_image(ox + t.xcor(), oy - t.ycor(),
-                  image=encode_image(expected_image))
-    t.forward(expected_image.height())
+class PixmapDiffer(LiveImageDiffer):
+    def __init__(self, diffs_path: Path = None, request=None, is_displayed=True):
+        """ Initialize the object and clean out the diffs path.
 
-
-class PixmapDiffer:
-    def __init__(self):
-        self.name = None
-        self.actual_pixmap = self.expected_pixmap = None
+        This class requires Pillow to be installed, but you can remove that
+        dependency with a subclass that overrides the start_diff() and
+        end_diff() methods.
+        :param diffs_path: The folder to write comparison images in, or None
+            if you don't want to write any. Will be created if it doesn't exist.
+        :param request: The Pytest request fixture, if you want to generate
+            default file names based on the current test name.
+        :param is_displayed: True if the comparison should be displayed on the
+            live canvas.
+        """
+        super().__init__(diffs_path, request, is_displayed)
         self.actual = self.expected = None
-        self.different_pixels = 0
-        self.diff_min_x = self.diff_min_y = None
-        self.diff_max_x = self.diff_max_y = None
-        self.max_diff = 0
-
-        self.names = set()
-
-        self.work_dir: Path = (Path(__file__).parent.parent /
-                               'tests' / 'pixmap_diffs')
-        self.work_dir.mkdir(exist_ok=True)
-        for work_file in self.work_dir.iterdir():
-            if work_file.name == 'README.md':
-                continue
-            assert work_file.suffix == '.png', work_file
-            work_file.unlink()
+        self.name: typing.Optional[str] = None
 
     @contextmanager
     def create_painters(
             self,
             width: int,
             height: int,
-            name: str,
+            name: str = None,
             max_diff: int = 0) -> typing.Iterator[typing.Tuple[QPainter, QPainter]]:
-        self.max_diff = max_diff
+        self.tolerance = max_diff
+        self.name = name
         try:
-            yield self.start(width, height, name)
+            yield self.start(width, height)
         finally:
             self.end()
-        self.assert_equal()
+        self.assert_equal(self.actual, self.expected)
 
     def start(self,
               width: int,
               height: int,
-              name: str) -> typing.Tuple[QPainter, QPainter]:
+              name: str = None) -> typing.Tuple[QPainter, QPainter]:
         """ Create painters for the actual and expected images.
 
         Caller must either call end() or assert_equal() to properly clean up
@@ -91,130 +52,73 @@ class PixmapDiffer:
         painters, or call the end() method and create a new painter on the
         same device. Order matters, though!
         """
-        __tracebackhide__ = True
-        assert name not in self.names, f'Duplicate name: {name!r}.'
-        self.names.add(name)
         self.name = name
-
-        white = QColor('white')
-        self.actual_pixmap = QPixmap(width, height)
-        self.actual_pixmap.fill(white)
-        self.actual = QPainter(self.actual_pixmap)
-        self.expected_pixmap = QPixmap(width, height)
-        self.expected_pixmap.fill(white)
-        self.expected = QPainter(self.expected_pixmap)
-
-        return self.actual, self.expected
+        self.actual = LiveQPainter(QPixmap(width, height))
+        self.expected = LiveQPainter(QPixmap(width, height))
+        return self.actual.painter, self.expected.painter
 
     def end(self):
-        if self.actual and self.actual.isActive():
+        if self.actual is not None:
             self.actual.end()
-        if self.expected and self.expected.isActive():
+        if self.expected is not None:
             self.expected.end()
 
-    def assert_equal(self):
-        __tracebackhide__ = True
+    def start_diff(self, size: LiveImage.Size):
+        """ Start the comparison by creating a diff painter.
+
+        Overrides must set self.diff to a LivePainter object.
+        :param size: the size of painter to put in self.diff.
+        """
+        self.diff = LiveQPainter(QPixmap(*size))
+
+    def end_diff(self) -> LiveImage:
+        self.diff.end()
         self.end()
-        self.different_pixels = 0
-        actual_image: QImage = self.actual.device().toImage()
-        expected_image: QImage = self.expected.device().toImage()
-        diff_pixmap = QPixmap(actual_image.width(), actual_image.height())
-        diff = QPainter(diff_pixmap)
+        return self.diff
+
+    def assert_equal(self,
+                     actual: LiveImage = None,
+                     expected: LiveImage = None,
+                     file_prefix: str = None):
+        if file_prefix is None:
+            file_prefix = self.name
+        if actual is None:
+            actual = self.actual
+        if expected is None:
+            expected = self.expected
+        super().assert_equal(actual, expected, file_prefix)
+
+
+class LiveQPainter(LivePainter):
+    WHITE = QColor('white')
+
+    def __init__(self, pixmap: QPixmap):
+        self.pixmap = pixmap
+        self.painter = QPainter(self.pixmap)
+        self.pixmap.fill(self.WHITE)
+
+    def set_pixel(self, position: LiveImage.Position, fill: LiveImage.Fill):
+        self.painter.setPen(QColor(*fill))
+        self.painter.drawPoint(*position)
+
+    def get_pixel(self, position: LiveImage.Position) -> LiveImage.Fill:
+        return self.painter.device().toImage().pixelColor(*position).toTuple()
+
+    def get_size(self) -> LiveImage.Size:
+        return self.pixmap.size().toTuple()
+
+    def convert_to_png(self) -> bytes:
+        self.end()
+        image_bytes = QByteArray()
+        buffer = QBuffer(image_bytes)
+        buffer.open(QIODevice.WriteOnly)
         try:
-            white = QColor('white')
-            diff.fillRect(0, 0, actual_image.width(), actual_image.height(), white)
-            for x in range(actual_image.width()):
-                for y in range(actual_image.height()):
-                    actual_colour = actual_image.pixelColor(x, y)
-                    expected_colour = expected_image.pixelColor(x, y)
-                    diff.setPen(self.diff_colour(actual_colour,
-                                                 expected_colour,
-                                                 x,
-                                                 y))
-                    diff.drawPoint(x, y)
+            # noinspection PyTypeChecker
+            self.pixmap.toImage().save(buffer, "PNG")
+            return bytes(buffer.data())
         finally:
-            diff.end()
-        diff_image: QImage = diff.device().toImage()
+            buffer.close()
 
-        display_diff(actual_image,
-                     diff_image,
-                     expected_image,
-                     self.different_pixels)
-
-        if self.different_pixels == 0:
-            return
-        actual_image.save(str(self.work_dir / (self.name + '_actual.png')))
-        expected_image.save(str(self.work_dir / (self.name + '_expected.png')))
-        diff_path = self.work_dir / (self.name + '_diff.png')
-        is_saved = diff_image.save(str(diff_path))
-        diff_width = self.diff_max_x - self.diff_min_x + 1
-        diff_height = self.diff_max_y - self.diff_min_y + 1
-        diff_section = QImage(diff_width, diff_height, QImage.Format_RGB32)
-        diff_section_painter = QPainter(diff_section)
-        try:
-            diff_section_painter.drawPixmap(0, 0,
-                                            diff_width, diff_height,
-                                            QPixmap.fromImage(diff_image),
-                                            self.diff_min_x, self.diff_min_y,
-                                            diff_width, diff_height)
-        finally:
-            diff_section_painter.end()
-        # To see an image dumped in the Travis CI log, copy the text from the
-        # log, and paste it in test_pixmap_differ.test_decode_image.
-        print(f'Encoded image of differing section '
-              f'({self.diff_min_x}, {self.diff_min_y}) - '
-              f'({self.diff_max_x}, {self.diff_max_y}):')
-        print(encode_image(diff_section))
-        message = f'Found {self.different_pixels} different pixels, '
-        message += f'see' if is_saved else 'could not write'
-        message += f' {diff_path.relative_to(Path(__file__).parent.parent)}.'
-        assert self.different_pixels == 0, message
-
-    def diff_colour(self,
-                    actual_colour: QColor,
-                    expected_colour: QColor,
-                    x: int,
-                    y: int):
-        diff_size = (abs(actual_colour.red() - expected_colour.red()) +
-                     abs(actual_colour.green() - expected_colour.green()) +
-                     abs(actual_colour.blue() - expected_colour.blue()))
-        if diff_size <= self.max_diff:
-            diff_colour = actual_colour.toRgb()
-            diff_colour.setAlpha(diff_colour.alpha() // 3)
-            return diff_colour
-        if self.different_pixels == 0:
-            self.diff_min_x = self.diff_max_x = x
-            self.diff_min_y = self.diff_max_y = y
-        else:
-            self.diff_min_x = min(self.diff_min_x, x)
-            self.diff_max_x = max(self.diff_max_x, x)
-            self.diff_min_y = min(self.diff_min_y, y)
-            self.diff_max_y = max(self.diff_max_y, y)
-
-        self.different_pixels += 1
-        # Colour
-        dr = 0xff
-        dg = (actual_colour.green() + expected_colour.green()) // 5
-        db = (actual_colour.blue() + expected_colour.blue()) // 5
-
-        # Opacity
-        da = 0xff
-        return QColor(dr, dg, db, da)
-
-
-def encode_image(image: QImage) -> str:
-    image_bytes = QByteArray()
-    buffer = QBuffer(image_bytes)
-    buffer.open(QIODevice.WriteOnly)
-    # noinspection PyTypeChecker
-    image.save(buffer, "PNG")  # writes pixmap into bytes in PNG format
-    encoded_bytes = image_bytes.toBase64()
-    encoded_string = encoded_bytes.data().decode()
-    return encoded_string
-
-
-def decode_image(text: str) -> QImage:
-    encoded_bytes = QByteArray(text.encode('utf8'))
-    image_bytes = QByteArray.fromBase64(encoded_bytes)
-    image = QImage.fromData(image_bytes)
-    return image
+    def end(self):
+        if self.painter.isActive():
+            self.painter.end()

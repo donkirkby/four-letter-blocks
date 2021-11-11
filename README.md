@@ -1,5 +1,17 @@
 # Four-Letter Blocks
 
+
+[![Package Version]][pypi]
+[![Build Status]][actions]
+[![Code Coverage]][codecov]
+
+[Package Version]: https://badge.fury.io/py/four-letter-blocks.svg
+[pypi]: https://pypi.org/project/four-letter-blocks/
+[Build Status]: https://github.com/donkirkby/four-letter-blocks/actions/workflows/build.yml/badge.svg?branch=main
+[actions]: https://github.com/donkirkby/four-letter-blocks/actions
+[Code Coverage]: https://codecov.io/github/donkirkby/four-letter-blocks/coverage.svg?branch=main
+[codecov]: https://codecov.io/github/donkirkby/four-letter-blocks?branch=main
+
 [starter]: docs/images/starter.png
 [PDF]: docs/images/starter.pdf
 [Construct Your Own]: docs/construct_your_own.md

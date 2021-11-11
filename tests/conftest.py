@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from PySide6.QtWidgets import QApplication
 
@@ -10,5 +12,8 @@ def qt_application() -> QApplication:
 
 
 @pytest.fixture(scope='session')
-def pixmap_differ(qt_application) -> PixmapDiffer:
-    return PixmapDiffer()
+def pixmap_differ(qt_application, request) -> PixmapDiffer:
+    diffs_path = Path(__file__).parent / 'pixmap_diffs'
+    differ = PixmapDiffer(diffs_path, request)
+    yield differ
+    differ.remove_common_prefix()
