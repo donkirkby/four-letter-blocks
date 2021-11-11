@@ -37,7 +37,7 @@ jobs:
           pipenv run codecov
       - name: Upload image diffs
         uses: actions/upload-artifact@v2
-        if: ${{ steps.test.outcome == 'failure' }}
+        if: ${{ always() && steps.test.outcome == 'failure' }}
         with:
           name: image-diffs
           path: |
