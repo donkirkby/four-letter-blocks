@@ -41,8 +41,7 @@ class Square:
         painter.drawRect(rect)
         font = painter.font()
 
-        # Intentional bug:
-        number_shift = round(-self.size / 20)
+        number_shift = round(self.size / 20)
 
         letter_shift = round(self.size * (1 - self.LETTER_SIZE)/2)
         rect.translate(number_shift, 0)
