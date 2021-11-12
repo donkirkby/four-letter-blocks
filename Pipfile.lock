@@ -48,11 +48,11 @@
         },
         "soupsieve": {
             "hashes": [
-                "sha256:617ffc4d0dfd39c66f4d1413a6e165663a34eca86be9b54f97b91756300ff6df",
-                "sha256:e4860f889dfa88774c07da0b276b70c073b6470fa1a4a8350800bb7bce3dcc76"
+                "sha256:1a3cca2617c6b38c0343ed661b1fa5de5637f257d4fe22bd9f1338010a1efefb",
+                "sha256:b8d49b1cd4f037c7082a9683dfa1801aa2597fb11c3a1155b7a5b94829b4f1f9"
             ],
             "markers": "python_version >= '3.6'",
-            "version": "==2.3"
+            "version": "==2.3.1"
         }
     },
     "develop": {
@@ -187,8 +187,11 @@
             "version": "==6.2.1"
         },
         "space-tracer": {
-            "git": "git://github.com/donkirkby/live-py-plugin.git",
-            "ref": "c6c581236b3eeb212d3f93de0463630773141e92"
+            "hashes": [
+                "sha256:5f3b7fc13b2741ae8932cd2c69809813d165d2a4886668d2ca8a348975d30be9",
+                "sha256:8aa422c2ca26959ecc607deeb6812a2d17777f0015670cf060715cb12894b521"
+            ],
+            "version": "==4.5.0"
         },
         "toml": {
             "hashes": [
