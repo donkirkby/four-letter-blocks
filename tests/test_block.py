@@ -175,3 +175,21 @@ def test_draw(pixmap_differ: PixmapDiffer):
     block.draw(actual)
 
     pixmap_differ.assert_equal()
+
+
+def test_draw_path(pixmap_differ: PixmapDiffer):
+    actual, expected = pixmap_differ.start(
+        310, 260,
+        'test_block_draw_path')
+    actual.drawText = lambda *args: None
+    block = create_basic_block()
+    block.squares[0].number = 12
+    block.squares[0].suit = 'D'
+    block.squares[1].number = 5
+    block.squares[1].suit = 'C'
+    block.draw(expected)
+
+    block.draw(actual, use_text_path=True)
+
+    pixmap_differ.compare()
+    assert pixmap_differ.diff_count <= 2500

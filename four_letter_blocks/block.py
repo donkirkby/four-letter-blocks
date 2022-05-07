@@ -82,6 +82,6 @@ class Block:
         bottom = self.squares[0].size + max(square.y for square in self.squares)
         return bottom - self.y
 
-    def draw(self, painter: QPainter):
+    def draw(self, painter: QPainter, use_text_path=False):
         for square in self.squares:
-            square.draw(painter)
+            square.draw(painter, use_text_path=use_text_path)

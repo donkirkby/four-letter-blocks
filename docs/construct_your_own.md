@@ -28,6 +28,14 @@ the card suits to help solvers work on one corner at a time, and anything
 bigger than 15x15 becomes too frustrating to solve. It takes too long to find
 a piece with the right clue number.
 
+I recommend you use the statistics window to check the following things when you
+finish laying out the black squares, or blocks:
+* total cells is a multiple of four
+* no two-letter words
+* no underchecked cells
+* not too many overchecked cells (a few are fine to build solid areas of words,
+but too many will make the grid hard to fill)
+
 #### Advanced Construction
 I found the basic features of Qxw builder were good enough for the smaller
 grids, but I kept getting stuck when I tried to construct a 15x15 grid with

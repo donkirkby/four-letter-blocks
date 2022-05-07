@@ -1,5 +1,5 @@
 from PySide6.QtCore import QRect, Qt
-from PySide6.QtGui import QPainter, QColor, QBrush
+from PySide6.QtGui import QPainter, QColor, QBrush, QPainterPath
 
 from four_letter_blocks.suit import Suit
 
@@ -28,7 +28,7 @@ class Square:
             number_repr = f", {self.number}"
         return f"Square({self.letter!r}{number_repr})"
 
-    def draw(self, painter: QPainter):
+    def draw(self, painter: QPainter, use_text_path=False):
         pen = painter.pen()
         pen.setWidth(round(self.size/80))
         painter.setPen(pen)
@@ -37,6 +37,7 @@ class Square:
                      self.size,
                      self.size)
         white = QColor('white')
+        black = QColor('black')
         painter.setBrush(QBrush(white))
         painter.drawRect(rect)
         font = painter.font()
@@ -44,21 +45,44 @@ class Square:
         number_shift = round(self.size / 20)
 
         letter_shift = round(self.size * (1 - self.LETTER_SIZE)/2)
-        rect.translate(number_shift, 0)
-        if self.number is not None:
-            font.setPixelSize(self.size * self.NUMBER_SIZE)
+        font.setPixelSize(self.size * self.NUMBER_SIZE)
+        if self.number is None:
+            pass
+        elif not use_text_path:
             painter.setFont(font)
+            rect.translate(number_shift, 0)
             painter.drawText(rect, 0, str(self.number))
-        rect.translate(-number_shift, letter_shift)
+            rect.translate(-number_shift, 0)
+        else:
+            path = QPainterPath()
+            path.addText(0, 0, font, str(self.number))
+            path.translate(rect.left()+self.size*0.05,
+                           rect.top()+self.size*0.225)
+            painter.setBrush(black)
+            painter.drawPath(path)
 
         font.setPixelSize(self.size * self.LETTER_SIZE)
-        painter.setFont(font)
-        painter.drawText(rect, Qt.AlignHCenter, self.letter)
+        if not use_text_path:
+            painter.setFont(font)
+            rect.translate(0, letter_shift)
+            painter.drawText(rect, Qt.AlignHCenter, self.letter)
+            rect.translate(0, -letter_shift)
+        else:
+            path = QPainterPath()
+            path.addText(0, 0, font, self.letter)
+            letter_rect = path.boundingRect()
+            path.translate(
+                rect.left()-letter_rect.left() +
+                (rect.width()-letter_rect.width())/2,
+                rect.top() + self.size*0.824)
+            painter.setBrush(black)
+            painter.drawPath(path)
 
-        rect.translate(0, -letter_shift)
-        if self.suit is not None:
+        font.setPixelSize(self.size)
+        if self.suit is None:
+            pass
+        elif not use_text_path:
             suit_display = self.SUIT_DISPLAYS[self.suit]
-            font.setPixelSize(self.size)
             painter.setFont(font)
             old_pen = painter.pen()
             painter.setPen(QColor(0, 0, 0, 30))
@@ -66,6 +90,25 @@ class Square:
             painter.setPen(QColor(0, 0, 0, 70))
             painter.drawText(rect, Qt.AlignHCenter, suit_display.display)
             painter.setPen(old_pen)
+        else:
+            offset = (rect.left()+self.size*0.051, rect.top()+self.size*0.93)
+            suit_display = self.SUIT_DISPLAYS[self.suit]
+            path = QPainterPath()
+            path.addText(0, 0, font, suit_display.filled)
+            path.translate(*offset)
+            black.setAlpha(30)
+            painter.setBrush(black)
+            painter.setPen(black)
+            painter.drawPath(path)
+            path.clear()
+            path.addText(0, 0, font, suit_display.display)
+            path.translate(*offset)
+            black.setAlpha(70)
+            painter.setBrush(black)
+            painter.setPen(black)
+            painter.drawPath(path)
+            black.setAlpha(255)
+            painter.setPen(black)
 
     def display_number(self):
         suit_display = self.SUIT_DISPLAYS[self.suit]

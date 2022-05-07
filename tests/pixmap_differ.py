@@ -76,6 +76,18 @@ class PixmapDiffer(LiveImageDiffer):
         self.end()
         return self.diff
 
+    def compare(self,
+                actual: LiveImage = None,
+                expected: LiveImage = None,
+                file_prefix: str = None) -> LiveImage:
+        if file_prefix is None:
+            file_prefix = self.name
+        if actual is None:
+            actual = self.actual
+        if expected is None:
+            expected = self.expected
+        return super().compare(actual, expected, file_prefix)
+
     def assert_equal(self,
                      actual: LiveImage = None,
                      expected: LiveImage = None,

@@ -23,6 +23,7 @@ def test_repr():
     assert repr(square) == "Square('X')"
 
 
+# noinspection DuplicatedCode
 def test_paint(pixmap_differ: PixmapDiffer):
     actual, expected = pixmap_differ.start(
         180, 180,
@@ -92,3 +93,20 @@ def test_paint_with_number_and_suit(pixmap_differ: PixmapDiffer):
 
     square.draw(actual)
     pixmap_differ.assert_equal()
+
+
+# noinspection DuplicatedCode
+def test_paint_path(pixmap_differ: PixmapDiffer):
+    actual, expected = pixmap_differ.start(180, 180, 'test_paint_path')
+    actual.drawText = lambda *args: None  # Check that all text converts to path
+
+    square = Square('W', 12, 'H')
+    square.x = 20
+    square.y = 20
+    square.size = 80
+    square.draw(expected)
+
+    square.draw(actual, use_text_path=True)
+
+    pixmap_differ.compare()
+    assert pixmap_differ.diff_count <= 800
