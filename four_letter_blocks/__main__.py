@@ -370,9 +370,9 @@ class FourLetterBlocksWindow(QMainWindow):
         if not self.is_state_changed():
             return
         puzzle = self.parse_puzzle()
-        block_summary = puzzle.display_block_sizes()
+        block_summary = puzzle.display_block_summary()
         if block_summary:
-            self.statusBar().showMessage(f'Block sizes: {block_summary}.')
+            self.statusBar().showMessage(block_summary)
 
     def clues_changed(self):
         if not self.is_state_changed():

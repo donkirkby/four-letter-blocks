@@ -333,7 +333,7 @@ def test_resize():
     assert puzzle.blocks[0].squares[0].size == 100
 
 
-def test_display_block_sizes():
+def test_display_block_summary():
     source_file = StringIO("""\
 Title
 
@@ -351,9 +351,9 @@ CCCC
 """)
     puzzle = Puzzle.parse(source_file)
 
-    block_sizes = puzzle.display_block_sizes()
+    block_summary = puzzle.display_block_summary()
 
-    assert block_sizes == '2x4, A=3, D=2'
+    assert block_summary == 'Block sizes: 2x4, A=3, D=2, Shapes: I: 1, L: 1'
 
 
 def test_display_block_sizes_all_correct():
@@ -390,9 +390,9 @@ EACH
 """)
     puzzle = Puzzle.parse(source_file)
 
-    block_sizes = puzzle.display_block_sizes()
+    block_summary = puzzle.display_block_summary()
 
-    assert block_sizes == 'unused=13'
+    assert block_summary == 'Block sizes: unused=13'
 
 
 def test_display_block_sizes_four_unused():

@@ -1,7 +1,9 @@
 import typing
 from collections import defaultdict
 from copy import copy
+from functools import cache
 from operator import attrgetter
+from textwrap import dedent
 
 from PySide6.QtGui import QPainter
 
@@ -15,6 +17,10 @@ class Block:
     def __init__(self, *squares: Square, marker: str = None):
         self.squares = squares
         self.marker = marker
+        coordinates = normalize_coordinates(
+            [(square.x, square.y) for square in squares])
+        self.shape, self.shape_rotation = shape_rotations().get(coordinates,
+                                                                (None, 0))
 
     def __repr__(self):
         squares = ', '.join(repr(square) for square in self.squares)
@@ -85,3 +91,58 @@ class Block:
     def draw(self, painter: QPainter, use_text=True):
         for square in self.squares:
             square.draw(painter, use_text=use_text)
+
+
+@cache
+def shape_rotations() -> typing.Dict[
+        typing.FrozenSet[typing.Tuple[int, int]],
+        typing.Tuple[str, int]]:
+    """ Generate a lookup table from a set of squares to name and rotation. """
+    shapes_text = dedent("""\
+        OO
+        OO
+        
+        I
+        I
+        I
+        I
+        
+        L
+        L
+        LL
+        
+         J
+         J
+        JJ
+        
+         SS
+        SS
+        
+        ZZ
+         ZZ
+        
+        TTT
+         T
+        """)
+    sections = shapes_text.split('\n\n')
+    names = {}
+    for section in sections:
+        name = section.replace(' ', '')[0]
+        lines = section.splitlines()
+        section_coordinates = []
+        for y, line in enumerate(lines):
+            for x, letter in enumerate(line):
+                if letter != ' ':
+                    section_coordinates.append((x, y))
+        for rotation in range(4):
+            names.setdefault(normalize_coordinates(section_coordinates),
+                             (name, rotation))
+            section_coordinates = [(y, -x) for x, y in section_coordinates]
+    return names
+
+
+def normalize_coordinates(coordinates: typing.Sequence[
+        typing.Tuple[int, int]]) -> typing.FrozenSet[typing.Tuple[int, int]]:
+    min_x = min(pair[0] for pair in coordinates)
+    min_y = min(pair[1] for pair in coordinates)
+    return frozenset((x - min_x, y - min_y) for x, y in coordinates)

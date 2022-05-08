@@ -1,3 +1,5 @@
+from textwrap import dedent
+
 from four_letter_blocks.grid import Grid
 from four_letter_blocks.block import Block
 from four_letter_blocks.square import Square
@@ -160,6 +162,34 @@ def test_move():
 
     assert square1.y == 100
     assert square2.y == 200
+
+
+def test_shape():
+    grid_text = dedent("""\
+        ABCDEFGHI
+        RQPONMLKJ
+        STUVWXY#Z
+        #FEDCB##A""")
+    block_text = dedent("""\
+        AABBBCCEG
+        AABDDCEEG
+        HHDDFCE#G
+        #HHFFF##G""")
+    grid = Grid(grid_text)
+
+    blocks = dict(zip('ABCDEFGH', Block.parse(block_text, grid)))
+    assert blocks['A'].shape == 'O'
+    assert blocks['A'].shape_rotation == 0
+    assert blocks['B'].shape == 'L'
+    assert blocks['B'].shape_rotation == 3
+    assert blocks['C'].shape == 'J'
+    assert blocks['D'].shape == 'S'
+    assert blocks['E'].shape == 'Z'
+    assert blocks['E'].shape_rotation == 1
+    assert blocks['F'].shape == 'T'
+    assert blocks['G'].shape == 'I'
+    assert blocks['H'].shape == 'Z'
+    assert blocks['H'].shape_rotation == 0
 
 
 def test_draw(pixmap_differ: PixmapDiffer):

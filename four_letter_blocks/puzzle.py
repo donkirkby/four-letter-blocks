@@ -255,6 +255,20 @@ class Puzzle:
                 rows[y][x] = block_letter
         return '\n'.join(''.join(row) for row in rows)
 
+    def display_block_summary(self) -> str:
+        sections = []
+        block_sizes = self.display_block_sizes()
+        sections.append(f'Block sizes: {block_sizes}')
+        shape_counts = Counter(block.shape
+                               for block in self.blocks
+                               if block.shape is not None)
+        shape_count_text = ', '.join(
+            f'{shape}: {count}'
+            for shape, count in sorted(shape_counts.items()))
+        if shape_count_text:
+            sections.append('Shapes: ' + shape_count_text)
+        return ', '.join(sections)
+
     def display_block_sizes(self) -> str:
         correct_markers = {block.marker
                            for block in self.blocks
