@@ -106,7 +106,7 @@ def test_paint_path(pixmap_differ: PixmapDiffer):
     square.size = 80
     square.draw(expected)
 
-    square.draw(actual, use_text_path=True)
+    square.draw(actual, use_text=False)
 
     pixmap_differ.compare()
     assert pixmap_differ.diff_count <= 800

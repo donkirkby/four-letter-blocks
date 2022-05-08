@@ -189,7 +189,7 @@ def test_draw_path(pixmap_differ: PixmapDiffer):
     block.squares[1].suit = 'C'
     block.draw(expected)
 
-    block.draw(actual, use_text_path=True)
+    block.draw(actual, use_text=False)
 
     pixmap_differ.compare()
     assert pixmap_differ.diff_count <= 2500

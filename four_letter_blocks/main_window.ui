@@ -91,6 +91,7 @@
     <addaction name="save_as_action"/>
     <addaction name="separator"/>
     <addaction name="export_action"/>
+    <addaction name="export_laser_action"/>
     <addaction name="separator"/>
     <addaction name="exit_action"/>
    </widget>
@@ -191,6 +192,11 @@
   <action name="options_action">
    <property name="text">
     <string>&amp;Options...</string>
+   </property>
+  </action>
+  <action name="export_laser_action">
+   <property name="text">
+    <string>Export for &amp;Laser Cut...</string>
    </property>
   </action>
  </widget>

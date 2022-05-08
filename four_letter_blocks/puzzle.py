@@ -27,6 +27,7 @@ class Puzzle:
     across_clues: typing.List[Clue] = field(init=False)
     down_clues: typing.List[Clue] = field(init=False)
     use_suits: bool = False
+    use_text: bool = True
 
     @staticmethod
     def parse(source_file: typing.IO) -> 'Puzzle':
@@ -183,7 +184,7 @@ class Puzzle:
             if is_active_row:
                 block.x = x
                 block.y = y
-                block.draw(painter)
+                block.draw(painter, use_text=self.use_text)
             line_height = max(line_height, block.height)
             x += block.width + gap
         if row_index is None:

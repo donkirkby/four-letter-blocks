@@ -28,7 +28,7 @@ class Square:
             number_repr = f", {self.number}"
         return f"Square({self.letter!r}{number_repr})"
 
-    def draw(self, painter: QPainter, use_text_path=False):
+    def draw(self, painter: QPainter, use_text=True):
         pen = painter.pen()
         pen.setWidth(round(self.size/80))
         painter.setPen(pen)
@@ -48,7 +48,7 @@ class Square:
         font.setPixelSize(self.size * self.NUMBER_SIZE)
         if self.number is None:
             pass
-        elif not use_text_path:
+        elif use_text:
             painter.setFont(font)
             rect.translate(number_shift, 0)
             painter.drawText(rect, 0, str(self.number))
@@ -62,7 +62,7 @@ class Square:
             painter.drawPath(path)
 
         font.setPixelSize(self.size * self.LETTER_SIZE)
-        if not use_text_path:
+        if use_text:
             painter.setFont(font)
             rect.translate(0, letter_shift)
             painter.drawText(rect, Qt.AlignHCenter, self.letter)
@@ -81,7 +81,7 @@ class Square:
         font.setPixelSize(self.size)
         if self.suit is None:
             pass
-        elif not use_text_path:
+        elif use_text:
             suit_display = self.SUIT_DISPLAYS[self.suit]
             painter.setFont(font)
             old_pen = painter.pen()

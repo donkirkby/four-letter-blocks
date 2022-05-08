@@ -33,6 +33,7 @@ class FourLetterBlocksWindow(QMainWindow):
         ui.save_action.triggered.connect(self.save)
         ui.save_as_action.triggered.connect(self.save_as)
         ui.export_action.triggered.connect(self.export)
+        ui.export_laser_action.triggered.connect(self.export_laser)
 
         ui.shuffle_action.triggered.connect(self.shuffle)
         ui.options_action.triggered.connect(self.choose_font)
@@ -234,6 +235,51 @@ class FourLetterBlocksWindow(QMainWindow):
             self.export_png(file_path)
         else:
             self.export_md(file_path)
+        self.statusBar().showMessage(f'Exported to {file_path.name}.')
+
+    def export_laser(self):
+        save_dir = self.get_save_dir()
+        kwargs = get_file_dialog_options()
+        file_name, _ = QFileDialog.getSaveFileName(
+            self,
+            'Export for laser cutter',
+            dir=save_dir,
+            filter=';;'.join(('PDF blocks for laser cutter (*.pdf)',
+                              'All files (*.*)')),
+            **kwargs)
+        if not file_name:
+            return
+        self.settings.setValue('save_path', file_name)
+        file_path = Path(file_name)
+        pdf = QPdfWriter(file_name)
+        pdf.setPageSize(QPageSize.Letter)
+
+        puzzle = self.parse_puzzle()
+        puzzle.use_text = False
+
+        document = QTextDocument()
+        document.setPageSize(QSize(pdf.width(), pdf.height()))
+        font = document.defaultFont()
+        font.setPixelSize(pdf.height()//60)
+        document.setDefaultFont(font)
+
+        diagram_handler = BlockDiagram(puzzle)
+        doc_layout = document.documentLayout()
+        doc_layout.registerHandler(DIAGRAM_TEXT_FORMAT, diagram_handler)
+
+        cursor = QTextCursor(document)
+        cursor.movePosition(cursor.End)
+        cursor.insertText('\n')
+
+        diagram_format = QTextCharFormat()
+        diagram_format.setObjectType(DIAGRAM_TEXT_FORMAT)
+
+        for i in range(len(puzzle.row_heights())):
+            diagram_format.setProperty(DIAGRAM_DATA, i)
+            cursor.insertText(OBJECT_REPLACEMENT, diagram_format)
+            cursor.insertText('\n')
+
+        document.print_(pdf)
         self.statusBar().showMessage(f'Exported to {file_path.name}.')
 
     def export_pdf(self, file_path: Path):

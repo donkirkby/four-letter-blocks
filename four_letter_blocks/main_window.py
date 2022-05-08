@@ -3,17 +3,24 @@
 ################################################################################
 ## Form generated from reading UI file 'main_window.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.0.2
+## Created by: Qt User Interface Compiler version 6.2.4
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide6.QtCore import *
-from PySide6.QtGui import *
-from PySide6.QtWidgets import *
+from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
+    QCursor, QFont, QFontDatabase, QGradient,
+    QIcon, QImage, QKeySequence, QLinearGradient,
+    QPainter, QPalette, QPixmap, QRadialGradient,
+    QTransform)
+from PySide6.QtWidgets import (QApplication, QLabel, QLineEdit, QMainWindow,
+    QMenu, QMenuBar, QPlainTextEdit, QSizePolicy,
+    QStatusBar, QVBoxLayout, QWidget)
 
 from four_letter_blocks.focused_plain_text_edit import FocusedPlainTextEdit
-
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -38,6 +45,8 @@ class Ui_MainWindow(object):
         self.shuffle_action.setObjectName(u"shuffle_action")
         self.options_action = QAction(MainWindow)
         self.options_action.setObjectName(u"options_action")
+        self.export_laser_action = QAction(MainWindow)
+        self.export_laser_action.setObjectName(u"export_laser_action")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
@@ -112,6 +121,7 @@ class Ui_MainWindow(object):
         self.file_menu.addAction(self.save_as_action)
         self.file_menu.addSeparator()
         self.file_menu.addAction(self.export_action)
+        self.file_menu.addAction(self.export_laser_action)
         self.file_menu.addSeparator()
         self.file_menu.addAction(self.exit_action)
         self.help_menu.addAction(self.about_action)
@@ -164,6 +174,7 @@ class Ui_MainWindow(object):
         self.shuffle_action.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+F", None))
 #endif // QT_CONFIG(shortcut)
         self.options_action.setText(QCoreApplication.translate("MainWindow", u"&Options...", None))
+        self.export_laser_action.setText(QCoreApplication.translate("MainWindow", u"Export for &Laser Cut...", None))
         self.title_label.setText(QCoreApplication.translate("MainWindow", u"Title", None))
         self.grid_label.setText(QCoreApplication.translate("MainWindow", u"Grid", None))
         self.grid_text.setPlainText("")
