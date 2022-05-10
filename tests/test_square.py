@@ -33,15 +33,16 @@ def test_paint(pixmap_differ: PixmapDiffer):
     expected.setFont(font)
     expected.drawText(20, 30, 80, 80, Qt.AlignHCenter, 'W')
 
-    expected.drawRect(20, 20, 80, 80)
-    actual.drawRect(20, 20, 80, 80)
-
     square = Square('W')
     square.x = 20
     square.y = 20
     square.size = 80
 
     square.draw(actual)
+
+    expected.drawRect(20, 20, 80, 80)
+    actual.drawRect(20, 20, 80, 80)
+
     pixmap_differ.assert_equal()
 
 
@@ -58,15 +59,16 @@ def test_paint_with_number(pixmap_differ: PixmapDiffer):
     expected.setFont(font)
     expected.drawText(20, 30, 80, 80, Qt.AlignHCenter, 'W')
 
-    expected.drawRect(20, 20, 80, 80)
-    actual.drawRect(20, 20, 80, 80)
-
     square = Square('W', 12)
     square.x = 20
     square.y = 20
     square.size = 80
 
     square.draw(actual)
+
+    expected.drawRect(20, 20, 80, 80)
+    actual.drawRect(20, 20, 80, 80)
+
     pixmap_differ.assert_equal()
 
 
@@ -92,15 +94,16 @@ def test_paint_with_number_and_suit(pixmap_differ: PixmapDiffer):
     expected.setFont(font)
     expected.drawText(20, 30, 80, 80, Qt.AlignHCenter, 'W')
 
-    expected.drawRect(20, 20, 80, 80)
-    actual.drawRect(20, 20, 80, 80)
-
     square = Square('W', 12, 'H')
     square.x = 20
     square.y = 20
     square.size = 80
 
     square.draw(actual)
+
+    expected.drawRect(20, 20, 80, 80)
+    actual.drawRect(20, 20, 80, 80)
+
     pixmap_differ.assert_equal()
 
 

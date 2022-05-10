@@ -36,6 +36,7 @@ class Square:
                      self.y,
                      self.size,
                      self.size)
+        white = QColor('white')
         black = QColor('black')
         suit_outline = QColor(166, 166, 166)
         suit_fill = QColor(227, 227, 227)
@@ -43,6 +44,9 @@ class Square:
 
         number_shift = round(self.size / 20)
         letter_shift = round(self.size * (1 - self.LETTER_SIZE)/2)
+
+        if use_text:
+            painter.fillRect(rect, white)
 
         font.setPixelSize(self.size)
         if self.suit is None:

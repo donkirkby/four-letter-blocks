@@ -122,6 +122,7 @@ class Block:
         divider_pen = QPen(self.divider_colour)
         divider_pen.setWidth(old_pen.width())
         for square in self.squares:
+            square.draw(painter, use_text=use_text)
             x = square.x
             y = square.y
             painter.setPen(divider_pen)
@@ -140,7 +141,6 @@ class Block:
             if (x+size, y) not in square_positions:
                 painter.drawLine(x+size, y, x+size, y+size)
             painter.setPen(old_pen)
-            square.draw(painter, use_text=use_text)
         painter.rotate(-rotation_change)
         painter.translate(-x_change, -y_change)
 
