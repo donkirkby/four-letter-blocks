@@ -1,6 +1,6 @@
 import re
 import typing
-from collections import Counter
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from html import escape
 from itertools import chain
@@ -12,6 +12,7 @@ from PySide6.QtGui import QPainter, QTextDocument
 from four_letter_blocks.clue import Clue
 from four_letter_blocks.grid import Grid
 from four_letter_blocks.block import Block
+from four_letter_blocks.line_deduper import LineDeduper
 
 
 @dataclass
@@ -151,6 +152,24 @@ class Puzzle:
                 square.x *= ratio
                 square.y *= ratio
 
+    def draw_packed(self,
+                    painter: typing.Union[QPainter, LineDeduper],
+                    shape_positions: typing.Dict[
+                        str,
+                        typing.List[typing.Tuple[int, int, int]]],
+                    square_size: int = None):
+        window_width = painter.window().width()
+        if square_size is None:
+            square_size = window_width // self.DEFAULT_ROW_LENGTH
+        self.square_size = square_size
+        for block in self.blocks:
+            positions = shape_positions[block.shape]
+            x, y, rotation = positions.pop()
+            block.set_display((x+0.5)*square_size, (y+0.5)*square_size, rotation)
+            block.border_colour = 'red'
+            block.divider_colour = 'blue'
+            block.draw(painter, use_text=self.use_text)
+
     def draw_blocks(self,
                     painter: QPainter,
                     square_size: int = None,
@@ -259,15 +278,26 @@ class Puzzle:
         sections = []
         block_sizes = self.display_block_sizes()
         sections.append(f'Block sizes: {block_sizes}')
-        shape_counts = Counter(block.shape
-                               for block in self.blocks
-                               if block.shape is not None)
         shape_count_text = ', '.join(
             f'{shape}: {count}'
-            for shape, count in sorted(shape_counts.items()))
+            for shape, count in sorted(self.shape_counts.items()))
         if shape_count_text:
             sections.append('Shapes: ' + shape_count_text)
         return ', '.join(sections)
+
+    @property
+    def shape_counts(self):
+        return Counter(block.shape
+                       for block in self.blocks
+                       if block.shape is not None)
+
+    @property
+    def shape_blocks(self):
+        d = defaultdict(list)
+        for block in self.blocks:
+            if block.shape is not None:
+                d[block.shape].append(block)
+        return d
 
     def display_block_sizes(self) -> str:
         correct_markers = {block.marker

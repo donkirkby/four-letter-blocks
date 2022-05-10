@@ -11,6 +11,8 @@ from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, \
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog, QInputDialog
 
 import four_letter_blocks
+from four_letter_blocks.block_packer import BlockPacker
+from four_letter_blocks.line_deduper import LineDeduper
 from four_letter_blocks.main_window import Ui_MainWindow
 from four_letter_blocks.puzzle import Puzzle
 
@@ -256,6 +258,9 @@ class FourLetterBlocksWindow(QMainWindow):
 
         puzzle = self.parse_puzzle()
         puzzle.use_text = False
+        shape_counts = puzzle.shape_counts
+        packer = BlockPacker(15, 15, tries=10_000)
+        packer.fill(shape_counts)
 
         document = QTextDocument()
         document.setPageSize(QSize(pdf.width(), pdf.height()))
@@ -263,7 +268,7 @@ class FourLetterBlocksWindow(QMainWindow):
         font.setPixelSize(pdf.height()//60)
         document.setDefaultFont(font)
 
-        diagram_handler = BlockDiagram(puzzle)
+        diagram_handler = BlockDiagram(puzzle, packer.positions)
         doc_layout = document.documentLayout()
         doc_layout.registerHandler(DIAGRAM_TEXT_FORMAT, diagram_handler)
 
@@ -274,10 +279,9 @@ class FourLetterBlocksWindow(QMainWindow):
         diagram_format = QTextCharFormat()
         diagram_format.setObjectType(DIAGRAM_TEXT_FORMAT)
 
-        for i in range(len(puzzle.row_heights())):
-            diagram_format.setProperty(DIAGRAM_DATA, i)
-            cursor.insertText(OBJECT_REPLACEMENT, diagram_format)
-            cursor.insertText('\n')
+        diagram_format.setProperty(DIAGRAM_DATA, 0)
+        cursor.insertText(OBJECT_REPLACEMENT, diagram_format)
+        cursor.insertText('\n')
 
         document.print_(pdf)
         self.statusBar().showMessage(f'Exported to {file_path.name}.')
@@ -411,9 +415,12 @@ class FourLetterBlocksWindow(QMainWindow):
 
 
 class BlockDiagram(QPyTextObject):
-    def __init__(self, puzzle: Puzzle, parent: QObject = None):
+    def __init__(self, puzzle: Puzzle,
+                 position_map: typing.Dict = None,
+                 parent: QObject = None):
         super().__init__(parent)
         self.puzzle = puzzle
+        self.position_map = position_map
 
     # noinspection PyPep8Naming,PyShadowingBuiltins
     def intrinsicSize(self,
@@ -433,10 +440,14 @@ class BlockDiagram(QPyTextObject):
                    posInDocument: int,
                    format: QTextFormat):
         row_index = format.property(DIAGRAM_DATA)
-        self.puzzle.draw_blocks(painter,
-                                row_index=row_index,
-                                x=rect.x(),
-                                y=rect.y())
+        if self.position_map is None:
+            self.puzzle.draw_blocks(painter,
+                                    row_index=row_index,
+                                    x=rect.x(),
+                                    y=rect.y())
+        else:
+            deduper = LineDeduper(painter)
+            self.puzzle.draw_packed(deduper, self.position_map)
 
 
 def get_settings():

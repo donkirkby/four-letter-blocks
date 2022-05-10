@@ -198,6 +198,9 @@
    <property name="text">
     <string>Export for &amp;Laser Cut...</string>
    </property>
+   <property name="shortcut">
+    <string>Alt+Shift+X</string>
+   </property>
   </action>
  </widget>
  <customwidgets>

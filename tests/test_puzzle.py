@@ -1,8 +1,11 @@
+from collections import Counter
 from io import StringIO
 
 import pytest
 from PySide6.QtGui import QTextDocument
 
+from four_letter_blocks.block import Block
+from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.clue import Clue
 from four_letter_blocks.puzzle import Puzzle
 import four_letter_blocks.puzzle
@@ -456,6 +459,31 @@ def test_draw_blocks_one_row(pixmap_differ: PixmapDiffer):
 
     puzzle2 = parse_basic_puzzle()
     puzzle2.draw_blocks(actual, square_size=20, row_index=1)
+
+    pixmap_differ.assert_equal()
+
+
+def test_draw_packed(pixmap_differ: PixmapDiffer):
+    actual, expected = pixmap_differ.start(
+        180, 180,
+        'test_puzzle_draw_packed')
+
+    puzzle1 = parse_basic_puzzle()
+    puzzle1.square_size = 20
+    block1, block2, block3 = puzzle1.blocks
+    block1: Block
+    block1.set_display(70, 10, 1)
+    block2.set_display(10, 10, 3)
+    block3.set_display(30, 30, 1)
+    for block in puzzle1.blocks:
+        block.border_colour = 'red'
+        block.divider_colour = 'blue'
+        block.draw(expected)
+
+    puzzle2 = parse_basic_puzzle()
+    packer = BlockPacker(6, 6, tries=1000)
+    packer.fill(Counter('LJI'))
+    puzzle2.draw_packed(actual, packer.positions, square_size=20)
 
     pixmap_differ.assert_equal()
 

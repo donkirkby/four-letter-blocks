@@ -29,10 +29,12 @@ def test_paint(pixmap_differ: PixmapDiffer):
         180, 180,
         'test_square_paint')
     font = expected.font()
-    expected.drawRect(20, 20, 80, 80)
     font.setPixelSize(60)
     expected.setFont(font)
     expected.drawText(20, 30, 80, 80, Qt.AlignHCenter, 'W')
+
+    expected.drawRect(20, 20, 80, 80)
+    actual.drawRect(20, 20, 80, 80)
 
     square = Square('W')
     square.x = 20
@@ -51,11 +53,13 @@ def test_paint_with_number(pixmap_differ: PixmapDiffer):
     font = expected.font()
     font.setPixelSize(20)
     expected.setFont(font)
-    expected.drawRect(20, 20, 80, 80)
     expected.drawText(24, 20, 80, 80, 0, '12')
     font.setPixelSize(60)
     expected.setFont(font)
     expected.drawText(20, 30, 80, 80, Qt.AlignHCenter, 'W')
+
+    expected.drawRect(20, 20, 80, 80)
+    actual.drawRect(20, 20, 80, 80)
 
     square = Square('W', 12)
     square.x = 20
@@ -72,19 +76,24 @@ def test_paint_with_number_and_suit(pixmap_differ: PixmapDiffer):
         180, 180,
         'test_square_paint_with_number_and_suit')
     font = expected.font()
+    font.setPixelSize(80)
+    expected.setFont(font)
+    gray1 = 227
+    gray2 = 166
+    expected.setPen(QPen(QColor(gray1, gray1, gray1)))
+    expected.drawText(20, 20, 80, 80, Qt.AlignHCenter, '♥')
+    expected.setPen(QPen(QColor(gray2, gray2, gray2)))
+    expected.drawText(20, 20, 80, 80, Qt.AlignHCenter, '♡')
+    expected.setPen(QPen('black'))
     font.setPixelSize(20)
     expected.setFont(font)
-    expected.drawRect(20, 20, 80, 80)
     expected.drawText(24, 20, 80, 80, 0, '12')
     font.setPixelSize(60)
     expected.setFont(font)
     expected.drawText(20, 30, 80, 80, Qt.AlignHCenter, 'W')
-    font.setPixelSize(80)
-    expected.setFont(font)
-    expected.setPen(QPen(QColor(0, 0, 0, 30)))
-    expected.drawText(20, 20, 80, 80, Qt.AlignHCenter, '♥')
-    expected.setPen(QPen(QColor(0, 0, 0, 70)))
-    expected.drawText(20, 20, 80, 80, Qt.AlignHCenter, '♡')
+
+    expected.drawRect(20, 20, 80, 80)
+    actual.drawRect(20, 20, 80, 80)
 
     square = Square('W', 12, 'H')
     square.x = 20

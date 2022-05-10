@@ -1,5 +1,7 @@
 from textwrap import dedent
 
+from PySide6.QtGui import QPen, Qt
+
 from four_letter_blocks.grid import Grid
 from four_letter_blocks.block import Block
 from four_letter_blocks.square import Square
@@ -14,15 +16,14 @@ def create_basic_block():
     square2 = Square('B')
     square3 = Square('C')
     square4 = Square('D')
-    square1.y = 50
-    square2.y = 150
-    square3.x = 100
-    square3.y = 50
-    square4.x = 200
-    square4.y = 50
+    square2.y = 1
+    square3.x = 1
+    square4.x = 2
     block = Block(square1, square2, square3, square4)
     for square in block.squares:
         square.size = 100
+        square.x *= 100
+        square.y = square.y*100 + 50
     return block
 
 
@@ -198,9 +199,28 @@ def test_draw(pixmap_differ: PixmapDiffer):
         'test_block_draw')
 
     block = create_basic_block()
+    block.border_colour = 'blue'
+    block.divider_colour = 'magenta'
 
     for square in block.squares:
         square.draw(expected)
+
+    pen = QPen('magenta')
+    expected.setPen(pen)
+    expected.drawLine(0, 150, 100, 150)
+    expected.drawLine(100, 50, 100, 150)
+    expected.drawLine(200, 50, 200, 150)
+
+    pen = QPen('blue')
+    pen.setWidth(3)
+    pen.setCapStyle(Qt.RoundCap)
+    expected.setPen(pen)
+    expected.drawLine(0, 50, 300, 50)
+    expected.drawLine(100, 150, 300, 150)
+    expected.drawLine(0, 250, 100, 250)
+    expected.drawLine(0, 50, 0, 250)
+    expected.drawLine(100, 150, 100, 250)
+    expected.drawLine(300, 50, 300, 150)
 
     block.draw(actual)
 
@@ -223,3 +243,69 @@ def test_draw_path(pixmap_differ: PixmapDiffer):
 
     pixmap_differ.compare()
     assert pixmap_differ.diff_count <= 2500
+
+
+def test_rotate180(pixmap_differ: PixmapDiffer):
+    actual, expected = pixmap_differ.start(
+        410, 260,
+        'test_block_rotate180')
+
+    block1 = create_basic_block()
+    block2 = create_basic_block()
+
+    block1.draw(expected)
+    expected.rotate(180)
+    expected.translate(-400, -300)
+    block2.draw(expected)
+
+    block2.x = 100
+    block2.set_display(100, 50, rotation=1)
+    
+    block1.draw(actual)
+    block2.draw(actual)
+
+    pixmap_differ.assert_equal()
+
+
+def test_rotate90(pixmap_differ: PixmapDiffer):
+    actual, expected = pixmap_differ.start(
+        510, 260,
+        'test_block_rotate90')
+
+    block1 = create_basic_block()
+    block2 = create_basic_block()
+
+    block1.draw(expected)
+    expected.translate(550, 50)
+    expected.rotate(90)
+    block2.draw(expected)
+
+    block2.x = 100
+    block2.set_display(300, 50, rotation=2)
+
+    block1.draw(actual)
+    block2.draw(actual)
+
+    pixmap_differ.assert_equal()
+
+
+def test_rotate270(pixmap_differ: PixmapDiffer):
+    actual, expected = pixmap_differ.start(
+        510, 260,
+        'test_block_rotate270')
+
+    block1 = create_basic_block()
+    block2 = create_basic_block()
+
+    block1.draw(expected)
+    expected.translate(250, 350)
+    expected.rotate(270)
+    block2.draw(expected)
+
+    block2.x = 100
+    block2.set_display(300, 50, rotation=0)
+
+    block1.draw(actual)
+    block2.draw(actual)
+
+    pixmap_differ.assert_equal()

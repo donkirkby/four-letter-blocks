@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'main_window.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.2.4
+## Created by: Qt User Interface Compiler version 6.3.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -175,6 +175,9 @@ class Ui_MainWindow(object):
 #endif // QT_CONFIG(shortcut)
         self.options_action.setText(QCoreApplication.translate("MainWindow", u"&Options...", None))
         self.export_laser_action.setText(QCoreApplication.translate("MainWindow", u"Export for &Laser Cut...", None))
+#if QT_CONFIG(shortcut)
+        self.export_laser_action.setShortcut(QCoreApplication.translate("MainWindow", u"Alt+Shift+X", None))
+#endif // QT_CONFIG(shortcut)
         self.title_label.setText(QCoreApplication.translate("MainWindow", u"Title", None))
         self.grid_label.setText(QCoreApplication.translate("MainWindow", u"Grid", None))
         self.grid_text.setPlainText("")

@@ -1,3 +1,4 @@
+import math
 import typing
 from collections import defaultdict
 from copy import copy
@@ -5,7 +6,7 @@ from functools import cache
 from operator import attrgetter
 from textwrap import dedent
 
-from PySide6.QtGui import QPainter
+from PySide6.QtGui import QPainter, QPen, Qt
 
 from four_letter_blocks.grid import Grid
 from four_letter_blocks.square import Square
@@ -17,10 +18,15 @@ class Block:
     def __init__(self, *squares: Square, marker: str = None):
         self.squares = squares
         self.marker = marker
+        self.border_colour = 'black'
+        self.divider_colour = 'black'
         coordinates = normalize_coordinates(
             [(square.x, square.y) for square in squares])
         self.shape, self.shape_rotation = shape_rotations().get(coordinates,
                                                                 (None, 0))
+        self.display_x: typing.Optional[int] = None
+        self.display_y: typing.Optional[int] = None
+        self.display_rotation: typing.Optional[int] = None
 
     def __repr__(self):
         squares = ', '.join(repr(square) for square in self.squares)
@@ -89,15 +95,66 @@ class Block:
         return bottom - self.y
 
     def draw(self, painter: QPainter, use_text=True):
+        x_change = y_change = rotation_change = 0
+        if self.display_x is not None:
+            rotation_change = ((self.shape_rotation + 4 -
+                                self.display_rotation) % 4) * 90
+            if rotation_change == 0:
+                x_change = self.display_x - self.x
+                y_change = self.display_y - self.y
+            elif rotation_change == 90:
+                x_change = self.display_x + self.height + self.y
+                y_change = self.display_y - self.x
+            elif rotation_change == 180:
+                x_change = self.display_x + self.width + self.x
+                y_change = self.display_y + self.height + self.y
+            else:
+                x_change = self.display_x - self.y
+                y_change = self.display_y + self.width + self.x
+        painter.translate(x_change, y_change)
+        painter.rotate(rotation_change)
+        square_positions = {(square.x, square.y) for square in self.squares}
+        size = self.squares[0].size
+        old_pen = painter.pen()
+        outer_pen = QPen(self.border_colour)
+        outer_pen.setWidth(math.floor(size/33))
+        outer_pen.setCapStyle(Qt.RoundCap)
+        divider_pen = QPen(self.divider_colour)
+        divider_pen.setWidth(old_pen.width())
         for square in self.squares:
+            x = square.x
+            y = square.y
+            painter.setPen(divider_pen)
+            if (x, y-size) in square_positions:
+                painter.drawLine(x, y, x+size, y)
+            if (x-size, y) in square_positions:
+                painter.drawLine(x, y, x, y+size)
+
+            painter.setPen(outer_pen)
+            if (x, y - size) not in square_positions:
+                painter.drawLine(x, y, x+size, y)
+            if (x, y+size) not in square_positions:
+                painter.drawLine(x, y+size, x+size, y+size)
+            if (x - size, y) not in square_positions:
+                painter.drawLine(x, y, x, y+size)
+            if (x+size, y) not in square_positions:
+                painter.drawLine(x+size, y, x+size, y+size)
+            painter.setPen(old_pen)
             square.draw(painter, use_text=use_text)
+        painter.rotate(-rotation_change)
+        painter.translate(-x_change, -y_change)
+
+    def set_display(self, x: int, y: int, rotation: int):
+        self.display_x = x
+        self.display_y = y
+        self.display_rotation = rotation
 
 
 @cache
 def shape_rotations() -> typing.Dict[
         typing.FrozenSet[typing.Tuple[int, int]],
         typing.Tuple[str, int]]:
-    """ Generate a lookup table from a set of squares to name and rotation. """
+    """ A lookup table from a set of (x, y) pairs to name and rotation. """
     shapes_text = dedent("""\
         OO
         OO
