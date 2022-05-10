@@ -423,18 +423,18 @@ BBBB
 
 def test_draw_blocks(pixmap_differ: PixmapDiffer):
     actual, expected = pixmap_differ.start(
-        180, 180,
+        150, 180,
         'test_puzzle_draw_blocks')
 
     puzzle1 = parse_basic_puzzle()
     puzzle1.square_size = 20
     block1, block2, block3 = puzzle1.blocks
     block1.x = 20
-    block1.y = 20
+    block1.y = 50
     block2.x = 70
-    block2.y = 20
+    block2.y = 50
     block3.x = 20
-    block3.y = 90
+    block3.y = 20
     block1.draw(expected)
     block2.draw(expected)
     block3.draw(expected)
@@ -447,15 +447,18 @@ def test_draw_blocks(pixmap_differ: PixmapDiffer):
 
 def test_draw_blocks_one_row(pixmap_differ: PixmapDiffer):
     actual, expected = pixmap_differ.start(
-        180, 180,
+        150, 180,
         'test_puzzle_draw_blocks_one_row')
 
     puzzle1 = parse_basic_puzzle()
     puzzle1.square_size = 20
     block1, block2, block3 = puzzle1.blocks
-    block3.x = 20
-    block3.y = 10
-    block3.draw(expected)
+    block1.x = 20
+    block1.y = 10
+    block1.draw(expected)
+    block2.x = 70
+    block2.y = 10
+    block2.draw(expected)
 
     puzzle2 = parse_basic_puzzle()
     puzzle2.draw_blocks(actual, square_size=20, row_index=1)

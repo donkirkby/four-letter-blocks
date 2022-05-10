@@ -192,7 +192,7 @@ class Puzzle:
         row_count = 0
         x_limit = painter.window().width() - self.square_size
         is_active_row = False
-        for block in self.blocks:
+        for block in self.sorted_blocks():
             if x_limit < x + block.width - x_start:
                 x = self.square_size
                 if is_active_row:
@@ -212,6 +212,10 @@ class Puzzle:
             y += line_height
         return y
 
+    def sorted_blocks(self):
+        """ Blocks sorted by increasing height. """
+        return sorted(self.blocks, key=lambda b: b.height)
+
     def row_heights(self,
                     window_width: int = None,
                     square_size: int = None) -> typing.List[int]:
@@ -229,7 +233,7 @@ class Puzzle:
         x = self.square_size
         line_height = 0
         x_limit = window_width - square_size
-        for block in self.blocks:
+        for block in self.sorted_blocks():
             if x_limit < x + block.width:
                 x = self.square_size
                 row_heights.append(line_height + gap)
