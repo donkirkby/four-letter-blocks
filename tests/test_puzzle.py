@@ -466,8 +466,8 @@ C###
 
     warnings = puzzle.check_style()
 
-    assert warnings == ['complete word on one block from (4, 1) to (4, 3)',
-                        'complete word on one block from (1, 4) to (3, 4)']
+    assert warnings == ['complete word on one block from (1, 4) to (3, 4)',
+                        'complete word on one block from (4, 1) to (4, 3)']
 
 
 def test_warning_complete_unused():
@@ -485,6 +485,22 @@ S###
     warnings = puzzle.check_style()
 
     assert warnings == []
+
+
+def test_warning_two_letter():
+    source_file = StringIO("""\
+Title
+
+WORD
+I##A
+NO#S
+E##H
+""")
+    puzzle = Puzzle.parse(source_file)
+
+    warnings = puzzle.check_style()
+
+    assert warnings == ['two-letter word at (1, 3) and (2, 3)']
 
 
 def test_draw_blocks(pixmap_differ: PixmapDiffer):

@@ -290,37 +290,40 @@ class Puzzle:
         return ', '.join(sections)
 
     def check_style(self) -> typing.List[str]:
-        warnings = []
+        complete_warnings = []
+        short_warnings = []
         for block in self.blocks:
-            if block.marker == Block.UNUSED:
-                continue
             for square1 in block.squares:
-                if square1.across_word is not None:
-                    block_coordinates = block.calculate_coordinates()
+                for word, dx, dy in ((square1.across_word, 1, 0),
+                                     (square1.down_word, 0, 1)):
+                    if word is None:
+                        continue
                     x = square1.x
                     y = square1.y
-                    word_length = len(square1.across_word)
+                    word_length = len(word)
+                    start = (x+1, y+1)
+                    end = (x+word_length*dx+dy, y+word_length*dy+dx)
+                    if word_length == 2:
+                        short_warnings.append(
+                            (start,
+                             end,
+                             f'two-letter word at {start} and {end}'))
+                    if block.marker == Block.UNUSED:
+                        continue
+                    block_coordinates = block.calculate_coordinates()
                     for i in range(1, word_length):
-                        square2 = self.grid[x+i, y]
+                        square2 = self.grid[x+i*dx, y+i*dy]
                         if (square2.x, square2.y) not in block_coordinates:
                             break
                     else:
-                        warnings.append(
-                            f'complete word on one block from ({x+1}, {y+1}) '
-                            f'to ({x+word_length}, {y+1})')
-                if square1.down_word is not None:
-                    block_coordinates = block.calculate_coordinates()
-                    x = square1.x
-                    y = square1.y
-                    word_length = len(square1.down_word)
-                    for i in range(1, word_length):
-                        square2 = self.grid[x, y+i]
-                        if (square2.x, square2.y) not in block_coordinates:
-                            break
-                    else:
-                        warnings.append(
-                            f'complete word on one block from ({x+1}, {y+1}) '
-                            f'to ({x+1}, {y+word_length})')
+                        complete_warnings.append((
+                            start,
+                            end,
+                            f'complete word on one block from {start} to {end}'))
+        short_warnings.sort()
+        complete_warnings.sort()
+        warnings = [warning for start, end, warning in short_warnings]
+        warnings.extend(warning for start, end, warning in complete_warnings)
         return warnings
 
     @property
