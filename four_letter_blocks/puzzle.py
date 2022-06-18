@@ -292,6 +292,8 @@ class Puzzle:
     def check_style(self) -> typing.List[str]:
         warnings = []
         for block in self.blocks:
+            if block.marker == Block.UNUSED:
+                continue
             for square1 in block.squares:
                 if square1.across_word is not None:
                     block_coordinates = block.calculate_coordinates()

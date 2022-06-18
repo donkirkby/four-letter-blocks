@@ -470,6 +470,23 @@ C###
                         'complete word on one block from (1, 4) to (3, 4)']
 
 
+def test_warning_complete_unused():
+    source_file = StringIO("""\
+Title
+
+WORD
+I##A
+N##D
+END#
+S###
+""")
+    puzzle = Puzzle.parse(source_file)
+
+    warnings = puzzle.check_style()
+
+    assert warnings == []
+
+
 def test_draw_blocks(pixmap_differ: PixmapDiffer):
     actual, expected = pixmap_differ.start(
         150, 180,

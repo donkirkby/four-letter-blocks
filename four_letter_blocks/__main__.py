@@ -54,6 +54,8 @@ class FourLetterBlocksWindow(QMainWindow):
         ui.blocks_text.focused.connect(self.blocks_changed)
         ui.clues_text.textChanged.connect(self.clues_changed)
 
+        ui.warnings_label.setVisible(False)
+
         self.state_fields = (self.ui.title_text,
                              self.ui.grid_text,
                              self.ui.clues_text,
@@ -164,6 +166,10 @@ class FourLetterBlocksWindow(QMainWindow):
         with file_path.open() as source_file:
             puzzle = Puzzle.parse(source_file)
         self.file_path = file_path
+
+        # Clear blocks first, to avoid extra warnings.
+        self.ui.blocks_text.setPlainText('')
+
         self.ui.title_text.setText(puzzle.title)
         self.ui.grid_text.setPlainText(puzzle.format_grid())
         self.ui.clues_text.setPlainText(puzzle.format_clues())
