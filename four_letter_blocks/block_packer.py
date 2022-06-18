@@ -3,6 +3,7 @@ from collections import defaultdict
 from functools import cache
 
 import numpy as np
+from PySide6.QtGui import QPainter, QPen, Qt
 
 from four_letter_blocks.block import shape_rotations, normalize_coordinates
 
@@ -24,6 +25,9 @@ class BlockPacker:
                                             else 1 if char == '#'
                                             else ord(char) - 63)
         self.tries = tries
+        self.cell_size = 940
+        self.margin = 120
+        self.nick_radius = 5
 
     @property
     def positions(self):
@@ -111,6 +115,108 @@ class BlockPacker:
             start_state[target_row, target_col] = 1  # gap
             self.state = start_state
             self.fill(shape_counts)
+
+    @staticmethod
+    def draw_front(painter: QPainter):
+        device = painter.device()
+        painter.fillRect(0, 0, device.width(), device.height(), 'black')
+
+    @staticmethod
+    def draw_back(painter: QPainter):
+        device = painter.device()
+        painter.fillRect(0, 0, device.width(), device.height(), 'white')
+
+    def draw_cuts(self, painter: QPainter):
+        cell_size = self.cell_size
+        margin = self.margin
+        nick_radius = self.nick_radius
+
+        pen = QPen('#ed2224')
+        pen.setWidth(cell_size/20)
+        pen.setCapStyle(Qt.FlatCap)
+
+        painter.setPen(pen)
+        # L
+        painter.drawLine(margin, margin,
+                         margin + cell_size*3-nick_radius, margin)
+        painter.drawLine(margin + cell_size*3, margin+nick_radius,
+                         margin + cell_size*3, margin+cell_size-nick_radius)
+        painter.drawLine(margin + cell_size*3-nick_radius, margin+cell_size,
+                         margin + cell_size, margin+cell_size)
+        painter.drawLine(margin + cell_size, margin+cell_size,
+                         margin + cell_size, margin+cell_size*2-nick_radius)
+        painter.drawLine(margin + cell_size-nick_radius, margin+cell_size*2,
+                         margin + nick_radius, margin+cell_size*2)
+        painter.drawLine(margin, margin,
+                         margin, margin+cell_size*2-nick_radius)
+
+        # J
+        painter.drawLine(margin, margin+cell_size*2+nick_radius,
+                         margin, margin+cell_size*4)
+        painter.drawLine(margin, margin+cell_size*4,
+                         margin+cell_size*3-nick_radius, margin+cell_size*4)
+        painter.drawLine(margin+cell_size*3, margin+cell_size*4-nick_radius,
+                         margin+cell_size*3, margin+cell_size*3+nick_radius)
+        painter.drawLine(margin+cell_size*3-nick_radius, margin+cell_size*3,
+                         margin+cell_size, margin+cell_size*3)
+        painter.drawLine(margin+cell_size, margin+cell_size*3,
+                         margin+cell_size, margin+cell_size*2+nick_radius)
+
+        # O
+        painter.drawLine(margin+cell_size*3, margin+cell_size+nick_radius,
+                         margin+cell_size*3, margin+cell_size*3-nick_radius)
+
+        # I
+        painter.drawLine(margin+cell_size*3+nick_radius, margin,
+                         margin+cell_size*4-nick_radius, margin)
+        painter.drawLine(margin+cell_size*3+nick_radius, margin+cell_size*4,
+                         margin+cell_size*4-nick_radius, margin+cell_size*4)
+        painter.drawLine(margin+cell_size*4, margin+nick_radius,
+                         margin+cell_size*4, margin+cell_size*3-nick_radius)
+        painter.drawLine(margin+cell_size*4, margin+cell_size*3+nick_radius,
+                         margin+cell_size*4, margin+cell_size*4-nick_radius)
+        painter.drawLine(margin+cell_size*4, margin+cell_size*3+nick_radius,
+                         margin+cell_size*4, margin+cell_size*4-nick_radius)
+
+        # T
+        painter.drawLine(margin+cell_size*4+nick_radius, margin,
+                         margin+cell_size*5-nick_radius, margin)
+        painter.drawLine(margin+cell_size*5, margin+nick_radius,
+                         margin+cell_size*5, margin+cell_size)
+        painter.drawLine(margin+cell_size*5, margin+cell_size,
+                         margin+cell_size*6, margin+cell_size)
+        painter.drawLine(margin+cell_size*6, margin+cell_size,
+                         margin+cell_size*6, margin+cell_size*2-nick_radius)
+        painter.drawLine(margin+cell_size*6-nick_radius, margin+cell_size*2,
+                         margin+cell_size*5, margin+cell_size*2)
+        painter.drawLine(margin+cell_size*5, margin+cell_size*2,
+                         margin+cell_size*5, margin+cell_size*3)
+        painter.drawLine(margin+cell_size*5, margin+cell_size*3,
+                         margin+cell_size*4+nick_radius, margin+cell_size*3)
+
+        # S
+        painter.drawLine(margin+cell_size*6, margin+cell_size*4,
+                         margin+cell_size*4+nick_radius, margin+cell_size*4)
+        painter.drawLine(margin+cell_size*6, margin+cell_size*4,
+                         margin+cell_size*6, margin+cell_size*3)
+        painter.drawLine(margin+cell_size*6, margin+cell_size*3,
+                         margin+cell_size*7, margin+cell_size*3)
+        painter.drawLine(margin+cell_size*7, margin+cell_size*3,
+                         margin+cell_size*7, margin+cell_size*2+nick_radius)
+        painter.drawLine(margin+cell_size*7-nick_radius, margin+cell_size*2,
+                         margin+cell_size*6+nick_radius, margin+cell_size*2)
+
+        # Z
+        painter.drawLine(margin+cell_size*7+nick_radius, margin+cell_size*2,
+                         margin+cell_size*8, margin+cell_size*2)
+        painter.drawLine(margin+cell_size*8, margin+cell_size*2,
+                         margin+cell_size*8, margin+cell_size)
+        painter.drawLine(margin + cell_size*7, margin+cell_size,
+                         margin + cell_size*8, margin+cell_size)
+        painter.drawLine(margin + cell_size*7, margin+cell_size,
+                         margin + cell_size*7, margin)
+        painter.drawLine(margin + cell_size*7, margin,
+                         margin + cell_size*5+nick_radius, margin)
 
 
 @cache

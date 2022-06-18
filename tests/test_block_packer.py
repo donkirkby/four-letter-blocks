@@ -4,6 +4,7 @@ from textwrap import dedent
 import numpy as np
 
 from four_letter_blocks.block_packer import BlockPacker
+from tests.pixmap_differ import PixmapDiffer
 
 
 def test_display():
@@ -97,3 +98,47 @@ def test():
                           'L': [(0, 1, 1), (3, 0, 2)]}
 
     assert packer.positions == expected_positions
+
+
+def test_draw_cuts(pixmap_differ: PixmapDiffer):
+    actual, expected = pixmap_differ.start(
+        500, 225,
+        'test_draw_cuts')
+
+    packer = BlockPacker()
+    packer.cell_size = 50
+    packer.margin = 5
+    packer.nick_radius = 10
+
+    packer.draw_cuts(actual)
+    packer.draw_cuts(expected)  # TODO: add real test
+
+    pixmap_differ.assert_equal()
+
+
+def test_draw_front(pixmap_differ: PixmapDiffer):
+    actual, expected = pixmap_differ.start(
+        500, 225,
+        'test_draw_front')
+
+    packer = BlockPacker()
+
+    expected.fillRect(0, 0, 500, 225, 'black')
+
+    packer.draw_front(actual)
+
+    pixmap_differ.assert_equal()
+
+
+def test_draw_back(pixmap_differ: PixmapDiffer):
+    actual, expected = pixmap_differ.start(
+        500, 225,
+        'test_draw_back')
+
+    packer = BlockPacker()
+
+    expected.fillRect(0, 0, 500, 225, 'white')
+
+    packer.draw_back(actual)
+
+    pixmap_differ.assert_equal()

@@ -61,7 +61,8 @@ a few times to see which words are possible through those cells.
 7. If the autofill always produces the same grid, check that the autofill
 preferences are highly randomised and prevent duplicates.
 8. Pick one of the words you like from the autofill choices, and type it in.
-Then go back to step 6.
+Then go back to step 6. You can also look at the recommended letters and choose
+your own word to type in. Just make sure that autofill still works.
 
 ### Installing the Software
 The next step happens in the Four-Letter Blocks program, so install it with

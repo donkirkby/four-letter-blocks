@@ -4,10 +4,11 @@ import traceback
 import typing
 from pathlib import Path
 
-from PySide6.QtCore import QSettings, QSize, QSizeF, QObject, QRectF
+from PySide6.QtCore import QSettings, QSize, QSizeF, QObject, QRectF, QRect
 from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, \
     Qt, QCloseEvent, QPixmap, QColor, QTextDocument, QTextFormat, QTextCursor, \
-    QTextCharFormat, QPyTextObject
+    QTextCharFormat, QPyTextObject, QImage
+from PySide6.QtSvg import QSvgGenerator
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog, QInputDialog
 
 import four_letter_blocks
@@ -242,24 +243,44 @@ class FourLetterBlocksWindow(QMainWindow):
     def export_laser(self):
         save_dir = self.get_save_dir()
         kwargs = get_file_dialog_options()
-        file_name, _ = QFileDialog.getSaveFileName(
+        folder_name = QFileDialog.getExistingDirectory(
             self,
             'Export for laser cutter',
             dir=save_dir,
-            filter=';;'.join(('PDF blocks for laser cutter (*.pdf)',
-                              'All files (*.*)')),
             **kwargs)
-        if not file_name:
+        if not folder_name:
             return
-        self.settings.setValue('save_path', file_name)
-        file_path = Path(file_name)
-        pdf = QPdfWriter(file_name)
+        self.settings.setValue('save_path', folder_name)
+        folder_path = Path(folder_name)
+        generator = QSvgGenerator()
+        generator.setFileName(str(folder_path/'cuts.svg'))
+        generator.setSize(QSize(8000, 4500))
+        generator.setResolution(1000)  # dots per inch
+        generator.setViewBox(QRect(0, 0, 8000, 4500))
+
+        painter = QPainter(generator)
+        packer = BlockPacker(15, 15, tries=10_000)
+        packer.draw_cuts(painter)
+        painter.end()
+
+        front_image = QImage(2400, 1350, QImage.Format_RGB32)
+        painter = QPainter(front_image)
+        packer.draw_front(painter)
+        painter.end()
+        front_image.save(str(folder_path/'front.png'))
+
+        back_image = QImage(2400, 1350, QImage.Format_RGB32)
+        painter = QPainter(back_image)
+        packer.draw_back(painter)
+        painter.end()
+        back_image.save(str(folder_path/'back.png'))
+
+        pdf = QPdfWriter(folder_name)
         pdf.setPageSize(QPageSize.Letter)
 
         puzzle = self.parse_puzzle()
         puzzle.use_text = False
         shape_counts = puzzle.shape_counts
-        packer = BlockPacker(15, 15, tries=10_000)
         packer.fill(shape_counts)
 
         document = QTextDocument()
@@ -284,7 +305,7 @@ class FourLetterBlocksWindow(QMainWindow):
         cursor.insertText('\n')
 
         document.print_(pdf)
-        self.statusBar().showMessage(f'Exported to {file_path.name}.')
+        self.statusBar().showMessage(f'Exported to {folder_path.name}.')
 
     def export_pdf(self, file_path: Path):
         file_name = str(file_path)
