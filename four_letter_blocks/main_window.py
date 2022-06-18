@@ -94,6 +94,11 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addWidget(self.blocks_text)
 
+        self.warnings_label = QLabel(self.centralwidget)
+        self.warnings_label.setObjectName(u"warnings_label")
+
+        self.verticalLayout.addWidget(self.warnings_label)
+
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
@@ -183,6 +188,7 @@ class Ui_MainWindow(object):
         self.grid_text.setPlainText("")
         self.clues_label.setText(QCoreApplication.translate("MainWindow", u"Clues", None))
         self.blocks_label.setText(QCoreApplication.translate("MainWindow", u"Blocks", None))
+        self.warnings_label.setText(QCoreApplication.translate("MainWindow", u"Warnings", None))
         self.file_menu.setTitle(QCoreApplication.translate("MainWindow", u"&File", None))
         self.help_menu.setTitle(QCoreApplication.translate("MainWindow", u"&Help", None))
         self.edit_menu.setTitle(QCoreApplication.translate("MainWindow", u"&Edit", None))

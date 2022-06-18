@@ -421,6 +421,55 @@ BBBB
     assert block_sizes == '2x4, unused=4'
 
 
+def test_warning_complete_across():
+    source_file = StringIO("""\
+Title
+
+WORD
+I##A
+N##S
+EACH
+
+-
+
+AAAA
+B##C
+B##C
+BBCC
+""")
+    puzzle = Puzzle.parse(source_file)
+
+    warnings = puzzle.check_style()
+
+    assert warnings == ['complete word on one block from (1, 1) to (4, 1)']
+
+
+def test_warning_complete_down():
+    source_file = StringIO("""\
+Title
+
+WORD
+I##A
+N##D
+END#
+S###
+
+-
+
+AABB
+A##B
+A##B
+CCC#
+C###
+""")
+    puzzle = Puzzle.parse(source_file)
+
+    warnings = puzzle.check_style()
+
+    assert warnings == ['complete word on one block from (4, 1) to (4, 3)',
+                        'complete word on one block from (1, 4) to (3, 4)']
+
+
 def test_draw_blocks(pixmap_differ: PixmapDiffer):
     actual, expected = pixmap_differ.start(
         150, 180,

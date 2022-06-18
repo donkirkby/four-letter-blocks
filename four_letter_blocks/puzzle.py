@@ -289,6 +289,38 @@ class Puzzle:
             sections.append('Shapes: ' + shape_count_text)
         return ', '.join(sections)
 
+    def check_style(self) -> typing.List[str]:
+        warnings = []
+        for block in self.blocks:
+            for square1 in block.squares:
+                if square1.across_word is not None:
+                    block_coordinates = block.calculate_coordinates()
+                    x = square1.x
+                    y = square1.y
+                    word_length = len(square1.across_word)
+                    for i in range(1, word_length):
+                        square2 = self.grid[x+i, y]
+                        if (square2.x, square2.y) not in block_coordinates:
+                            break
+                    else:
+                        warnings.append(
+                            f'complete word on one block from ({x+1}, {y+1}) '
+                            f'to ({x+word_length}, {y+1})')
+                if square1.down_word is not None:
+                    block_coordinates = block.calculate_coordinates()
+                    x = square1.x
+                    y = square1.y
+                    word_length = len(square1.down_word)
+                    for i in range(1, word_length):
+                        square2 = self.grid[x, y+i]
+                        if (square2.x, square2.y) not in block_coordinates:
+                            break
+                    else:
+                        warnings.append(
+                            f'complete word on one block from ({x+1}, {y+1}) '
+                            f'to ({x+1}, {y+word_length})')
+        return warnings
+
     @property
     def shape_counts(self):
         return Counter(block.shape

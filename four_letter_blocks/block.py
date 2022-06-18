@@ -149,6 +149,9 @@ class Block:
         self.display_y = y
         self.display_rotation = rotation
 
+    def calculate_coordinates(self):
+        return {(square.x, square.y) for square in self.squares}
+
 
 @cache
 def shape_rotations() -> typing.Dict[

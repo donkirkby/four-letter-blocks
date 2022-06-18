@@ -70,6 +70,13 @@
       </property>
      </widget>
     </item>
+    <item>
+     <widget class="QLabel" name="warnings_label">
+      <property name="text">
+       <string>Warnings</string>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">

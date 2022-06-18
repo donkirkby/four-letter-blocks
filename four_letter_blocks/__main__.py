@@ -395,6 +395,11 @@ class FourLetterBlocksWindow(QMainWindow):
         if not self.is_state_changed():
             return
         puzzle = self.parse_puzzle()
+        warnings = puzzle.check_style()
+        self.ui.warnings_label.setVisible(bool(warnings))
+        if warnings:
+            warnings.insert(0, 'Warnings')
+            self.ui.warnings_label.setText('\n  '.join(warnings))
         block_summary = puzzle.display_block_summary()
         if block_summary:
             self.statusBar().showMessage(block_summary)
