@@ -568,6 +568,22 @@ N#D
     assert warnings == ['symmetry broken at (2, 1) and (2, 3)']
 
 
+def test_warning_repeat():
+    source_file = StringIO("""\
+Title
+
+REED
+E##E
+E##A
+DEED
+""")
+    puzzle = Puzzle.parse(source_file)
+
+    warnings = puzzle.check_style()
+
+    assert warnings == ['repeated word REED']
+
+
 def test_draw_blocks(pixmap_differ: PixmapDiffer):
     actual, expected = pixmap_differ.start(
         150, 180,

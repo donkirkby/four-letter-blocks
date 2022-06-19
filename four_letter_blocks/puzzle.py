@@ -291,6 +291,7 @@ class Puzzle:
 
     def check_style(self) -> typing.List[str]:
         warnings = list(self.check_symmetry())
+        warnings.extend(self.check_repeats())
         warnings.extend(self.check_word_length())
         return warnings
 
@@ -329,6 +330,19 @@ class Puzzle:
         yield from (warning for start, end, warning in short_warnings)
         complete_warnings.sort()
         yield from (warning for start, end, warning in complete_warnings)
+
+    def check_repeats(self):
+        word_counts = Counter()
+        for x in range(self.grid.width):
+            for y in range(self.grid.height):
+                square = self.grid[x, y]
+                if square is not None:
+                    word_counts[square.across_word] += 1
+                    word_counts[square.down_word] += 1
+        word_counts[None] = 0
+        repeats = [word for word, count in word_counts.items() if count > 1]
+        repeats.sort()
+        yield from (f'repeated word {word}' for word in repeats)
 
     def check_symmetry(self):
         grid = self.grid
