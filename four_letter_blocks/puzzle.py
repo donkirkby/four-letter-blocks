@@ -290,19 +290,24 @@ class Puzzle:
         return ', '.join(sections)
 
     def check_style(self) -> typing.List[str]:
-        complete_warnings = []
+        warnings = list(self.check_symmetry())
+        warnings.extend(self.check_word_length())
+        return warnings
+
+    def check_word_length(self):
         short_warnings = []
+        complete_warnings = []
         for block in self.blocks:
             for square1 in block.squares:
                 for word, dx, dy in ((square1.across_word, 1, 0),
                                      (square1.down_word, 0, 1)):
                     if word is None:
                         continue
-                    x = square1.x
-                    y = square1.y
+                    x1 = square1.x
+                    y1 = square1.y
                     word_length = len(word)
-                    start = (x+1, y+1)
-                    end = (x+word_length*dx+dy, y+word_length*dy+dx)
+                    start = (x1 + 1, y1 + 1)
+                    end = (x1 + word_length * dx + dy, y1 + word_length * dy + dx)
                     if word_length == 2:
                         short_warnings.append(
                             (start,
@@ -312,7 +317,7 @@ class Puzzle:
                         continue
                     block_coordinates = block.calculate_coordinates()
                     for i in range(1, word_length):
-                        square2 = self.grid[x+i*dx, y+i*dy]
+                        square2 = self.grid[x1 + i * dx, y1 + i * dy]
                         if (square2.x, square2.y) not in block_coordinates:
                             break
                     else:
@@ -321,10 +326,26 @@ class Puzzle:
                             end,
                             f'complete word on one block from {start} to {end}'))
         short_warnings.sort()
+        yield from (warning for start, end, warning in short_warnings)
         complete_warnings.sort()
-        warnings = [warning for start, end, warning in short_warnings]
-        warnings.extend(warning for start, end, warning in complete_warnings)
-        return warnings
+        yield from (warning for start, end, warning in complete_warnings)
+
+    def check_symmetry(self):
+        grid = self.grid
+        if grid.width != grid.height:
+            yield 'not square'
+            return
+        x_limit = (grid.width + 1) // 2
+        for x1 in range(x_limit):
+            y_limit = grid.height if x1*2 < grid.width-1 else (grid.height+1)//2
+            for y1 in range(y_limit):
+                is_block1 = grid[x1, y1] is None
+                x2 = grid.width - x1 - 1
+                y2 = grid.height - y1 - 1
+                is_block2 = grid[x2, y2] is None
+                if is_block1 != is_block2:
+                    yield (f'symmetry broken at {(x1 + 1, y1 + 1)} and '
+                           f'{(x2 + 1, y2 + 1)}')
 
     @property
     def shape_counts(self):

@@ -450,24 +450,21 @@ Title
 
 WORD
 I##A
-N##D
-END#
-S###
+N##S
+EACH
 
 -
 
-AABB
-A##B
-A##B
-CCC#
-C###
+AAAC
+A##C
+B##C
+BBBC
 """)
     puzzle = Puzzle.parse(source_file)
 
     warnings = puzzle.check_style()
 
-    assert warnings == ['complete word on one block from (1, 4) to (3, 4)',
-                        'complete word on one block from (4, 1) to (4, 3)']
+    assert warnings == ['complete word on one block from (4, 1) to (4, 4)']
 
 
 def test_warning_complete_unused():
@@ -476,9 +473,8 @@ Title
 
 WORD
 I##A
-N##D
-END#
-S###
+N##S
+EACH
 """)
     puzzle = Puzzle.parse(source_file)
 
@@ -492,15 +488,84 @@ def test_warning_two_letter():
 Title
 
 WORD
-I##A
+I#OA
 NO#S
-E##H
+ENDS
 """)
     puzzle = Puzzle.parse(source_file)
 
     warnings = puzzle.check_style()
 
-    assert warnings == ['two-letter word at (1, 3) and (2, 3)']
+    assert warnings == ['two-letter word at (1, 3) and (2, 3)',
+                        'two-letter word at (2, 3) and (2, 4)',
+                        'two-letter word at (3, 1) and (3, 2)',
+                        'two-letter word at (3, 2) and (4, 2)']
+
+
+def test_warning_square():
+    source_file = StringIO("""\
+Title
+
+WON
+I##
+NO#
+END
+""")
+    puzzle = Puzzle.parse(source_file)
+
+    warnings = puzzle.check_style()
+
+    assert warnings == ['not square',
+                        'two-letter word at (1, 3) and (2, 3)',
+                        'two-letter word at (2, 3) and (2, 4)']
+
+
+def test_warning_symmetry():
+    source_file = StringIO("""\
+Title
+
+WE#D
+I##A
+N##D
+ENDS
+""")
+    puzzle = Puzzle.parse(source_file)
+
+    warnings = puzzle.check_style()
+
+    assert warnings == ['symmetry broken at (2, 4) and (3, 1)',
+                        'two-letter word at (1, 1) and (2, 1)']
+
+
+def test_warning_symmetry_diagonal():
+    source_file = StringIO("""\
+Title
+
+WEED
+I##A
+N##D
+END#
+""")
+    puzzle = Puzzle.parse(source_file)
+
+    warnings = puzzle.check_style()
+
+    assert warnings == ['symmetry broken at (1, 1) and (4, 4)']
+
+
+def test_warning_symmetry_vertical():
+    source_file = StringIO("""\
+Title
+
+WED
+I#A
+N#D
+""")
+    puzzle = Puzzle.parse(source_file)
+
+    warnings = puzzle.check_style()
+
+    assert warnings == ['symmetry broken at (2, 1) and (2, 3)']
 
 
 def test_draw_blocks(pixmap_differ: PixmapDiffer):
