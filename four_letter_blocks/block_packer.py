@@ -126,6 +126,38 @@ class BlockPacker:
         device = painter.device()
         painter.fillRect(0, 0, device.width(), device.height(), 'white')
 
+    def draw_nicked_line(self,
+                         painter: QPainter,
+                         x1: int,
+                         y1: int,
+                         x2: int,
+                         y2: int):
+        pen = QPen('#ed2224')
+        pen.setWidth(self.cell_size / 20)
+        pen.setCapStyle(Qt.FlatCap)
+
+        painter.setPen(pen)
+        length = max(abs(x2-x1), abs(y2-y1))
+        cell_count = round(length / self.cell_size)
+        xstep = (x2-x1) / (cell_count*2)
+        ystep = (y2-y1) / (cell_count*2)
+        xnick = ynick = 0
+        if xstep > 0:
+            xnick = self.nick_radius
+        elif xstep < 0:
+            xnick = -self.nick_radius
+        elif ystep > 0:
+            ynick = self.nick_radius
+        else:
+            ynick = -self.nick_radius
+        painter.drawLine(x1, y1, round(x1+xstep-xnick), round(y1+ystep-ynick))
+        for i in range(cell_count-1):
+            painter.drawLine(round(x1+xstep*(2*i+1)+xnick),
+                             round(y1+ystep*(2*i+1)+ynick),
+                             round(x1+xstep*(2*i+3)-xnick),
+                             round(y1+ystep*(2*i+3)-ynick))
+        painter.drawLine(round(x2-xstep+xnick), round(y2-ystep+ynick), x2, y2)
+
     def draw_cuts(self, painter: QPainter):
         cell_size = self.cell_size
         margin = self.margin
@@ -137,86 +169,120 @@ class BlockPacker:
 
         painter.setPen(pen)
         # L
-        painter.drawLine(margin, margin,
-                         margin + cell_size*3-nick_radius, margin)
-        painter.drawLine(margin + cell_size*3, margin+nick_radius,
-                         margin + cell_size*3, margin+cell_size-nick_radius)
-        painter.drawLine(margin + cell_size*3-nick_radius, margin+cell_size,
-                         margin + cell_size, margin+cell_size)
-        painter.drawLine(margin + cell_size, margin+cell_size,
-                         margin + cell_size, margin+cell_size*2-nick_radius)
-        painter.drawLine(margin + cell_size-nick_radius, margin+cell_size*2,
-                         margin + nick_radius, margin+cell_size*2)
-        painter.drawLine(margin, margin,
-                         margin, margin+cell_size*2-nick_radius)
+        self.draw_nicked_line(painter,
+                              margin, margin,
+                              margin + cell_size*3, margin)
+        self.draw_nicked_line(painter,
+                              margin + cell_size*3, margin,
+                              margin + cell_size*3, margin+cell_size)
+        self.draw_nicked_line(painter,
+                              margin + cell_size*3, margin+cell_size,
+                              margin + cell_size, margin+cell_size)
+        self.draw_nicked_line(painter,
+                              margin + cell_size, margin+cell_size,
+                              margin + cell_size, margin+cell_size*2)
+        self.draw_nicked_line(painter,
+                              margin + cell_size, margin+cell_size*2,
+                              margin, margin+cell_size*2)
+        self.draw_nicked_line(painter,
+                              margin, margin,
+                              margin, margin+cell_size*2)
 
         # J
-        painter.drawLine(margin, margin+cell_size*2+nick_radius,
-                         margin, margin+cell_size*4)
-        painter.drawLine(margin, margin+cell_size*4,
-                         margin+cell_size*3-nick_radius, margin+cell_size*4)
-        painter.drawLine(margin+cell_size*3, margin+cell_size*4-nick_radius,
-                         margin+cell_size*3, margin+cell_size*3+nick_radius)
-        painter.drawLine(margin+cell_size*3-nick_radius, margin+cell_size*3,
-                         margin+cell_size, margin+cell_size*3)
-        painter.drawLine(margin+cell_size, margin+cell_size*3,
-                         margin+cell_size, margin+cell_size*2+nick_radius)
+        self.draw_nicked_line(painter,
+                              margin, margin+cell_size*2,
+                              margin, margin+cell_size*4)
+        self.draw_nicked_line(painter,
+                              margin, margin+cell_size*4,
+                              margin+cell_size*3, margin+cell_size*4)
+        self.draw_nicked_line(painter,
+                              margin+cell_size*3, margin+cell_size*4,
+                              margin+cell_size*3, margin+cell_size*3)
+        self.draw_nicked_line(painter,
+                              margin+cell_size*3, margin+cell_size*3,
+                              margin+cell_size, margin+cell_size*3)
+        self.draw_nicked_line(painter,
+                              margin+cell_size, margin+cell_size*3,
+                              margin+cell_size, margin+cell_size*2)
 
         # O
-        painter.drawLine(margin+cell_size*3, margin+cell_size+nick_radius,
-                         margin+cell_size*3, margin+cell_size*3-nick_radius)
+        self.draw_nicked_line(painter,
+                              margin+cell_size*3, margin+cell_size,
+                              margin+cell_size*3, margin+cell_size*3)
 
         # I
-        painter.drawLine(margin+cell_size*3+nick_radius, margin,
-                         margin+cell_size*4-nick_radius, margin)
-        painter.drawLine(margin+cell_size*3+nick_radius, margin+cell_size*4,
-                         margin+cell_size*4-nick_radius, margin+cell_size*4)
-        painter.drawLine(margin+cell_size*4, margin+nick_radius,
-                         margin+cell_size*4, margin+cell_size*3-nick_radius)
-        painter.drawLine(margin+cell_size*4, margin+cell_size*3+nick_radius,
-                         margin+cell_size*4, margin+cell_size*4-nick_radius)
-        painter.drawLine(margin+cell_size*4, margin+cell_size*3+nick_radius,
-                         margin+cell_size*4, margin+cell_size*4-nick_radius)
+        self.draw_nicked_line(painter,
+                              margin+cell_size*3, margin,
+                              margin+cell_size*4, margin)
+        self.draw_nicked_line(painter,
+                              margin+cell_size*3, margin+cell_size*4,
+                              margin+cell_size*4, margin+cell_size*4)
+        self.draw_nicked_line(painter,
+                              margin+cell_size*4, margin,
+                              margin+cell_size*4, margin+cell_size*3)
+        self.draw_nicked_line(painter,
+                              margin+cell_size*4, margin+cell_size*3,
+                              margin+cell_size*4, margin+cell_size*4)
+        self.draw_nicked_line(painter,
+                              margin+cell_size*4, margin+cell_size*3,
+                              margin+cell_size*4, margin+cell_size*4)
 
         # T
-        painter.drawLine(margin+cell_size*4+nick_radius, margin,
-                         margin+cell_size*5-nick_radius, margin)
-        painter.drawLine(margin+cell_size*5, margin+nick_radius,
-                         margin+cell_size*5, margin+cell_size)
-        painter.drawLine(margin+cell_size*5, margin+cell_size,
-                         margin+cell_size*6, margin+cell_size)
-        painter.drawLine(margin+cell_size*6, margin+cell_size,
-                         margin+cell_size*6, margin+cell_size*2-nick_radius)
-        painter.drawLine(margin+cell_size*6-nick_radius, margin+cell_size*2,
-                         margin+cell_size*5, margin+cell_size*2)
-        painter.drawLine(margin+cell_size*5, margin+cell_size*2,
-                         margin+cell_size*5, margin+cell_size*3)
-        painter.drawLine(margin+cell_size*5, margin+cell_size*3,
-                         margin+cell_size*4+nick_radius, margin+cell_size*3)
+        self.draw_nicked_line(painter,
+                              margin+cell_size*4, margin,
+                              margin+cell_size*5, margin)
+        self.draw_nicked_line(painter,
+                              margin+cell_size*5, margin,
+                              margin+cell_size*5, margin+cell_size)
+        self.draw_nicked_line(painter,
+                              margin+cell_size*5, margin+cell_size,
+                              margin+cell_size*6, margin+cell_size)
+        self.draw_nicked_line(painter,
+                              margin+cell_size*6, margin+cell_size,
+                              margin+cell_size*6, margin+cell_size*2)
+        self.draw_nicked_line(painter,
+                              margin+cell_size*6, margin+cell_size*2,
+                              margin+cell_size*5, margin+cell_size*2)
+        self.draw_nicked_line(painter,
+                              margin+cell_size*5, margin+cell_size*2,
+                              margin+cell_size*5, margin+cell_size*3)
+        self.draw_nicked_line(painter,
+                              margin+cell_size*5, margin+cell_size*3,
+                              margin+cell_size*4, margin+cell_size*3)
 
         # S
-        painter.drawLine(margin+cell_size*6, margin+cell_size*4,
-                         margin+cell_size*4+nick_radius, margin+cell_size*4)
-        painter.drawLine(margin+cell_size*6, margin+cell_size*4,
-                         margin+cell_size*6, margin+cell_size*3)
-        painter.drawLine(margin+cell_size*6, margin+cell_size*3,
-                         margin+cell_size*7, margin+cell_size*3)
-        painter.drawLine(margin+cell_size*7, margin+cell_size*3,
-                         margin+cell_size*7, margin+cell_size*2+nick_radius)
-        painter.drawLine(margin+cell_size*7-nick_radius, margin+cell_size*2,
-                         margin+cell_size*6+nick_radius, margin+cell_size*2)
+        self.draw_nicked_line(painter,
+                              margin+cell_size*6, margin+cell_size*4,
+                              margin+cell_size*4, margin+cell_size*4)
+        self.draw_nicked_line(painter,
+                              margin+cell_size*6, margin+cell_size*4,
+                              margin+cell_size*6, margin+cell_size*3)
+        self.draw_nicked_line(painter,
+                              margin+cell_size*6, margin+cell_size*3,
+                              margin+cell_size*7, margin+cell_size*3)
+        self.draw_nicked_line(painter,
+                              margin+cell_size*7, margin+cell_size*3,
+                              margin+cell_size*7, margin+cell_size*2)
+        self.draw_nicked_line(painter,
+                              margin+cell_size*7, margin+cell_size*2,
+                              margin+cell_size*6, margin+cell_size*2)
 
         # Z
-        painter.drawLine(margin+cell_size*7+nick_radius, margin+cell_size*2,
-                         margin+cell_size*8, margin+cell_size*2)
-        painter.drawLine(margin+cell_size*8, margin+cell_size*2,
-                         margin+cell_size*8, margin+cell_size)
-        painter.drawLine(margin + cell_size*7, margin+cell_size,
-                         margin + cell_size*8, margin+cell_size)
-        painter.drawLine(margin + cell_size*7, margin+cell_size,
-                         margin + cell_size*7, margin)
-        painter.drawLine(margin + cell_size*7, margin,
-                         margin + cell_size*5+nick_radius, margin)
+        self.draw_nicked_line(painter,
+                              margin+cell_size*7, margin+cell_size*2,
+                              margin+cell_size*8, margin+cell_size*2)
+        self.draw_nicked_line(painter,
+                              margin+cell_size*8, margin+cell_size*2,
+                              margin+cell_size*8, margin+cell_size)
+        self.draw_nicked_line(painter,
+                              margin + cell_size*7, margin+cell_size,
+                              margin + cell_size*8, margin+cell_size)
+        self.draw_nicked_line(painter,
+                              margin + cell_size*7, margin+cell_size,
+                              margin + cell_size*7, margin)
+        self.draw_nicked_line(painter,
+                              margin + cell_size*7, margin,
+                              margin + cell_size*5, margin)
 
 
 @cache
