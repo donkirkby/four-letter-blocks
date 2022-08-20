@@ -36,10 +36,23 @@ class FourLetterBlocksWindow(QMainWindow):
         ui.save_action.triggered.connect(self.save)
         ui.save_as_action.triggered.connect(self.save_as)
         ui.export_action.triggered.connect(self.export)
-        ui.export_laser_action.triggered.connect(self.export_laser)
+        ui.export_set_action.triggered.connect(self.export_laser)
 
         ui.shuffle_action.triggered.connect(self.shuffle)
         ui.options_action.triggered.connect(self.choose_font)
+
+        ui.main_tabs.currentChanged.connect(self.select_tab)
+        self.select_tab(ui.main_tabs.currentIndex())
+        ui.crossword_files.currentRowChanged.connect(
+            self.select_crossword_file)
+        self.selected_crossword_file = -1
+        self.select_crossword_file(-1)
+
+        ui.add_button.clicked.connect(self.add_crosswords)
+        ui.remove_button.clicked.connect(self.remove_crossword)
+        ui.cut_button.clicked.connect(self.select_cut_file)
+        ui.front_button.clicked.connect(self.select_front_file)
+        ui.back_button.clicked.connect(self.select_back_file)
 
         sys.excepthook = self.on_error
         self.file_path: typing.Optional[Path] = None
@@ -56,10 +69,10 @@ class FourLetterBlocksWindow(QMainWindow):
 
         ui.warnings_label.setVisible(False)
 
-        self.state_fields = (self.ui.title_text,
-                             self.ui.grid_text,
-                             self.ui.clues_text,
-                             self.ui.blocks_text)
+        self.state_fields = (ui.title_text,
+                             ui.grid_text,
+                             ui.clues_text,
+                             ui.blocks_text)
         self.clean_state = self.current_state = self.build_current_state()
         self.update_font()
 
@@ -145,6 +158,41 @@ class FourLetterBlocksWindow(QMainWindow):
         self.ui.blocks_text.clear()
         self.record_clean_state()
 
+    def add_crosswords(self):
+        save_dir = self.get_save_dir()
+        kwargs = get_file_dialog_options()
+        file_names: typing.List[str]
+        file_names, selected_filter = QFileDialog.getOpenFileNames(
+            self,
+            'Open Crossword Files',
+            dir=save_dir,
+            filter='Text files (*.txt);;All files (*.*)',
+            **kwargs)
+        if not file_names:
+            return
+
+        file_names.sort()
+        crossword_files = self.ui.crossword_files
+        old_files = [crossword_files.item(i).text()
+                     for i in range(crossword_files.count())]
+        i = 0
+        while file_names:
+            new_file = file_names.pop(0)
+            while i < len(old_files):
+                old_file = old_files[i]
+                if new_file == old_file:
+                    break
+                if new_file < old_file:
+                    old_files.insert(i, new_file)
+                    crossword_files.insertItem(i, new_file)
+                    i += 1
+                    break
+                i += 1
+            else:
+                old_files.append(new_file)
+                crossword_files.addItem(new_file)
+                i += 1
+
     def open(self):
         if not self.can_abandon('open a file'):
             return
@@ -176,25 +224,36 @@ class FourLetterBlocksWindow(QMainWindow):
         self.ui.blocks_text.setPlainText(puzzle.format_blocks())
         self.record_clean_state()
 
+    def remove_crossword(self):
+        if self.selected_crossword_file >= 0:
+            self.ui.crossword_files.takeItem(self.selected_crossword_file)
+            self.selected_crossword_file = self.ui.crossword_files.currentRow()
+
     def record_clean_state(self):
         self.clean_state = self.build_current_state()
         self.is_state_changed()  # Update dirty display.
 
     def save_as(self):
+        file_name = self.get_save_file_name(
+            'Save puzzle',
+            'Text files (*.txt);;All files (*.*)')
+        if not file_name:
+            return
+
+        self.file_path = Path(file_name)
+        self.save()
+
+    def get_save_file_name(self, caption, file_filter):
         save_dir = self.get_save_dir()
         kwargs = get_file_dialog_options()
         file_name, _ = QFileDialog.getSaveFileName(
             self,
-            'Save puzzle',
+            caption,
             dir=save_dir,
-            filter='Text files (*.txt);;All files (*.*)',
+            filter=file_filter,
             **kwargs)
-        if not file_name:
-            return
-        self.file_path = Path(file_name)
-        self.settings.setValue('save_path', str(self.file_path))
-
-        self.save()
+        self.settings.setValue('save_path', file_name)
+        return file_name
 
     def get_save_dir(self):
         save_path = self.settings.value('save_path')
@@ -212,6 +271,36 @@ class FourLetterBlocksWindow(QMainWindow):
         self.file_path.write_text(self.format_text())
         self.statusBar().showMessage(f'Saved to {self.file_path.name}.')
         self.record_clean_state()
+
+    def select_cut_file(self):
+        file_name = self.get_save_file_name(
+            'Save Cut File',
+            'SVG files (*.svg);;All files (*.*)')
+
+        if not file_name:
+            return
+
+        self.ui.cut_file.setText(file_name)
+
+    def select_front_file(self):
+        file_name = self.get_save_file_name(
+            'Save Front File',
+            'PNG files (*.png);;All files (*.*)')
+
+        if not file_name:
+            return
+
+        self.ui.front_file.setText(file_name)
+
+    def select_back_file(self):
+        file_name = self.get_save_file_name(
+            'Save Back File',
+            'PNG files (*.png);;All files (*.*)')
+
+        if not file_name:
+            return
+
+        self.ui.back_file.setText(file_name)
 
     def format_text(self) -> str:
         sections = [self.ui.title_text.text().strip() or 'Untitled']
@@ -428,6 +517,20 @@ class FourLetterBlocksWindow(QMainWindow):
         if is_ok:
             self.settings.setValue('font_size', font_size)
             self.update_font()
+
+    def select_tab(self, tab_index):
+        is_single = tab_index == 0
+        self.ui.new_action.setEnabled(is_single)
+        self.ui.open_action.setEnabled(is_single)
+        self.ui.save_action.setEnabled(is_single)
+        self.ui.save_as_action.setEnabled(is_single)
+        self.ui.shuffle_action.setEnabled(is_single)
+        self.ui.export_action.setEnabled(is_single)
+        self.ui.export_set_action.setEnabled(not is_single)
+
+    def select_crossword_file(self, file_index):
+        self.selected_crossword_file = file_index
+        self.ui.remove_button.setEnabled(file_index >= 0)
 
     def update_font(self):
         font_size = self.settings.value('font_size', 11, int)

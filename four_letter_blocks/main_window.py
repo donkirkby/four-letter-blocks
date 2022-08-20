@@ -16,9 +16,11 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
     QIcon, QImage, QKeySequence, QLinearGradient,
     QPainter, QPalette, QPixmap, QRadialGradient,
     QTransform)
-from PySide6.QtWidgets import (QApplication, QLabel, QLineEdit, QMainWindow,
-    QMenu, QMenuBar, QPlainTextEdit, QSizePolicy,
-    QStatusBar, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QGridLayout, QLabel, QLineEdit,
+    QListWidget, QListWidgetItem, QMainWindow, QMenu,
+    QMenuBar, QPlainTextEdit, QPushButton, QSizePolicy,
+    QSpacerItem, QStatusBar, QTabWidget, QVBoxLayout,
+    QWidget)
 
 from four_letter_blocks.focused_plain_text_edit import FocusedPlainTextEdit
 
@@ -45,59 +47,143 @@ class Ui_MainWindow(object):
         self.shuffle_action.setObjectName(u"shuffle_action")
         self.options_action = QAction(MainWindow)
         self.options_action.setObjectName(u"options_action")
-        self.export_laser_action = QAction(MainWindow)
-        self.export_laser_action.setObjectName(u"export_laser_action")
+        self.export_set_action = QAction(MainWindow)
+        self.export_set_action.setObjectName(u"export_set_action")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
         self.verticalLayout.setObjectName(u"verticalLayout")
-        self.title_label = QLabel(self.centralwidget)
+        self.main_tabs = QTabWidget(self.centralwidget)
+        self.main_tabs.setObjectName(u"main_tabs")
+        self.single_tab = QWidget()
+        self.single_tab.setObjectName(u"single_tab")
+        self.verticalLayout_2 = QVBoxLayout(self.single_tab)
+        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
+        self.title_label = QLabel(self.single_tab)
         self.title_label.setObjectName(u"title_label")
 
-        self.verticalLayout.addWidget(self.title_label)
+        self.verticalLayout_2.addWidget(self.title_label)
 
-        self.title_text = QLineEdit(self.centralwidget)
+        self.title_text = QLineEdit(self.single_tab)
         self.title_text.setObjectName(u"title_text")
 
-        self.verticalLayout.addWidget(self.title_text)
+        self.verticalLayout_2.addWidget(self.title_text)
 
-        self.grid_label = QLabel(self.centralwidget)
+        self.grid_label = QLabel(self.single_tab)
         self.grid_label.setObjectName(u"grid_label")
 
-        self.verticalLayout.addWidget(self.grid_label)
+        self.verticalLayout_2.addWidget(self.grid_label)
 
-        self.grid_text = FocusedPlainTextEdit(self.centralwidget)
+        self.grid_text = FocusedPlainTextEdit(self.single_tab)
         self.grid_text.setObjectName(u"grid_text")
         self.grid_text.setTabChangesFocus(True)
 
-        self.verticalLayout.addWidget(self.grid_text)
+        self.verticalLayout_2.addWidget(self.grid_text)
 
-        self.clues_label = QLabel(self.centralwidget)
+        self.clues_label = QLabel(self.single_tab)
         self.clues_label.setObjectName(u"clues_label")
 
-        self.verticalLayout.addWidget(self.clues_label)
+        self.verticalLayout_2.addWidget(self.clues_label)
 
-        self.clues_text = QPlainTextEdit(self.centralwidget)
+        self.clues_text = QPlainTextEdit(self.single_tab)
         self.clues_text.setObjectName(u"clues_text")
         self.clues_text.setTabChangesFocus(True)
 
-        self.verticalLayout.addWidget(self.clues_text)
+        self.verticalLayout_2.addWidget(self.clues_text)
 
-        self.blocks_label = QLabel(self.centralwidget)
+        self.blocks_label = QLabel(self.single_tab)
         self.blocks_label.setObjectName(u"blocks_label")
 
-        self.verticalLayout.addWidget(self.blocks_label)
+        self.verticalLayout_2.addWidget(self.blocks_label)
 
-        self.blocks_text = FocusedPlainTextEdit(self.centralwidget)
+        self.blocks_text = FocusedPlainTextEdit(self.single_tab)
         self.blocks_text.setObjectName(u"blocks_text")
         self.blocks_text.setTabChangesFocus(True)
 
-        self.verticalLayout.addWidget(self.blocks_text)
+        self.verticalLayout_2.addWidget(self.blocks_text)
 
-        self.warnings_label = QLabel(self.centralwidget)
+        self.warnings_label = QLabel(self.single_tab)
         self.warnings_label.setObjectName(u"warnings_label")
 
-        self.verticalLayout.addWidget(self.warnings_label)
+        self.verticalLayout_2.addWidget(self.warnings_label)
+
+        self.main_tabs.addTab(self.single_tab, "")
+        self.set_tab = QWidget()
+        self.set_tab.setObjectName(u"set_tab")
+        self.gridLayout = QGridLayout(self.set_tab)
+        self.gridLayout.setObjectName(u"gridLayout")
+        self.crossword_label = QLabel(self.set_tab)
+        self.crossword_label.setObjectName(u"crossword_label")
+
+        self.gridLayout.addWidget(self.crossword_label, 0, 0, 1, 3)
+
+        self.crossword_files = QListWidget(self.set_tab)
+        self.crossword_files.setObjectName(u"crossword_files")
+
+        self.gridLayout.addWidget(self.crossword_files, 1, 0, 1, 3)
+
+        self.remove_button = QPushButton(self.set_tab)
+        self.remove_button.setObjectName(u"remove_button")
+
+        self.gridLayout.addWidget(self.remove_button, 2, 2, 1, 1)
+
+        self.add_button = QPushButton(self.set_tab)
+        self.add_button.setObjectName(u"add_button")
+
+        self.gridLayout.addWidget(self.add_button, 2, 1, 1, 1)
+
+        self.front_label = QLabel(self.set_tab)
+        self.front_label.setObjectName(u"front_label")
+
+        self.gridLayout.addWidget(self.front_label, 8, 0, 1, 1)
+
+        self.cut_label = QLabel(self.set_tab)
+        self.cut_label.setObjectName(u"cut_label")
+
+        self.gridLayout.addWidget(self.cut_label, 3, 0, 1, 3)
+
+        self.back_label = QLabel(self.set_tab)
+        self.back_label.setObjectName(u"back_label")
+
+        self.gridLayout.addWidget(self.back_label, 10, 0, 1, 1)
+
+        self.crossword_spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.gridLayout.addItem(self.crossword_spacer, 2, 0, 1, 1)
+
+        self.cut_file = QLineEdit(self.set_tab)
+        self.cut_file.setObjectName(u"cut_file")
+
+        self.gridLayout.addWidget(self.cut_file, 7, 0, 1, 2)
+
+        self.front_file = QLineEdit(self.set_tab)
+        self.front_file.setObjectName(u"front_file")
+
+        self.gridLayout.addWidget(self.front_file, 9, 0, 1, 2)
+
+        self.back_file = QLineEdit(self.set_tab)
+        self.back_file.setObjectName(u"back_file")
+
+        self.gridLayout.addWidget(self.back_file, 11, 0, 1, 2)
+
+        self.cut_button = QPushButton(self.set_tab)
+        self.cut_button.setObjectName(u"cut_button")
+
+        self.gridLayout.addWidget(self.cut_button, 7, 2, 1, 1)
+
+        self.front_button = QPushButton(self.set_tab)
+        self.front_button.setObjectName(u"front_button")
+
+        self.gridLayout.addWidget(self.front_button, 9, 2, 1, 1)
+
+        self.back_button = QPushButton(self.set_tab)
+        self.back_button.setObjectName(u"back_button")
+
+        self.gridLayout.addWidget(self.back_button, 11, 2, 1, 1)
+
+        self.main_tabs.addTab(self.set_tab, "")
+
+        self.verticalLayout.addWidget(self.main_tabs)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
@@ -126,7 +212,7 @@ class Ui_MainWindow(object):
         self.file_menu.addAction(self.save_as_action)
         self.file_menu.addSeparator()
         self.file_menu.addAction(self.export_action)
-        self.file_menu.addAction(self.export_laser_action)
+        self.file_menu.addAction(self.export_set_action)
         self.file_menu.addSeparator()
         self.file_menu.addAction(self.exit_action)
         self.help_menu.addAction(self.about_action)
@@ -134,6 +220,9 @@ class Ui_MainWindow(object):
         self.tools_menu.addAction(self.options_action)
 
         self.retranslateUi(MainWindow)
+
+        self.main_tabs.setCurrentIndex(0)
+
 
         QMetaObject.connectSlotsByName(MainWindow)
     # setupUi
@@ -179,9 +268,9 @@ class Ui_MainWindow(object):
         self.shuffle_action.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+F", None))
 #endif // QT_CONFIG(shortcut)
         self.options_action.setText(QCoreApplication.translate("MainWindow", u"&Options...", None))
-        self.export_laser_action.setText(QCoreApplication.translate("MainWindow", u"Export for &Laser Cut...", None))
+        self.export_set_action.setText(QCoreApplication.translate("MainWindow", u"Export Se&t...", None))
 #if QT_CONFIG(shortcut)
-        self.export_laser_action.setShortcut(QCoreApplication.translate("MainWindow", u"Alt+Shift+X", None))
+        self.export_set_action.setShortcut(QCoreApplication.translate("MainWindow", u"Alt+Shift+X", None))
 #endif // QT_CONFIG(shortcut)
         self.title_label.setText(QCoreApplication.translate("MainWindow", u"Title", None))
         self.grid_label.setText(QCoreApplication.translate("MainWindow", u"Grid", None))
@@ -189,6 +278,17 @@ class Ui_MainWindow(object):
         self.clues_label.setText(QCoreApplication.translate("MainWindow", u"Clues", None))
         self.blocks_label.setText(QCoreApplication.translate("MainWindow", u"Blocks", None))
         self.warnings_label.setText(QCoreApplication.translate("MainWindow", u"Warnings", None))
+        self.main_tabs.setTabText(self.main_tabs.indexOf(self.single_tab), QCoreApplication.translate("MainWindow", u"Single", None))
+        self.crossword_label.setText(QCoreApplication.translate("MainWindow", u"Crossword Files", None))
+        self.remove_button.setText(QCoreApplication.translate("MainWindow", u"Remove", None))
+        self.add_button.setText(QCoreApplication.translate("MainWindow", u"Add...", None))
+        self.front_label.setText(QCoreApplication.translate("MainWindow", u"Front File", None))
+        self.cut_label.setText(QCoreApplication.translate("MainWindow", u"Cut File", None))
+        self.back_label.setText(QCoreApplication.translate("MainWindow", u"Back File", None))
+        self.cut_button.setText(QCoreApplication.translate("MainWindow", u"...", None))
+        self.front_button.setText(QCoreApplication.translate("MainWindow", u"...", None))
+        self.back_button.setText(QCoreApplication.translate("MainWindow", u"...", None))
+        self.main_tabs.setTabText(self.main_tabs.indexOf(self.set_tab), QCoreApplication.translate("MainWindow", u"Set", None))
         self.file_menu.setTitle(QCoreApplication.translate("MainWindow", u"&File", None))
         self.help_menu.setTitle(QCoreApplication.translate("MainWindow", u"&Help", None))
         self.edit_menu.setTitle(QCoreApplication.translate("MainWindow", u"&Edit", None))
