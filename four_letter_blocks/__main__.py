@@ -4,18 +4,20 @@ import traceback
 import typing
 from pathlib import Path
 
-from PySide6.QtCore import QSettings, QSize, QSizeF, QObject, QRectF, QRect
+from PySide6.QtCore import QSettings, QSize, QSizeF, QObject, QRectF, QRect, QPoint
 from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, \
     Qt, QCloseEvent, QPixmap, QColor, QTextDocument, QTextFormat, QTextCursor, \
     QTextCharFormat, QPyTextObject, QImage
 from PySide6.QtSvg import QSvgGenerator
-from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog, QInputDialog
+from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog, QInputDialog, QToolTip, \
+    QListWidgetItem
 
 import four_letter_blocks
 from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.line_deduper import LineDeduper
 from four_letter_blocks.main_window import Ui_MainWindow
 from four_letter_blocks.puzzle import Puzzle
+from four_letter_blocks.puzzle_set import PuzzleSet
 
 DIAGRAM_TEXT_FORMAT = QTextFormat.UserObject + 1
 DIAGRAM_DATA = 1
@@ -47,6 +49,7 @@ class FourLetterBlocksWindow(QMainWindow):
             self.select_crossword_file)
         self.selected_crossword_file = -1
         self.select_crossword_file(-1)
+        self.crossword_set: typing.Dict[str, Puzzle] = {}
 
         ui.add_button.clicked.connect(self.add_crosswords)
         ui.remove_button.clicked.connect(self.remove_crossword)
@@ -171,27 +174,60 @@ class FourLetterBlocksWindow(QMainWindow):
         if not file_names:
             return
 
-        file_names.sort()
         crossword_files = self.ui.crossword_files
-        old_files = [crossword_files.item(i).text()
+        old_names = [((item := crossword_files.item(i)).text(), item.toolTip())
                      for i in range(crossword_files.count())]
+        old_files = {file_name for text, file_name in old_names}
+
+        new_names = []
+        for file_name in file_names:
+            if file_name in old_files:
+                continue
+            with open(file_name) as puzzle_file:
+                puzzle = Puzzle.parse(puzzle_file)
+            self.crossword_set[file_name] = puzzle
+            new_names.append((puzzle.title, file_name))
+        new_names.sort()
+
         i = 0
-        while file_names:
-            new_file = file_names.pop(0)
-            while i < len(old_files):
-                old_file = old_files[i]
-                if new_file == old_file:
-                    break
-                if new_file < old_file:
-                    old_files.insert(i, new_file)
-                    crossword_files.insertItem(i, new_file)
+        while new_names:
+            new_name = new_names.pop(0)
+            while i < len(old_names):
+                old_name = old_names[i]
+                if new_name < old_name:
+                    old_names.insert(i, new_name)
+                    new_text, new_file = new_name
+                    new_item = QListWidgetItem(new_text)
+                    new_item.setToolTip(new_file)
+                    crossword_files.insertItem(i, new_item)
                     i += 1
                     break
                 i += 1
             else:
-                old_files.append(new_file)
-                crossword_files.addItem(new_file)
+                old_names.append(new_name)
+                new_text, new_file = new_name
+                new_item = QListWidgetItem(new_text)
+                new_item.setToolTip(new_file)
+                crossword_files.addItem(new_item)
                 i += 1
+
+        self.summarize_crossword_set()
+
+    def add_crossword_to_set(self, file_name: str) -> Puzzle:
+        with open(file_name) as puzzle_file:
+            puzzle = Puzzle.parse(puzzle_file)
+        self.crossword_set[file_name] = puzzle
+        return puzzle
+
+    def summarize_crossword_set(self):
+        puzzles = []
+        crossword_files = self.ui.crossword_files
+        for i in range(crossword_files.count()):
+            file_name = crossword_files.item(i).toolTip()
+            puzzles.append(self.crossword_set[file_name])
+
+        puzzle_set = PuzzleSet(*puzzles)
+        self.statusBar().showMessage(puzzle_set.block_summary)
 
     def open(self):
         if not self.can_abandon('open a file'):
@@ -226,8 +262,12 @@ class FourLetterBlocksWindow(QMainWindow):
 
     def remove_crossword(self):
         if self.selected_crossword_file >= 0:
-            self.ui.crossword_files.takeItem(self.selected_crossword_file)
+            item = self.ui.crossword_files.takeItem(
+                self.selected_crossword_file)
+            file_name = item.toolTip()
+            del self.crossword_set[file_name]
             self.selected_crossword_file = self.ui.crossword_files.currentRow()
+            self.summarize_crossword_set()
 
     def record_clean_state(self):
         self.clean_state = self.build_current_state()
@@ -335,7 +375,30 @@ class FourLetterBlocksWindow(QMainWindow):
             self.export_md(file_path)
         self.statusBar().showMessage(f'Exported to {file_path.name}.')
 
+    @staticmethod
+    def is_field_filled(field, label, button):
+        if field.text():
+            return True
+        message = f"Select a {label.text().lower()} before exporting."
+        point = button.mapToGlobal(QPoint(0, 0))
+        QToolTip.showText(point, message)
+        return False
+
     def export_laser(self):
+        ui = self.ui
+        if not self.is_field_filled(ui.cut_file, ui.cut_label, ui.cut_button):
+            return
+        if not self.is_field_filled(ui.front_file,
+                                    ui.front_label,
+                                    ui.front_button):
+            return
+        if not self.is_field_filled(ui.back_file,
+                                    ui.back_label,
+                                    ui.back_button):
+            return
+        print('Exporting!')
+
+    def export_laserx(self):
         save_dir = self.get_save_dir()
         kwargs = get_file_dialog_options()
         folder_name = QFileDialog.getExistingDirectory(

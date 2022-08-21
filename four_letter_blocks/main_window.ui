@@ -315,7 +315,7 @@
     <string>Export Se&amp;t...</string>
    </property>
    <property name="shortcut">
-    <string>Alt+Shift+X</string>
+    <string>Alt+X</string>
    </property>
   </action>
  </widget>
