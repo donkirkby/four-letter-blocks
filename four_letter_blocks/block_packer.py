@@ -9,8 +9,16 @@ from four_letter_blocks.block import shape_rotations, normalize_coordinates
 
 
 class BlockPacker:
-    def __init__(self, width=0, height=0, tries=-1, start_text: str = None):
-        if start_text is None:
+    def __init__(self,
+                 width=0,
+                 height=0,
+                 tries=-1,
+                 start_text: str = None,
+                 start_state: np.ndarray = None):
+        if start_state is not None:
+            self.height, self.width = start_state.shape
+            self.state = start_state
+        elif start_text is None:
             self.width = width
             self.height = height
             self.state = np.zeros((height, width), np.int8)
@@ -161,7 +169,6 @@ class BlockPacker:
     def draw_cuts(self, painter: QPainter):
         cell_size = self.cell_size
         margin = self.margin
-        nick_radius = self.nick_radius
 
         pen = QPen('#ed2224')
         pen.setWidth(cell_size/20)
@@ -283,6 +290,10 @@ class BlockPacker:
         self.draw_nicked_line(painter,
                               margin + cell_size*7, margin,
                               margin + cell_size*5, margin)
+
+    def flip(self) -> 'BlockPacker':
+        flipped_state = np.copy(np.fliplr(self.state))
+        return BlockPacker(start_state=flipped_state, tries=self.tries)
 
 
 @cache

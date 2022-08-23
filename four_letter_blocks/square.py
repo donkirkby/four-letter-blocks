@@ -20,6 +20,7 @@ class Square:
         self.x = self.y = 0
         self.size = 1
         self.across_word = self.down_word = None
+        self.face_colour = 'white'
 
     def __repr__(self):
         if self.number is None:
@@ -36,7 +37,7 @@ class Square:
                      self.y,
                      self.size,
                      self.size)
-        white = QColor('white')
+        face = QColor(self.face_colour)
         black = QColor('black')
         suit_outline = QColor(166, 166, 166)
         suit_fill = QColor(227, 227, 227)
@@ -45,8 +46,7 @@ class Square:
         number_shift = round(self.size / 20)
         letter_shift = round(self.size * (1 - self.LETTER_SIZE)/2)
 
-        if use_text:
-            painter.fillRect(rect, white)
+        painter.fillRect(rect, face)
 
         font.setPixelSize(self.size)
         if self.suit is None:

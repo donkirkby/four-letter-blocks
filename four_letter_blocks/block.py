@@ -32,6 +32,15 @@ class Block:
         squares = ', '.join(repr(square) for square in self.squares)
         return f"Block({squares})"
 
+    @property
+    def face_colour(self):
+        return self.squares[0].face_colour
+
+    @face_colour.setter
+    def face_colour(self, colour):
+        for square in self.squares:
+            square.face_colour = colour
+
     @staticmethod
     def parse(text: str, grid: Grid) -> typing.List['Block']:
         unused_squares = {square

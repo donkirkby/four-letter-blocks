@@ -85,7 +85,7 @@ def test_fill_three_blocks():
     assert packer.display() == expected_display
 
 
-def test():
+def test_positions():
     packer = BlockPacker(start_text=dedent("""\
         AA#CC
         AAB.C
@@ -99,6 +99,25 @@ def test():
 
     assert packer.positions == expected_positions
 
+
+def test_flip():
+    packer = BlockPacker(start_text=dedent("""\
+        AA#CC
+        AAB.C
+        BBB.C
+        ....."""))
+    expected_display = dedent("""\
+        CC#AA
+        C.BAA
+        C.BBB
+        .....""")
+
+    flipped_packer = packer.flip()
+
+    assert flipped_packer.display() == expected_display
+
+
+# TODO: Test fill failure.
 
 def test_draw_cuts(pixmap_differ: PixmapDiffer):
     actual, expected = pixmap_differ.start(

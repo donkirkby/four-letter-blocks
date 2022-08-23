@@ -12,7 +12,6 @@ from PySide6.QtGui import QPainter, QTextDocument
 from four_letter_blocks.clue import Clue
 from four_letter_blocks.grid import Grid
 from four_letter_blocks.block import Block
-from four_letter_blocks.line_deduper import LineDeduper
 
 
 @dataclass
@@ -151,24 +150,6 @@ class Puzzle:
                 square.size = value
                 square.x *= ratio
                 square.y *= ratio
-
-    def draw_packed(self,
-                    painter: typing.Union[QPainter, LineDeduper],
-                    shape_positions: typing.Dict[
-                        str,
-                        typing.List[typing.Tuple[int, int, int]]],
-                    square_size: int = None):
-        window_width = painter.window().width()
-        if square_size is None:
-            square_size = window_width // self.DEFAULT_ROW_LENGTH
-        self.square_size = square_size
-        for block in self.blocks:
-            positions = shape_positions[block.shape]
-            x, y, rotation = positions.pop()
-            block.set_display((x+0.5)*square_size, (y+0.5)*square_size, rotation)
-            block.border_colour = 'red'
-            block.divider_colour = 'blue'
-            block.draw(painter, use_text=self.use_text)
 
     def draw_blocks(self,
                     painter: QPainter,

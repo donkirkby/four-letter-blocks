@@ -14,7 +14,6 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialo
 
 import four_letter_blocks
 from four_letter_blocks.block_packer import BlockPacker
-from four_letter_blocks.line_deduper import LineDeduper
 from four_letter_blocks.main_window import Ui_MainWindow
 from four_letter_blocks.puzzle import Puzzle
 from four_letter_blocks.puzzle_set import PuzzleSet
@@ -638,14 +637,10 @@ class BlockDiagram(QPyTextObject):
                    posInDocument: int,
                    format: QTextFormat):
         row_index = format.property(DIAGRAM_DATA)
-        if self.position_map is None:
-            self.puzzle.draw_blocks(painter,
-                                    row_index=row_index,
-                                    x=rect.x(),
-                                    y=rect.y())
-        else:
-            deduper = LineDeduper(painter)
-            self.puzzle.draw_packed(deduper, self.position_map)
+        self.puzzle.draw_blocks(painter,
+                                row_index=row_index,
+                                x=rect.x(),
+                                y=rect.y())
 
 
 def get_settings():

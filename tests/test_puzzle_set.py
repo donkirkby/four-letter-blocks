@@ -1,14 +1,13 @@
 from io import StringIO
 from textwrap import dedent
 
-import pytest
-
+from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.puzzle import Puzzle
 from four_letter_blocks.puzzle_set import PuzzleSet
 from tests.pixmap_differ import PixmapDiffer
 
 
-def parse_puzzle_set():
+def parse_puzzle_set(block_packer: BlockPacker = None):
     puzzle1 = Puzzle.parse(StringIO(dedent("""\
         Title
 
@@ -43,7 +42,7 @@ def parse_puzzle_set():
         E##CD
         EEDDD
     """)))
-    puzzle_set = PuzzleSet(puzzle1, puzzle2)
+    puzzle_set = PuzzleSet(puzzle1, puzzle2, block_packer=block_packer)
     return puzzle_set
 
 
@@ -116,32 +115,42 @@ def test_shape_counts():
     shape_counts = puzzle_set.shape_counts
 
     assert shape_counts == {'I': 1,
-                            'J': 2,
-                            'L': 2,
+                            'J': 4,
                             'O': 1,
-                            'S': 1,
-                            'Z': 1}
+                            'S': 2}
 
 
-@pytest.mark.skip(reason='Not implemented yet.')
 def test_draw_packed(pixmap_differ: PixmapDiffer):
     with pixmap_differ.create_painters(
-            180,
+            360,
             180,
             'test_puzzle_draw_packed') as (actual, expected):
-        puzzle_set = parse_puzzle_set()
-        puzzle1, puzzle2 = puzzle_set.puzzles
-        puzzle1.square_size = 20
+        puzzle_set1 = parse_puzzle_set(BlockPacker(10, 10, tries=1000))
+        puzzle1, puzzle2 = puzzle_set1.puzzles
+        puzzle_set1.square_size = 20
         blocks = puzzle1.blocks
-        blocks[0].set_display(70, 10, 1)
-        # block2.set_display(10, 10, 3)
-        # block3.set_display(30, 30, 1)
-        for block in puzzle1.blocks:
-            block.border_colour = 'blue'
-            block.divider_colour = 'red'
-            block.draw(expected)
+        blocks[0].set_display(270, 10, 0)
+        blocks[1].set_display(190, 10, 0)
+        blocks[2].set_display(50, 10, 0)
+        blocks[3].set_display(70, 70, 0)
+        blocks[4].set_display(50, 90, 3)
 
-        # puzzle2 = parse_basic_puzzle()
-        # packer = BlockPacker(6, 6, tries=1000)
-        # packer.fill(Counter('LJI'))
-        # puzzle2.draw_packed(actual, packer.positions, square_size=20)
+        blocks = puzzle2.blocks
+        blocks[0].set_display(110, 70, 1)
+        blocks[1].set_display(130, 10, 0)
+        blocks[2].set_display(250, 70, 0)
+        blocks[3].set_display(230, 10, 0)
+        blocks[4].set_display(210, 90, 1)
+
+        for block in puzzle2.blocks:
+            block.face_colour = '#90c2b2'
+
+        for block in puzzle1.blocks + puzzle2.blocks:
+            block.border_colour = 'red'
+            block.draw(expected, use_text=False)
+
+        puzzle_set2 = parse_puzzle_set(BlockPacker(7, 8, tries=1000))
+        puzzle_set2.square_size = 20
+        puzzle_set2.draw_front(actual)
+
+        puzzle_set2.draw_back(actual, x_offset=8)
