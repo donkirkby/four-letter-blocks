@@ -104,6 +104,55 @@ class Block:
         return bottom - self.y
 
     def draw(self, painter: QPainter, use_text=True):
+        self.transform_painter(painter, 1)
+        square_positions = self.square_positions
+        size = self.squares[0].size
+        old_pen = painter.pen()
+        divider_pen = QPen(self.divider_colour)
+        divider_pen.setWidth(old_pen.width())
+        for square in self.squares:
+            square.draw(painter, use_text=use_text)
+            x = square.x
+            y = square.y
+            painter.setPen(divider_pen)
+            if (round(x), round(y-size)) in square_positions:
+                painter.drawLine(x, y, x+size, y)
+            if (round(x-size), round(y)) in square_positions:
+                painter.drawLine(x, y, x, y+size)
+            painter.setPen(old_pen)
+        self.transform_painter(painter, -1)
+
+        self.draw_outline(painter)
+
+    def draw_outline(self, painter):
+        self.transform_painter(painter, 1)
+        square_positions = self.square_positions
+        size = self.squares[0].size
+        old_pen = painter.pen()
+        outer_pen = QPen(self.border_colour)
+        outer_pen.setWidth(math.floor(size / 33))
+        outer_pen.setCapStyle(Qt.RoundCap)
+        for square in self.squares:
+            painter.setPen(outer_pen)
+            x = square.x
+            y = square.y
+            if (round(x), round(y - size)) not in square_positions:
+                painter.drawLine(x, y, x + size, y)
+            if (round(x), round(y + size)) not in square_positions:
+                painter.drawLine(x, y + size, x + size, y + size)
+            if (round(x - size), round(y)) not in square_positions:
+                painter.drawLine(x, y, x, y + size)
+            if (round(x + size), round(y)) not in square_positions:
+                painter.drawLine(x + size, y, x + size, y + size)
+            painter.setPen(old_pen)
+        self.transform_painter(painter, -1)
+
+    @property
+    def square_positions(self):
+        return {(round(square.x), round(square.y))
+                for square in self.squares}
+
+    def transform_painter(self, painter, sign):
         x_change = y_change = rotation_change = 0
         if self.display_x is not None:
             rotation_change = ((self.shape_rotation + 4 -
@@ -120,38 +169,12 @@ class Block:
             else:
                 x_change = self.display_x - self.y
                 y_change = self.display_y + self.width + self.x
-        painter.translate(x_change, y_change)
-        painter.rotate(rotation_change)
-        square_positions = {(square.x, square.y) for square in self.squares}
-        size = self.squares[0].size
-        old_pen = painter.pen()
-        outer_pen = QPen(self.border_colour)
-        outer_pen.setWidth(math.floor(size/33))
-        outer_pen.setCapStyle(Qt.RoundCap)
-        divider_pen = QPen(self.divider_colour)
-        divider_pen.setWidth(old_pen.width())
-        for square in self.squares:
-            square.draw(painter, use_text=use_text)
-            x = square.x
-            y = square.y
-            painter.setPen(divider_pen)
-            if (x, y-size) in square_positions:
-                painter.drawLine(x, y, x+size, y)
-            if (x-size, y) in square_positions:
-                painter.drawLine(x, y, x, y+size)
-
-            painter.setPen(outer_pen)
-            if (x, y - size) not in square_positions:
-                painter.drawLine(x, y, x+size, y)
-            if (x, y+size) not in square_positions:
-                painter.drawLine(x, y+size, x+size, y+size)
-            if (x - size, y) not in square_positions:
-                painter.drawLine(x, y, x, y+size)
-            if (x+size, y) not in square_positions:
-                painter.drawLine(x+size, y, x+size, y+size)
-            painter.setPen(old_pen)
-        painter.rotate(-rotation_change)
-        painter.translate(-x_change, -y_change)
+        if sign > 0:
+            painter.translate(sign * x_change, sign * y_change)
+            painter.rotate(sign * rotation_change)
+        else:
+            painter.rotate(sign * rotation_change)
+            painter.translate(sign * x_change, sign * y_change)
 
     def set_display(self, x: int, y: int, rotation: int):
         self.display_x = x

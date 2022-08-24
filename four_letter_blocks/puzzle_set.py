@@ -2,7 +2,7 @@ import math
 import typing
 from collections import Counter, defaultdict
 
-from PySide6.QtGui import QPainter
+from PySide6.QtGui import QPainter, QColor
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
@@ -17,7 +17,8 @@ class PuzzleSet:
         if block_packer:
             self.block_packer = block_packer
         else:
-            self.block_packer = BlockPacker(16, 10)  # Game Crafter cutout size
+            self.block_packer = BlockPacker(16, 10,  # Game Crafter cutout size
+                                            tries=100)
         self.front_blocks: typing.Dict[
             str,
             typing.List[typing.Optional[Block]]] = defaultdict(list)
@@ -48,8 +49,12 @@ class PuzzleSet:
                 if count > max_counts[combo]:
                     max_counts[combo] = count
                     max_puzzles[combo] = i
+        all_combos = set(combos)
+        all_combos.update(combos.values())
+        all_combos.update(total_counts)
         extras = []
-        for combo, total_count in sorted(total_counts.items()):
+        for combo in sorted(all_combos):
+            total_count = total_counts[combo]
             max_count = max_counts[combo]
             mirror = self.pairs.get(combo)
             source_nums = ', '.join(str(i + 1)
@@ -75,9 +80,10 @@ class PuzzleSet:
                                                    mirror_count,
                                                    max_count)
 
-        for combo, total_count in total_counts.items():
+        for combo in all_combos:
             if len(combo) > 1:
                 continue
+            total_count = total_counts[combo]
             front_shape = combo
             back_shape = self.pairs.get(front_shape, front_shape)
             if front_shape == back_shape:
@@ -139,7 +145,7 @@ class PuzzleSet:
         self.block_packer.fill(self.shape_counts)
         if len(self.puzzles) > 1:
             for block in self.puzzles[1].blocks:
-                block.face_colour = '#90c2b2'
+                block.face_colour = QColor.fromHsv(120, 30, 255)
 
     @property
     def square_size(self) -> int:
@@ -149,6 +155,9 @@ class PuzzleSet:
     def square_size(self, square_size: int):
         for puzzle in self.puzzles:
             puzzle.square_size = square_size
+
+    def draw_cuts(self, painter):
+        pass
 
     def draw_front(self,
                    painter: typing.Union[QPainter, LineDeduper],
@@ -163,7 +172,6 @@ class PuzzleSet:
                 if block is None:
                     continue
                 block.set_display((x+0.5)*square_size, (y+0.5)*square_size, rotation)
-                block.border_colour = 'red'
                 block.draw(painter, use_text=False)
 
     def draw_back(self,
@@ -175,13 +183,9 @@ class PuzzleSet:
         for shape, shape_blocks in self.back_blocks.items():
             shape_positions = positions[shape][:]
             for block in shape_blocks:
-                # if not shape_positions:
-                #     assert block is None
-                #     break
                 x, y, rotation = shape_positions.pop()
                 x += x_offset
                 if block is None:
                     continue
                 block.set_display((x+0.5)*square_size, (y+0.5)*square_size, rotation)
-                block.border_colour = 'red'
                 block.draw(painter, use_text=False)

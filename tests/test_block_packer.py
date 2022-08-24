@@ -133,31 +133,3 @@ def test_draw_cuts(pixmap_differ: PixmapDiffer):
     packer.draw_cuts(expected)  # TODO: add real test
 
     pixmap_differ.assert_equal()
-
-
-def test_draw_front(pixmap_differ: PixmapDiffer):
-    actual, expected = pixmap_differ.start(
-        500, 225,
-        'test_draw_front')
-
-    packer = BlockPacker()
-
-    expected.fillRect(0, 0, 500, 225, 'black')
-
-    packer.draw_front(actual)
-
-    pixmap_differ.assert_equal()
-
-
-def test_draw_back(pixmap_differ: PixmapDiffer):
-    actual, expected = pixmap_differ.start(
-        500, 225,
-        'test_draw_back')
-
-    packer = BlockPacker()
-
-    expected.fillRect(0, 0, 500, 225, 'white')
-
-    packer.draw_back(actual)
-
-    pixmap_differ.assert_equal()

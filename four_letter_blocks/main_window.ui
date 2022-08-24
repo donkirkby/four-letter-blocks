@@ -94,12 +94,18 @@
         <string>Set</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout">
-        <item row="0" column="0" colspan="3">
-         <widget class="QLabel" name="crossword_label">
-          <property name="text">
-           <string>Crossword Files</string>
+        <item row="2" column="0">
+         <spacer name="crossword_spacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
           </property>
-         </widget>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
         </item>
         <item row="1" column="0" colspan="3">
          <widget class="QListWidget" name="crossword_files"/>
@@ -118,67 +124,10 @@
           </property>
          </widget>
         </item>
-        <item row="8" column="0">
-         <widget class="QLabel" name="front_label">
+        <item row="0" column="0" colspan="3">
+         <widget class="QLabel" name="crossword_label">
           <property name="text">
-           <string>Front File</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="0" colspan="3">
-         <widget class="QLabel" name="cut_label">
-          <property name="text">
-           <string>Cut File</string>
-          </property>
-         </widget>
-        </item>
-        <item row="10" column="0">
-         <widget class="QLabel" name="back_label">
-          <property name="text">
-           <string>Back File</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <spacer name="crossword_spacer">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item row="7" column="0" colspan="2">
-         <widget class="QLineEdit" name="cut_file"/>
-        </item>
-        <item row="9" column="0" colspan="2">
-         <widget class="QLineEdit" name="front_file"/>
-        </item>
-        <item row="11" column="0" colspan="2">
-         <widget class="QLineEdit" name="back_file"/>
-        </item>
-        <item row="7" column="2">
-         <widget class="QPushButton" name="cut_button">
-          <property name="text">
-           <string>...</string>
-          </property>
-         </widget>
-        </item>
-        <item row="9" column="2">
-         <widget class="QPushButton" name="front_button">
-          <property name="text">
-           <string>...</string>
-          </property>
-         </widget>
-        </item>
-        <item row="11" column="2">
-         <widget class="QPushButton" name="back_button">
-          <property name="text">
-           <string>...</string>
+           <string>Crossword Files</string>
           </property>
          </widget>
         </item>
@@ -335,12 +284,6 @@
   <tabstop>crossword_files</tabstop>
   <tabstop>add_button</tabstop>
   <tabstop>remove_button</tabstop>
-  <tabstop>cut_file</tabstop>
-  <tabstop>cut_button</tabstop>
-  <tabstop>front_file</tabstop>
-  <tabstop>front_button</tabstop>
-  <tabstop>back_file</tabstop>
-  <tabstop>back_button</tabstop>
  </tabstops>
  <resources/>
  <connections/>

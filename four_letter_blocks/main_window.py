@@ -112,10 +112,9 @@ class Ui_MainWindow(object):
         self.set_tab.setObjectName(u"set_tab")
         self.gridLayout = QGridLayout(self.set_tab)
         self.gridLayout.setObjectName(u"gridLayout")
-        self.crossword_label = QLabel(self.set_tab)
-        self.crossword_label.setObjectName(u"crossword_label")
+        self.crossword_spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
-        self.gridLayout.addWidget(self.crossword_label, 0, 0, 1, 3)
+        self.gridLayout.addItem(self.crossword_spacer, 2, 0, 1, 1)
 
         self.crossword_files = QListWidget(self.set_tab)
         self.crossword_files.setObjectName(u"crossword_files")
@@ -132,54 +131,10 @@ class Ui_MainWindow(object):
 
         self.gridLayout.addWidget(self.add_button, 2, 1, 1, 1)
 
-        self.front_label = QLabel(self.set_tab)
-        self.front_label.setObjectName(u"front_label")
+        self.crossword_label = QLabel(self.set_tab)
+        self.crossword_label.setObjectName(u"crossword_label")
 
-        self.gridLayout.addWidget(self.front_label, 8, 0, 1, 1)
-
-        self.cut_label = QLabel(self.set_tab)
-        self.cut_label.setObjectName(u"cut_label")
-
-        self.gridLayout.addWidget(self.cut_label, 3, 0, 1, 3)
-
-        self.back_label = QLabel(self.set_tab)
-        self.back_label.setObjectName(u"back_label")
-
-        self.gridLayout.addWidget(self.back_label, 10, 0, 1, 1)
-
-        self.crossword_spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
-
-        self.gridLayout.addItem(self.crossword_spacer, 2, 0, 1, 1)
-
-        self.cut_file = QLineEdit(self.set_tab)
-        self.cut_file.setObjectName(u"cut_file")
-
-        self.gridLayout.addWidget(self.cut_file, 7, 0, 1, 2)
-
-        self.front_file = QLineEdit(self.set_tab)
-        self.front_file.setObjectName(u"front_file")
-
-        self.gridLayout.addWidget(self.front_file, 9, 0, 1, 2)
-
-        self.back_file = QLineEdit(self.set_tab)
-        self.back_file.setObjectName(u"back_file")
-
-        self.gridLayout.addWidget(self.back_file, 11, 0, 1, 2)
-
-        self.cut_button = QPushButton(self.set_tab)
-        self.cut_button.setObjectName(u"cut_button")
-
-        self.gridLayout.addWidget(self.cut_button, 7, 2, 1, 1)
-
-        self.front_button = QPushButton(self.set_tab)
-        self.front_button.setObjectName(u"front_button")
-
-        self.gridLayout.addWidget(self.front_button, 9, 2, 1, 1)
-
-        self.back_button = QPushButton(self.set_tab)
-        self.back_button.setObjectName(u"back_button")
-
-        self.gridLayout.addWidget(self.back_button, 11, 2, 1, 1)
+        self.gridLayout.addWidget(self.crossword_label, 0, 0, 1, 3)
 
         self.main_tabs.addTab(self.set_tab, "")
 
@@ -208,12 +163,6 @@ class Ui_MainWindow(object):
         QWidget.setTabOrder(self.blocks_text, self.crossword_files)
         QWidget.setTabOrder(self.crossword_files, self.add_button)
         QWidget.setTabOrder(self.add_button, self.remove_button)
-        QWidget.setTabOrder(self.remove_button, self.cut_file)
-        QWidget.setTabOrder(self.cut_file, self.cut_button)
-        QWidget.setTabOrder(self.cut_button, self.front_file)
-        QWidget.setTabOrder(self.front_file, self.front_button)
-        QWidget.setTabOrder(self.front_button, self.back_file)
-        QWidget.setTabOrder(self.back_file, self.back_button)
 
         self.menubar.addAction(self.file_menu.menuAction())
         self.menubar.addAction(self.edit_menu.menuAction())
@@ -292,15 +241,9 @@ class Ui_MainWindow(object):
         self.blocks_label.setText(QCoreApplication.translate("MainWindow", u"Blocks", None))
         self.warnings_label.setText(QCoreApplication.translate("MainWindow", u"Warnings", None))
         self.main_tabs.setTabText(self.main_tabs.indexOf(self.single_tab), QCoreApplication.translate("MainWindow", u"Single", None))
-        self.crossword_label.setText(QCoreApplication.translate("MainWindow", u"Crossword Files", None))
         self.remove_button.setText(QCoreApplication.translate("MainWindow", u"Remove", None))
         self.add_button.setText(QCoreApplication.translate("MainWindow", u"Add...", None))
-        self.front_label.setText(QCoreApplication.translate("MainWindow", u"Front File", None))
-        self.cut_label.setText(QCoreApplication.translate("MainWindow", u"Cut File", None))
-        self.back_label.setText(QCoreApplication.translate("MainWindow", u"Back File", None))
-        self.cut_button.setText(QCoreApplication.translate("MainWindow", u"...", None))
-        self.front_button.setText(QCoreApplication.translate("MainWindow", u"...", None))
-        self.back_button.setText(QCoreApplication.translate("MainWindow", u"...", None))
+        self.crossword_label.setText(QCoreApplication.translate("MainWindow", u"Crossword Files", None))
         self.main_tabs.setTabText(self.main_tabs.indexOf(self.set_tab), QCoreApplication.translate("MainWindow", u"Set", None))
         self.file_menu.setTitle(QCoreApplication.translate("MainWindow", u"&File", None))
         self.help_menu.setTitle(QCoreApplication.translate("MainWindow", u"&Help", None))

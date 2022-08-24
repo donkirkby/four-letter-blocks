@@ -124,16 +124,6 @@ class BlockPacker:
             self.state = start_state
             self.fill(shape_counts)
 
-    @staticmethod
-    def draw_front(painter: QPainter):
-        device = painter.device()
-        painter.fillRect(0, 0, device.width(), device.height(), 'black')
-
-    @staticmethod
-    def draw_back(painter: QPainter):
-        device = painter.device()
-        painter.fillRect(0, 0, device.width(), device.height(), 'white')
-
     def draw_nicked_line(self,
                          painter: QPainter,
                          x1: int,

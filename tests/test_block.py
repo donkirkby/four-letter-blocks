@@ -309,3 +309,19 @@ def test_rotate270(pixmap_differ: PixmapDiffer):
     block2.draw(actual)
 
     pixmap_differ.assert_equal()
+
+
+def test_fractional_position(pixmap_differ: PixmapDiffer):
+    actual, expected = pixmap_differ.start(
+        510, 260,
+        'test_block_fractional_position')
+
+    block1 = create_basic_block()
+    block1.x = 100
+
+    block1.draw(expected)
+
+    block1.x = 100.2
+    block1.draw(actual)
+
+    pixmap_differ.assert_equal()

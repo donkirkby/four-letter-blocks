@@ -3,8 +3,9 @@ import sys
 import traceback
 import typing
 from pathlib import Path
+from zipfile import ZipFile, ZIP_DEFLATED
 
-from PySide6.QtCore import QSettings, QSize, QSizeF, QObject, QRectF, QRect, QPoint
+from PySide6.QtCore import QSettings, QSize, QSizeF, QObject, QRectF, QRect, QPoint, QBuffer
 from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, \
     Qt, QCloseEvent, QPixmap, QColor, QTextDocument, QTextFormat, QTextCursor, \
     QTextCharFormat, QPyTextObject, QImage
@@ -52,9 +53,6 @@ class FourLetterBlocksWindow(QMainWindow):
 
         ui.add_button.clicked.connect(self.add_crosswords)
         ui.remove_button.clicked.connect(self.remove_crossword)
-        ui.cut_button.clicked.connect(self.select_cut_file)
-        ui.front_button.clicked.connect(self.select_front_file)
-        ui.back_button.clicked.connect(self.select_back_file)
 
         sys.excepthook = self.on_error
         self.file_path: typing.Optional[Path] = None
@@ -311,36 +309,6 @@ class FourLetterBlocksWindow(QMainWindow):
         self.statusBar().showMessage(f'Saved to {self.file_path.name}.')
         self.record_clean_state()
 
-    def select_cut_file(self):
-        file_name = self.get_save_file_name(
-            'Save Cut File',
-            'SVG files (*.svg);;All files (*.*)')
-
-        if not file_name:
-            return
-
-        self.ui.cut_file.setText(file_name)
-
-    def select_front_file(self):
-        file_name = self.get_save_file_name(
-            'Save Front File',
-            'PNG files (*.png);;All files (*.*)')
-
-        if not file_name:
-            return
-
-        self.ui.front_file.setText(file_name)
-
-    def select_back_file(self):
-        file_name = self.get_save_file_name(
-            'Save Back File',
-            'PNG files (*.png);;All files (*.*)')
-
-        if not file_name:
-            return
-
-        self.ui.back_file.setText(file_name)
-
     def format_text(self) -> str:
         sections = [self.ui.title_text.text().strip() or 'Untitled']
         sections.extend(field.toPlainText().strip() or '-'
@@ -385,84 +353,64 @@ class FourLetterBlocksWindow(QMainWindow):
 
     def export_laser(self):
         ui = self.ui
-        if not self.is_field_filled(ui.cut_file, ui.cut_label, ui.cut_button):
+        if ui.crossword_files.count() < 2:
+            point = ui.add_button.mapToGlobal(QPoint(0, 0))
+            QToolTip.showText(point, "Add more crosswords before exporting.")
             return
-        if not self.is_field_filled(ui.front_file,
-                                    ui.front_label,
-                                    ui.front_button):
-            return
-        if not self.is_field_filled(ui.back_file,
-                                    ui.back_label,
-                                    ui.back_button):
-            return
-        print('Exporting!')
-
-    def export_laserx(self):
         save_dir = self.get_save_dir()
         kwargs = get_file_dialog_options()
-        folder_name = QFileDialog.getExistingDirectory(
+        file_name, _ = QFileDialog.getSaveFileName(
             self,
-            'Export for laser cutter',
+            'Export puzzle set',
             dir=save_dir,
+            filter=';;'.join(('Zip files (*.zip)',
+                              'All files (*.*)')),
             **kwargs)
-        if not folder_name:
+        if not file_name:
             return
-        self.settings.setValue('save_path', folder_name)
-        folder_path = Path(folder_name)
+        self.settings.setValue('save_path', file_name)
+
+        packer = BlockPacker(16, 15, tries=10_000)
+        puzzle_set = PuzzleSet(*self.crossword_set.values(),
+                               block_packer=packer)
+
+        svg_buffer = QBuffer()
         generator = QSvgGenerator()
-        generator.setFileName(str(folder_path/'cuts.svg'))
+        generator.setOutputDevice(svg_buffer)
         generator.setSize(QSize(8000, 4500))
         generator.setResolution(1000)  # dots per inch
         generator.setViewBox(QRect(0, 0, 8000, 4500))
 
         painter = QPainter(generator)
-        packer = BlockPacker(15, 15, tries=10_000)
-        packer.draw_cuts(painter)
+        puzzle_set.square_size = generator.width() / 17
+        puzzle_set.draw_cuts(painter)
         painter.end()
 
+        front_buffer = QBuffer()
         front_image = QImage(2400, 1350, QImage.Format_RGB32)
         painter = QPainter(front_image)
-        packer.draw_front(painter)
+        painter.fillRect(front_image.rect(), 'white')
+        puzzle_set.square_size = front_image.width() / 17
+        puzzle_set.draw_front(painter)
         painter.end()
-        front_image.save(str(folder_path/'front.png'))
+        success = front_image.save(front_buffer, 'PNG')
+        assert success
 
+        back_buffer = QBuffer()
         back_image = QImage(2400, 1350, QImage.Format_RGB32)
         painter = QPainter(back_image)
-        packer.draw_back(painter)
+        painter.fillRect(back_image.rect(), 'white')
+        puzzle_set.draw_back(painter)
         painter.end()
-        back_image.save(str(folder_path/'back.png'))
+        success = back_image.save(back_buffer, 'PNG')
+        assert success
 
-        pdf = QPdfWriter(folder_name)
-        pdf.setPageSize(QPageSize.Letter)
+        with ZipFile(file_name, 'w', compression=ZIP_DEFLATED) as zip_file:
+            zip_file.writestr('cuts.svg', svg_buffer.data())
+            zip_file.writestr('front.png', front_buffer.data())
+            zip_file.writestr('back.png', back_buffer.data())
 
-        puzzle = self.parse_puzzle()
-        puzzle.use_text = False
-        shape_counts = puzzle.shape_counts
-        packer.fill(shape_counts)
-
-        document = QTextDocument()
-        document.setPageSize(QSize(pdf.width(), pdf.height()))
-        font = document.defaultFont()
-        font.setPixelSize(pdf.height()//60)
-        document.setDefaultFont(font)
-
-        diagram_handler = BlockDiagram(puzzle, packer.positions)
-        doc_layout = document.documentLayout()
-        doc_layout.registerHandler(DIAGRAM_TEXT_FORMAT, diagram_handler)
-
-        cursor = QTextCursor(document)
-        cursor.movePosition(cursor.End)
-        cursor.insertText('\n')
-
-        diagram_format = QTextCharFormat()
-        diagram_format.setObjectType(DIAGRAM_TEXT_FORMAT)
-
-        diagram_format.setProperty(DIAGRAM_DATA, 0)
-        cursor.insertText(OBJECT_REPLACEMENT, diagram_format)
-        cursor.insertText('\n')
-
-        document.print_(pdf)
-        self.statusBar().showMessage(f'Exported to {folder_path.name}.')
+        self.statusBar().showMessage(f'Exported to {file_name}.')
 
     def export_pdf(self, file_path: Path):
         file_name = str(file_path)

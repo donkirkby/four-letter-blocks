@@ -1,6 +1,8 @@
 from io import StringIO
 from textwrap import dedent
 
+from PySide6.QtGui import QColor
+
 from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.puzzle import Puzzle
 from four_letter_blocks.puzzle_set import PuzzleSet
@@ -120,6 +122,43 @@ def test_shape_counts():
                             'S': 2}
 
 
+def test_shape_counts_z_only():
+    puzzle_text = dedent("""\
+        Title
+
+        ABCDE
+        FGHIJ
+        KL#MN
+        OPQRS
+        TUVWX
+
+        -
+
+        AAAAB
+        FFFBB
+        EF#BD
+        ECCDD
+        EECCD
+    """)
+    puzzle1 = Puzzle.parse(StringIO(puzzle_text))
+    puzzle2 = Puzzle.parse(StringIO(puzzle_text))
+    puzzle_set = PuzzleSet(puzzle1, puzzle2, block_packer=None)
+
+    shape_counts = puzzle_set.shape_counts
+
+    assert shape_counts == {'I': 1,
+                            'J': 2,
+                            'T': 2,
+                            'S': 4}
+    block_count = sum(1
+                      for shape_blocks in (puzzle_set.front_blocks,
+                                           puzzle_set.back_blocks)
+                      for blocks in shape_blocks.values()
+                      for block in blocks
+                      if block is not None)
+    assert block_count == 12
+
+
 def test_draw_packed(pixmap_differ: PixmapDiffer):
     with pixmap_differ.create_painters(
             360,
@@ -143,10 +182,9 @@ def test_draw_packed(pixmap_differ: PixmapDiffer):
         blocks[4].set_display(210, 90, 1)
 
         for block in puzzle2.blocks:
-            block.face_colour = '#90c2b2'
+            block.face_colour = QColor.fromHsv(120, 30, 255)
 
         for block in puzzle1.blocks + puzzle2.blocks:
-            block.border_colour = 'red'
             block.draw(expected, use_text=False)
 
         puzzle_set2 = parse_puzzle_set(BlockPacker(7, 8, tries=1000))
