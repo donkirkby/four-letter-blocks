@@ -370,7 +370,7 @@ class FourLetterBlocksWindow(QMainWindow):
             return
         self.settings.setValue('save_path', file_name)
 
-        packer = BlockPacker(16, 15, tries=10_000)
+        packer = BlockPacker(16, 20, tries=10_000)
         puzzle_set = PuzzleSet(*self.crossword_set.values(),
                                block_packer=packer)
 
@@ -379,7 +379,7 @@ class FourLetterBlocksWindow(QMainWindow):
         generator.setOutputDevice(svg_buffer)
         generator.setSize(QSize(8000, 4500))
         generator.setResolution(1000)  # dots per inch
-        generator.setViewBox(QRect(0, 0, 8000, 4500))
+        generator.setViewBox(QRect(0, 0, 8250, 10500))
 
         painter = QPainter(generator)
         puzzle_set.square_size = generator.width() / 17
@@ -387,7 +387,7 @@ class FourLetterBlocksWindow(QMainWindow):
         painter.end()
 
         front_buffer = QBuffer()
-        front_image = QImage(2400, 1350, QImage.Format_RGB32)
+        front_image = QImage(2475, 3150, QImage.Format_RGB32)
         painter = QPainter(front_image)
         painter.fillRect(front_image.rect(), 'white')
         puzzle_set.square_size = front_image.width() / 17
@@ -397,7 +397,7 @@ class FourLetterBlocksWindow(QMainWindow):
         assert success
 
         back_buffer = QBuffer()
-        back_image = QImage(2400, 1350, QImage.Format_RGB32)
+        back_image = QImage(2475, 3150, QImage.Format_RGB32)
         painter = QPainter(back_image)
         painter.fillRect(back_image.rect(), 'white')
         puzzle_set.draw_back(painter)

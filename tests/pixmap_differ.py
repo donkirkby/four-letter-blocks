@@ -34,9 +34,8 @@ class PixmapDiffer(LiveImageDiffer):
             name: str = None,
             max_diff: int = 0) -> typing.Iterator[typing.Tuple[QPainter, QPainter]]:
         self.tolerance = max_diff
-        self.name = name
         try:
-            yield self.start(width, height)
+            yield self.start(width, height, name)
         finally:
             self.end()
         self.assert_equal(self.actual, self.expected)

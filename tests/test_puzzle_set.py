@@ -3,6 +3,7 @@ from textwrap import dedent
 
 from PySide6.QtGui import QColor
 
+from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.puzzle import Puzzle
 from four_letter_blocks.puzzle_set import PuzzleSet
@@ -192,3 +193,32 @@ def test_draw_packed(pixmap_differ: PixmapDiffer):
         puzzle_set2.draw_front(actual)
 
         puzzle_set2.draw_back(actual, x_offset=8)
+
+
+def test_draw_cuts(pixmap_differ: PixmapDiffer):
+    with pixmap_differ.create_painters(
+            360,
+            180,
+            'test_puzzle_draw_cuts') as (actual, expected):
+        block_text = dedent("""\
+            #A#B#CD
+            #A#B#CD
+            AABBCCD
+            #EEFFGD
+            EEHFFGG
+            ##HHH#G
+        """)
+        puzzle3 = Puzzle.parse_sections('',
+                                        block_text,
+                                        '',
+                                        block_text)
+        puzzle3.square_size = 20
+        for block in puzzle3.blocks:
+            block.x += 10
+            block.y += 10
+            block.border_colour = Block.CUT_COLOUR
+            block.draw_outline(expected)
+
+        puzzle_set = parse_puzzle_set(BlockPacker(7, 8, tries=1000))
+        puzzle_set.square_size = 20
+        puzzle_set.draw_cuts(actual)

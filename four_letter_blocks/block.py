@@ -14,6 +14,7 @@ from four_letter_blocks.square import Square
 
 class Block:
     UNUSED = 'unused'
+    CUT_COLOUR = '#ed2224'  # Special colour for Game Crafter cutting
 
     def __init__(self, *squares: Square, marker: str = None):
         self.squares = squares

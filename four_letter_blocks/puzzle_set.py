@@ -1,6 +1,7 @@
 import math
 import typing
 from collections import Counter, defaultdict
+from collections.abc import Iterable
 
 from PySide6.QtGui import QPainter, QColor
 
@@ -156,36 +157,49 @@ class PuzzleSet:
         for puzzle in self.puzzles:
             puzzle.square_size = square_size
 
+    def display_blocks(self,
+                       block_packer: BlockPacker,
+                       blocks: typing.Dict[str, typing.List[Block]],
+                       x_offset: int = 0) -> Iterable[Block]:
+        square_size = self.square_size
+        positions = block_packer.positions
+        for shape, shape_blocks in blocks.items():
+            shape_positions = positions[shape][:]
+            for block in shape_blocks:
+                x, y, rotation = shape_positions.pop()
+                x += x_offset
+                if block is None:
+                    continue
+                block.set_display((x+0.5)*square_size, (y+0.5)*square_size, rotation)
+                yield block
+
     def draw_cuts(self, painter):
+        block_text = self.block_packer.display().replace('.', '#')
+        puzzle = Puzzle.parse_sections('',
+                                       block_text,
+                                       '',
+                                       block_text)
+        puzzle.square_size = self.square_size
+        for block in puzzle.blocks:
+            block.x += self.square_size / 2
+            block.y += self.square_size / 2
+            block.border_colour = Block.CUT_COLOUR
+            block.draw_outline(painter)
         pass
 
     def draw_front(self,
                    painter: typing.Union[QPainter, LineDeduper],
                    x_offset: int = 0):
-        square_size = self.square_size
-        positions = self.block_packer.positions
-        for shape, shape_blocks in self.front_blocks.items():
-            shape_positions = positions[shape][:]
-            for block in shape_blocks:
-                x, y, rotation = shape_positions.pop()
-                x += x_offset
-                if block is None:
-                    continue
-                block.set_display((x+0.5)*square_size, (y+0.5)*square_size, rotation)
-                block.draw(painter, use_text=False)
+        for block in self.display_blocks(self.block_packer,
+                                         self.front_blocks,
+                                         x_offset):
+            block.draw(painter, use_text=False)
 
     def draw_back(self,
                   painter: typing.Union[QPainter, LineDeduper],
                   x_offset: int = 0):
-        square_size = self.square_size
         block_packer = self.block_packer.flip()
-        positions = block_packer.positions
-        for shape, shape_blocks in self.back_blocks.items():
-            shape_positions = positions[shape][:]
-            for block in shape_blocks:
-                x, y, rotation = shape_positions.pop()
-                x += x_offset
-                if block is None:
-                    continue
-                block.set_display((x+0.5)*square_size, (y+0.5)*square_size, rotation)
-                block.draw(painter, use_text=False)
+        for block in self.display_blocks(block_packer,
+                                         self.back_blocks,
+                                         x_offset):
+            block.draw(painter, use_text=False)
