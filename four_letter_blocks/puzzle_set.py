@@ -18,8 +18,8 @@ class PuzzleSet:
         if block_packer:
             self.block_packer = block_packer
         else:
-            self.block_packer = BlockPacker(16, 10,  # Game Crafter cutout size
-                                            tries=100)
+            self.block_packer = BlockPacker(16, 20,  # Game Crafter cutout size
+                                            tries=10_000)
         self.front_blocks: typing.Dict[
             str,
             typing.List[typing.Optional[Block]]] = defaultdict(list)
@@ -107,8 +107,9 @@ class PuzzleSet:
                               i)
                              for i, puzzle in enumerate(self.puzzles)]
             puzzle_counts.sort(reverse=True)
-            is_top = True
+            is_top = False
             for _, puzzle_index in puzzle_counts:
+                is_top = not is_top
                 puzzle = self.puzzles[puzzle_index]
                 front_source = puzzle.shape_blocks[front_shape]
                 if front_shape == back_shape:
@@ -144,9 +145,13 @@ class PuzzleSet:
         else:
             self.block_summary = ''
         self.block_packer.fill(self.shape_counts)
-        if len(self.puzzles) > 1:
-            for block in self.puzzles[1].blocks:
-                block.face_colour = QColor.fromHsv(120, 30, 255)
+        for i, puzzle in enumerate(self.puzzles):
+            if i == 0:
+                colour = QColor('white')
+            else:
+                colour = QColor.fromHsv((540 - 60*i) % 360, 30, 255)
+            for block in puzzle.blocks:
+                block.face_colour = colour
 
     @property
     def square_size(self) -> int:
@@ -174,18 +179,15 @@ class PuzzleSet:
                 yield block
 
     def draw_cuts(self, painter):
-        block_text = self.block_packer.display().replace('.', '#')
-        puzzle = Puzzle.parse_sections('',
-                                       block_text,
-                                       '',
-                                       block_text)
-        puzzle.square_size = self.square_size
-        for block in puzzle.blocks:
-            block.x += self.square_size / 2
-            block.y += self.square_size / 2
+        square_size = self.square_size
+        blocks = self.block_packer.create_blocks()
+        for block in blocks:
+            for square in block.squares:
+                square.size = square_size
+                square.x = (square.x + 0.5) * square_size
+                square.y = (square.y + 0.5) * square_size
             block.border_colour = Block.CUT_COLOUR
             block.draw_outline(painter)
-        pass
 
     def draw_front(self,
                    painter: typing.Union[QPainter, LineDeduper],

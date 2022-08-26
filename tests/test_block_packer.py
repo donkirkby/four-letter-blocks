@@ -2,9 +2,9 @@ from collections import Counter
 from textwrap import dedent
 
 import numpy as np
+import pytest
 
 from four_letter_blocks.block_packer import BlockPacker
-from tests.pixmap_differ import PixmapDiffer
 
 
 def test_display():
@@ -28,6 +28,34 @@ def test_empty_display():
     display = BlockPacker(width, height).display()
 
     assert display == expected_display
+
+
+def test_display_max_ascii():
+    shape_counts = Counter({'O': 62})
+    expected_display_end = dedent("""\
+        }}
+        }}
+        ~~
+        ~~""")
+
+    packer = BlockPacker(2, 124, tries=500)
+    packer.fill(shape_counts)
+
+    display = packer.display()
+    display_lines = display.splitlines()
+    display_end = '\n'.join(display_lines[-4:])
+
+    assert display_end == expected_display_end
+
+
+def test_display_beyond_ascii():
+    shape_counts = Counter({'O': 63})
+
+    packer = BlockPacker(2, 126, tries=500)
+    packer.fill(shape_counts)
+
+    with pytest.raises(RuntimeError, match='Too many blocks for text display'):
+        packer.display()
 
 
 def test_start_text():
@@ -74,9 +102,9 @@ def test_fill_three_blocks():
     width = height = 5
     shape_counts = Counter('OLO')
     expected_display = dedent("""\
-        AABCC
-        AABCC
-        ..BB.
+        AABB#
+        AABBC
+        ..CCC
         .....
         .....""")
     packer = BlockPacker(width, height)
@@ -100,6 +128,21 @@ def test_positions():
     assert packer.positions == expected_positions
 
 
+def test_create_blocks():
+    packer = BlockPacker(start_text=dedent("""\
+        AA#CC
+        AAB.C
+        BBB.C"""))
+
+    a, b, c = packer.create_blocks()
+
+    assert (a.x, a.y) == (0, 0)
+    assert (b.x, b.y) == (0, 1)
+    assert (c.x, c.y) == (3, 0)
+    assert a.shape == 'O'
+    assert b.shape == 'L'
+
+
 def test_flip():
     packer = BlockPacker(start_text=dedent("""\
         AA#CC
@@ -117,19 +160,31 @@ def test_flip():
     assert flipped_packer.display() == expected_display
 
 
-# TODO: Test fill failure.
+def test_fill_with_underhang():
+    width, height = 3, 5
+    shape_counts = Counter('OOJ')
+    expected_display = dedent("""\
+        AAB
+        AAB
+        #BB
+        CC.
+        CC.""")
+    packer = BlockPacker(width, height, tries=100)
+    packer.fill(shape_counts)
 
-def test_draw_cuts(pixmap_differ: PixmapDiffer):
-    actual, expected = pixmap_differ.start(
-        500, 225,
-        'test_draw_cuts')
+    assert packer.display() == expected_display
 
-    packer = BlockPacker()
-    packer.cell_size = 50
-    packer.margin = 5
-    packer.nick_radius = 10
 
-    packer.draw_cuts(actual)
-    packer.draw_cuts(expected)  # TODO: add real test
+def test_fill_overflow():
+    """ Overflow 8-bit block numbers with 255 blocks. (0 and 1 are blanks.) """
+    shape_counts = Counter({'O': 254})
 
-    pixmap_differ.assert_equal()
+    packer = BlockPacker(256, 4, tries=500)
+    packer.fill(shape_counts)
+
+    assert len(packer.positions['O']) == 254
+
+    shape_counts['O'] += 1
+    packer = BlockPacker(256, 4, tries=500)
+    with pytest.raises(ValueError, match='Maximum 254 blocks in packer.'):
+        packer.fill(shape_counts)

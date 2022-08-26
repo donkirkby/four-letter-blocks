@@ -377,7 +377,7 @@ class FourLetterBlocksWindow(QMainWindow):
         svg_buffer = QBuffer()
         generator = QSvgGenerator()
         generator.setOutputDevice(svg_buffer)
-        generator.setSize(QSize(8000, 4500))
+        generator.setSize(QSize(8250, 10500))
         generator.setResolution(1000)  # dots per inch
         generator.setViewBox(QRect(0, 0, 8250, 10500))
 

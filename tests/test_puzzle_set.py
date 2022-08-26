@@ -170,17 +170,17 @@ def test_draw_packed(pixmap_differ: PixmapDiffer):
         puzzle_set1.square_size = 20
         blocks = puzzle1.blocks
         blocks[0].set_display(270, 10, 0)
-        blocks[1].set_display(190, 10, 0)
-        blocks[2].set_display(50, 10, 0)
-        blocks[3].set_display(70, 70, 0)
-        blocks[4].set_display(50, 90, 3)
+        blocks[1].set_display(170, 10, 2)
+        blocks[2].set_display(50, 10, 1)
+        blocks[3].set_display(10, 70, 0)
+        blocks[4].set_display(50, 70, 3)
 
         blocks = puzzle2.blocks
-        blocks[0].set_display(110, 70, 1)
-        blocks[1].set_display(130, 10, 0)
-        blocks[2].set_display(250, 70, 0)
-        blocks[3].set_display(230, 10, 0)
-        blocks[4].set_display(210, 90, 1)
+        blocks[0].set_display(90, 50, 1)
+        blocks[1].set_display(130, 30, 0)
+        blocks[2].set_display(230, 30, 1)
+        blocks[3].set_display(210, 70, 1)
+        blocks[4].set_display(210, 10, 3)
 
         for block in puzzle2.blocks:
             block.face_colour = QColor.fromHsv(120, 30, 255)
@@ -201,12 +201,11 @@ def test_draw_cuts(pixmap_differ: PixmapDiffer):
             180,
             'test_puzzle_draw_cuts') as (actual, expected):
         block_text = dedent("""\
-            #A#B#CD
-            #A#B#CD
-            AABBCCD
-            #EEFFGD
-            EEHFFGG
-            ##HHH#G
+            #ABBBCC
+            #AD#BCE
+            AADDFCE
+            GGHDFFE
+            GGHHHFE
         """)
         puzzle3 = Puzzle.parse_sections('',
                                         block_text,

@@ -5,7 +5,8 @@ from functools import cache
 import numpy as np
 from PySide6.QtGui import QPainter, QPen, Qt
 
-from four_letter_blocks.block import shape_rotations, normalize_coordinates
+from four_letter_blocks.block import shape_rotations, normalize_coordinates, Block
+from four_letter_blocks.square import Square
 
 
 class BlockPacker:
@@ -21,7 +22,7 @@ class BlockPacker:
         elif start_text is None:
             self.width = width
             self.height = height
-            self.state = np.zeros((height, width), np.int8)
+            self.state = np.zeros((height, width), np.uint8)
         else:
             lines = start_text.splitlines()
             self.height = len(lines)
@@ -56,9 +57,29 @@ class BlockPacker:
     def display(self, state: np.ndarray = None) -> str:
         if state is None:
             state = self.state
-        return '\n'.join(''.join(chr(63+c) if c > 1 else c and '#' or '.'
-                                 for c in row)
-                         for row in state)
+        ascii_offset = 63  # Displays first block as A.
+        last_block = np.amax(state) + ascii_offset
+        if last_block >= 127:
+            raise RuntimeError('Too many blocks for text display.')
+
+        return '\n'.join(
+            ''.join(chr(ascii_offset+c) if c > 1 else c and '#' or '.'
+                    for c in row)
+            for row in state)
+
+    def create_blocks(self) -> typing.Iterable[Block]:
+        max_block = np.max(self.state)
+        for block in range(2, max_block+1):
+            # convert row, col to x, y
+            y_coordinates, x_coordinates = np.nonzero(self.state == block)
+            coordinates = list(zip(x_coordinates, y_coordinates))
+            squares = []
+            for x, y in coordinates:
+                square = Square('X')
+                square.x = x
+                square.y = y
+                squares.append(square)
+            yield Block(*squares)
 
     def fill(self, shape_counts: typing.Counter[str]):
         """ Fill in the current state with the given shapes.
@@ -78,11 +99,17 @@ class BlockPacker:
         best_state = None
         start_state = self.state
         empty = np.nonzero(self.state == 0)
+        if len(empty[0]) == 0:
+            # No empty spaces left, fail.
+            self.state = None
+            return
         target_row = empty[0][0]
         target_col = empty[1][0]
         next_block = np.amax(start_state) + 1
         if next_block == 1:
             next_block = 2  # Skip blank value
+        elif next_block > 255:
+            raise ValueError('Maximum 254 blocks in packer.')
 
         fewest_rows = start_state.shape[0]+1
         for shape_name, _ in shape_counts.most_common():
@@ -91,11 +118,16 @@ class BlockPacker:
                 continue
             shape_counts[shape_name] = old_count - 1
             for block in blocks[shape_name]:
+                first_square_index = np.where(block[0])[0][0]
                 new_state = start_state.copy()
+                start_col = target_col
+                end_col = target_col + block.shape[1]
+                if start_col >= first_square_index:
+                    start_col -= first_square_index
+                    end_col -= first_square_index
                 target = new_state[
-                    target_row:target_row+block.shape[0],
-                    target_col:target_col+block.shape[1]
-                ]
+                         target_row:target_row+block.shape[0],
+                         start_col:end_col]
                 if target.shape != block.shape:
                     # hanging over the edge
                     continue
@@ -156,131 +188,6 @@ class BlockPacker:
                              round(y1+ystep*(2*i+3)-ynick))
         painter.drawLine(round(x2-xstep+xnick), round(y2-ystep+ynick), x2, y2)
 
-    def draw_cuts(self, painter: QPainter):
-        cell_size = self.cell_size
-        margin = self.margin
-
-        pen = QPen('#ed2224')
-        pen.setWidth(cell_size/20)
-        pen.setCapStyle(Qt.FlatCap)
-
-        painter.setPen(pen)
-        # L
-        self.draw_nicked_line(painter,
-                              margin, margin,
-                              margin + cell_size*3, margin)
-        self.draw_nicked_line(painter,
-                              margin + cell_size*3, margin,
-                              margin + cell_size*3, margin+cell_size)
-        self.draw_nicked_line(painter,
-                              margin + cell_size*3, margin+cell_size,
-                              margin + cell_size, margin+cell_size)
-        self.draw_nicked_line(painter,
-                              margin + cell_size, margin+cell_size,
-                              margin + cell_size, margin+cell_size*2)
-        self.draw_nicked_line(painter,
-                              margin + cell_size, margin+cell_size*2,
-                              margin, margin+cell_size*2)
-        self.draw_nicked_line(painter,
-                              margin, margin,
-                              margin, margin+cell_size*2)
-
-        # J
-        self.draw_nicked_line(painter,
-                              margin, margin+cell_size*2,
-                              margin, margin+cell_size*4)
-        self.draw_nicked_line(painter,
-                              margin, margin+cell_size*4,
-                              margin+cell_size*3, margin+cell_size*4)
-        self.draw_nicked_line(painter,
-                              margin+cell_size*3, margin+cell_size*4,
-                              margin+cell_size*3, margin+cell_size*3)
-        self.draw_nicked_line(painter,
-                              margin+cell_size*3, margin+cell_size*3,
-                              margin+cell_size, margin+cell_size*3)
-        self.draw_nicked_line(painter,
-                              margin+cell_size, margin+cell_size*3,
-                              margin+cell_size, margin+cell_size*2)
-
-        # O
-        self.draw_nicked_line(painter,
-                              margin+cell_size*3, margin+cell_size,
-                              margin+cell_size*3, margin+cell_size*3)
-
-        # I
-        self.draw_nicked_line(painter,
-                              margin+cell_size*3, margin,
-                              margin+cell_size*4, margin)
-        self.draw_nicked_line(painter,
-                              margin+cell_size*3, margin+cell_size*4,
-                              margin+cell_size*4, margin+cell_size*4)
-        self.draw_nicked_line(painter,
-                              margin+cell_size*4, margin,
-                              margin+cell_size*4, margin+cell_size*3)
-        self.draw_nicked_line(painter,
-                              margin+cell_size*4, margin+cell_size*3,
-                              margin+cell_size*4, margin+cell_size*4)
-        self.draw_nicked_line(painter,
-                              margin+cell_size*4, margin+cell_size*3,
-                              margin+cell_size*4, margin+cell_size*4)
-
-        # T
-        self.draw_nicked_line(painter,
-                              margin+cell_size*4, margin,
-                              margin+cell_size*5, margin)
-        self.draw_nicked_line(painter,
-                              margin+cell_size*5, margin,
-                              margin+cell_size*5, margin+cell_size)
-        self.draw_nicked_line(painter,
-                              margin+cell_size*5, margin+cell_size,
-                              margin+cell_size*6, margin+cell_size)
-        self.draw_nicked_line(painter,
-                              margin+cell_size*6, margin+cell_size,
-                              margin+cell_size*6, margin+cell_size*2)
-        self.draw_nicked_line(painter,
-                              margin+cell_size*6, margin+cell_size*2,
-                              margin+cell_size*5, margin+cell_size*2)
-        self.draw_nicked_line(painter,
-                              margin+cell_size*5, margin+cell_size*2,
-                              margin+cell_size*5, margin+cell_size*3)
-        self.draw_nicked_line(painter,
-                              margin+cell_size*5, margin+cell_size*3,
-                              margin+cell_size*4, margin+cell_size*3)
-
-        # S
-        self.draw_nicked_line(painter,
-                              margin+cell_size*6, margin+cell_size*4,
-                              margin+cell_size*4, margin+cell_size*4)
-        self.draw_nicked_line(painter,
-                              margin+cell_size*6, margin+cell_size*4,
-                              margin+cell_size*6, margin+cell_size*3)
-        self.draw_nicked_line(painter,
-                              margin+cell_size*6, margin+cell_size*3,
-                              margin+cell_size*7, margin+cell_size*3)
-        self.draw_nicked_line(painter,
-                              margin+cell_size*7, margin+cell_size*3,
-                              margin+cell_size*7, margin+cell_size*2)
-        self.draw_nicked_line(painter,
-                              margin+cell_size*7, margin+cell_size*2,
-                              margin+cell_size*6, margin+cell_size*2)
-
-        # Z
-        self.draw_nicked_line(painter,
-                              margin+cell_size*7, margin+cell_size*2,
-                              margin+cell_size*8, margin+cell_size*2)
-        self.draw_nicked_line(painter,
-                              margin+cell_size*8, margin+cell_size*2,
-                              margin+cell_size*8, margin+cell_size)
-        self.draw_nicked_line(painter,
-                              margin + cell_size*7, margin+cell_size,
-                              margin + cell_size*8, margin+cell_size)
-        self.draw_nicked_line(painter,
-                              margin + cell_size*7, margin+cell_size,
-                              margin + cell_size*7, margin)
-        self.draw_nicked_line(painter,
-                              margin + cell_size*7, margin,
-                              margin + cell_size*5, margin)
-
     def flip(self) -> 'BlockPacker':
         flipped_state = np.copy(np.fliplr(self.state))
         return BlockPacker(start_state=flipped_state, tries=self.tries)
@@ -292,7 +199,7 @@ def shape_coordinates() -> typing.Dict[str, typing.List[np.ndarray]]:
     for coordinates, (name, rotation) in shape_rotations().items():
         max_x = max(x for x, y in coordinates)
         max_y = max(y for x, y in coordinates)
-        grid = np.zeros((max_y+1, max_x+1), np.int8)
+        grid = np.zeros((max_y+1, max_x+1), np.uint8)
         for x, y in coordinates:
             grid[y, x] = 1
         coordinate_lists[name].append(grid)
