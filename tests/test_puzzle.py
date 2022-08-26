@@ -1,4 +1,5 @@
 from io import StringIO
+from textwrap import dedent
 
 import pytest
 from PySide6.QtGui import QTextDocument
@@ -873,3 +874,16 @@ AAAA"""
     grid_text = puzzle.format_blocks()
 
     assert grid_text == expected_text
+
+
+def test_extras():
+    text = dedent("""\
+        AAFFF
+        BAAEF
+        BC#EE
+        BCCED
+        BCDDD""")
+    expected_extras = 'I+, Z+1'
+    puzzle = Puzzle.parse_sections('', text, '', text)
+
+    assert puzzle.extras == expected_extras

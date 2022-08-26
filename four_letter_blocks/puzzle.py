@@ -151,6 +151,23 @@ class Puzzle:
                 square.x *= ratio
                 square.y *= ratio
 
+    @property
+    def extras(self):
+        messages = []
+        pairs = 'JLSZ'
+        shape_counts = self.shape_counts
+        for shape, count in sorted(shape_counts.items()):
+            pair_index = pairs.find(shape)
+            if pair_index < 0:
+                if count % 2 != 0:
+                    messages.append(f'{shape}+')
+            else:
+                mirror = pairs[pair_index+1 - 2*(pair_index % 2)]
+                mirror_count = shape_counts[mirror]
+                if count > mirror_count:
+                    messages.append(f'{shape}+{count-mirror_count}')
+        return ', '.join(messages)
+
     def draw_blocks(self,
                     painter: QPainter,
                     square_size: int = None,

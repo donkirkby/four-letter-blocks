@@ -43,8 +43,6 @@ class FourLetterBlocksWindow(QMainWindow):
         ui.shuffle_action.triggered.connect(self.shuffle)
         ui.options_action.triggered.connect(self.choose_font)
 
-        ui.main_tabs.currentChanged.connect(self.select_tab)
-        self.select_tab(ui.main_tabs.currentIndex())
         ui.crossword_files.currentRowChanged.connect(
             self.select_crossword_file)
         self.selected_crossword_file = -1
@@ -75,6 +73,8 @@ class FourLetterBlocksWindow(QMainWindow):
                              ui.blocks_text)
         self.clean_state = self.current_state = self.build_current_state()
         self.update_font()
+        ui.main_tabs.currentChanged.connect(self.select_tab)
+        self.select_tab(ui.main_tabs.currentIndex())
 
     def closeEvent(self, event: QCloseEvent):
         if self.can_abandon('quit'):
@@ -183,7 +183,7 @@ class FourLetterBlocksWindow(QMainWindow):
             with open(file_name) as puzzle_file:
                 puzzle = Puzzle.parse(puzzle_file)
             self.crossword_set[file_name] = puzzle
-            new_names.append((puzzle.title, file_name))
+            new_names.append((puzzle.title + ' ' + puzzle.extras, file_name))
         new_names.sort()
 
         i = 0
@@ -209,12 +209,6 @@ class FourLetterBlocksWindow(QMainWindow):
                 i += 1
 
         self.summarize_crossword_set()
-
-    def add_crossword_to_set(self, file_name: str) -> Puzzle:
-        with open(file_name) as puzzle_file:
-            puzzle = Puzzle.parse(puzzle_file)
-        self.crossword_set[file_name] = puzzle
-        return puzzle
 
     def summarize_crossword_set(self):
         puzzles = []
@@ -537,6 +531,12 @@ class FourLetterBlocksWindow(QMainWindow):
         self.ui.shuffle_action.setEnabled(is_single)
         self.ui.export_action.setEnabled(is_single)
         self.ui.export_set_action.setEnabled(not is_single)
+        if is_single:
+            puzzle = self.parse_puzzle()
+            block_summary = puzzle.display_block_summary()
+            self.statusBar().showMessage(block_summary)
+        else:
+            self.summarize_crossword_set()
 
     def select_crossword_file(self, file_index):
         self.selected_crossword_file = file_index

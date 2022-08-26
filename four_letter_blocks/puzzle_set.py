@@ -58,14 +58,12 @@ class PuzzleSet:
             total_count = total_counts[combo]
             max_count = max_counts[combo]
             mirror = self.pairs.get(combo)
-            source_nums = ', '.join(str(i + 1)
-                                    for i in source_puzzles[combo])
             if mirror is None:
                 extra = 2*max_count - total_count
                 if extra > 0:
                     extras.append(f'{combo}: {extra}({max_puzzles[combo]+1})')
                 elif total_count % 2 != 0:
-                    extras.append(f'{combo}: 1({source_nums})')
+                    extras.append(f'{combo}: 1')
                 if len(combo) == 1:
                     self.shape_counts[combo] = max(math.ceil(total_count/2),
                                                    max_count)
@@ -75,7 +73,7 @@ class PuzzleSet:
                 mirror_count = total_counts[mirror]
                 extra = total_count - mirror_count
                 if extra > 0:
-                    extras.append(f'{combo}: {extra}({source_nums})')
+                    extras.append(f'{combo}: {extra}')
                 if combo < mirror:
                     self.shape_counts[combo] = max(total_count,
                                                    mirror_count,
