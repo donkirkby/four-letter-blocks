@@ -143,11 +143,18 @@ class PuzzleSet:
         else:
             self.block_summary = ''
         self.block_packer.fill(self.shape_counts)
-        for i, puzzle in enumerate(self.puzzles):
-            if i == 0:
-                colour = QColor('white')
-            else:
-                colour = QColor.fromHsv((540 - 60*i) % 360, 30, 255)
+        sizes = [(puzzle.grid.width, i)
+                 for i, puzzle in enumerate(self.puzzles)]
+        sizes.sort()
+        colours = [(120, 30),
+                   (0, 0),
+                   (60, 30),
+                   (30, 30),
+                   (0, 30)]
+        for (width, i), (hue, saturation) in zip(sizes, colours):
+            puzzle = self.puzzles[i]
+            value = 255
+            colour = QColor.fromHsv(hue, saturation, value)
             for block in puzzle.blocks:
                 block.face_colour = colour
 

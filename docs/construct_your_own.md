@@ -14,6 +14,15 @@ because it shows you which squares you should fill in first, because they have
 the fewest feasible letters. [Phil grid builder] makes a good companion, and it
 has the advantage that it runs in a web browser.
 
+If you're struggling to find theme entries, one technique is to find web pages
+related to the theme, save them as text files with pandoc, lynx, or Emacs, and
+then grep the text files for words or phrases of the right length. Here's a
+command that looks for 11-letter words and a command that looks for 11-letter
+phrases.
+
+    egrep -oh "(^|\W)\w{11}(\W|$)" web-page.txt | sort -u | less
+    egrep -oh "(^|\W)\w(\W*\w){9}\w(\W|$)" web-page.txt | sort -u | less
+
 For the black squares, all the usual style guides apply: rotational symmetry, no
 two-letter words, and so on. The only additional guide is that you should have a
 multiple of four letters. In squares of an odd number, the standard, that means
@@ -144,6 +153,27 @@ If you are going to publish in Show and Tell, please keep the words and clue
 topics light and entertaining. If you get feedback from solvers, please keep
 discussions constructive and polite.
 
+### Puzzle Sets
+If you want to publish a professional-quality set of puzzles, [Game Crafter] is
+a good option. Construct a set of three to five puzzles, then combine them on
+the Set tab.
+
+If you are careful with the number of each shape, you should be able to fit them
+all on one large custom punchout. To avoid unused shapes, follow these rules:
+
+* Total number of I's, O's, and T's are each an even number.
+* Total number of J's match total number of L's.
+* Total number of S's match total number of Z's.
+* Maximum number of any shape in any of the puzzles must not be more than half
+  of the total number of that shape. For JL and SZ pairs, it's the maximum
+  number of a pair in any of the puzzles versus total number of that pair.
+
+The list of puzzles and the status bar will list the "extra" shapes in each
+puzzle and in total. It's fine to have "extra" shapes in each puzzle, so long
+as they cancel each other out. Try to construct the smaller puzzles before the
+larger puzzles in a set, because it's easier to adjust the shape counts in the
+larger puzzles.
+
 [New York Times]: https://www.nytimes.com/2018/09/14/crosswords/how-to-make-a-crossword-puzzle-the-series.html
 [Qxw builder]: https://www.quinapalus.com/qxw.html
 [manual]: https://www.quinapalus.com/qxw-guide-20200708.pdf
@@ -151,3 +181,4 @@ discussions constructive and polite.
 [quick-and-dirty guide]: https://snarky.ca/a-quick-and-dirty-guide-on-how-to-install-packages-for-python/
 [PySide6 bug]: https://bugreports.qt.io/browse/PYSIDE-1547
 [Show and Tell]: https://github.com/donkirkby/four-letter-blocks/discussions/categories/show-and-tell
+[Game Crafter]: https://www.thegamecrafter.com/make/products/CustomLargePunchout
