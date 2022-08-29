@@ -22,17 +22,14 @@ class CluePainter:
         margin = self.margin
 
         if self.font_size is not None:
-            target_font_size = self.font_size
+            font_size = self.font_size
         else:
-            target_font_size = painter.window().height() // 60
-        font_size = self.find_font_size(target_font_size, painter)
-        title_font_size = self.find_font_size(target_font_size*2, painter)
+            font_size = painter.window().height() // 60
         font = painter.font()
         font.setPixelSize(font_size)
         title_font = QFont(font)
-        title_font.setPixelSize(title_font_size)
+        title_font.setPixelSize(font_size*2)
         painter.setFont(title_font)
-        metrics = painter.fontMetrics()
 
         puzzle = self.puzzles[self.puzzle_index]
         window_width = painter.window().width()
@@ -42,21 +39,23 @@ class CluePainter:
         title_start = margin
         title_rect = QRect(margin, title_start,
                            window_width-2*margin, window_height)
-        rect = metrics.boundingRect(title_rect, centred, puzzle.title)
+        hint_start = title_start + self.find_text_height(puzzle.title,
+                                                         painter,
+                                                         title_rect.width())
         painter.drawText(title_rect, centred, puzzle.title)
-        hint_start = rect.bottom()
 
         painter.setFont(font)
-        metrics = painter.fontMetrics()
-
         hints = puzzle.build_hints()
         hints_rect = QRect(margin, hint_start,
                            window_width - 2*margin, window_height)
-        rect = metrics.boundingRect(hints_rect, word_wrap, hints)
+        divider_start = hint_start + self.find_text_height(hints,
+                                                           painter,
+                                                           hints_rect.width())
+        line_height = self.find_text_height('X', painter)
         painter.drawText(hints_rect, word_wrap, hints)
-        line_start = rect.bottom() + font_size//2
-        painter.drawLine(margin, line_start, window_width - margin, line_start)
-        header_start = rect.bottom() + font_size
+        painter.drawLine(margin, divider_start + line_height//2,
+                         window_width - margin, divider_start + line_height//2)
+        header_start = divider_start + line_height
 
         left_header_rect = QRect(margin, header_start,
                                  window_width//2 - margin, window_height)
@@ -64,10 +63,10 @@ class CluePainter:
                                   window_width//2 - margin, window_height)
         painter.drawText(left_header_rect, 0, 'Across')
         painter.drawText(right_header_rect, 0, 'Down')
-        clue_start = header_start + metrics.lineSpacing()
+        clue_start = header_start + line_height
 
         max_clue = max(clue.number for clue in puzzle.all_clues.values())
-        number_width = metrics.horizontalAdvance(f'{max_clue}.')
+        number_width = self.find_text_width(f'{max_clue}. ', painter)
         left_number_rect = QRect(
             margin, clue_start,
             number_width, window_height - margin - clue_start)
@@ -88,31 +87,20 @@ class CluePainter:
                    right_clue_rect)
 
     @staticmethod
-    def find_font_size(target: int, painter: QPainter) -> float:
-        retries = 10
-        font_size = target
-        ratio = 0.1
-        is_growing = False
-        font = painter.font()
-        for i in range(retries):
-            font.setPixelSize(font_size)
-            painter.setFont(font)
-            metrics = painter.fontMetrics()
-            rect = metrics.boundingRect('X')
-            line_height = rect.height()
-            if line_height == target:
-                return font_size
-            if line_height < target:
-                if not is_growing:
-                    ratio /= 2
-                is_growing = True
-                font_size *= 1+ratio
-            else:
-                if is_growing:
-                    ratio /= 2
-                is_growing = False
-                font_size *= 1-ratio
-        return font_size
+    def find_text_width(text: str, painter: QPainter) -> int:
+        metrics = painter.fontMetrics()
+        return metrics.horizontalAdvance(text)
+
+    @staticmethod
+    def find_text_height(text: str, painter: QPainter, width=0) -> int:
+        metrics = painter.fontMetrics()
+        if not width:
+            width = painter.window().width()
+        rect = metrics.boundingRect(0, 0,
+                                    width, 0,
+                                    int(Qt.TextWordWrap),
+                                    text)
+        return rect.height()
 
 
 def draw_clues(painter, clues, next_number_rect, next_clue_rect):
@@ -121,11 +109,10 @@ def draw_clues(painter, clues, next_number_rect, next_clue_rect):
     word_wrap = int(Qt.TextWordWrap)
     bottom = next_clue_rect.bottom()
     for clue in clues:
-        clue_text = ' ' + clue.text
-        rect = metrics.boundingRect(next_clue_rect, word_wrap, clue_text)
+        rect = metrics.boundingRect(next_clue_rect, word_wrap, clue.text)
         if rect.bottom() > bottom:
             return
-        painter.drawText(next_number_rect, align_right, f'{clue.number}.')
-        painter.drawText(next_clue_rect, word_wrap, clue_text)
+        painter.drawText(next_number_rect, align_right, f'{clue.number}. ')
+        painter.drawText(next_clue_rect, word_wrap, clue.text)
         next_number_rect = next_number_rect.translated(0, rect.height())
         next_clue_rect = next_clue_rect.translated(0, rect.height())

@@ -17,38 +17,56 @@ def test_draw_clues(pixmap_differ: PixmapDiffer):
     with pixmap_differ.create_painters(
             width, height,
             'test_clue_painter_draw_clues') as (actual, expected):
-        font_size = CluePainter.find_font_size(22, expected)
-        title_size = CluePainter.find_font_size(44, expected)
-        clue_painter = CluePainter(puzzle, font_size=22, margin=margin)
+        clue_painter = CluePainter(puzzle, font_size=20, margin=margin)
         expected.fillRect(0, 0, width, height, 'ivory')
         font = expected.font()
-        font.setPixelSize(title_size)
+        font.setPixelSize(40)
         expected.setFont(font)
         expected.drawText(0, margin,
                           width, height,
                           Qt.AlignHCenter,
                           'Basic Puzzle')
-        font.setPixelSize(font_size)
+        y = margin + CluePainter.find_text_height('X', expected)
+        font.setPixelSize(20)
         expected.setFont(font)
         expected.drawText(
-            margin, 53,
+            margin, y,
             width, height,
             0,
             'Clue numbers are shuffled: 1 Across might not be in the top left.')
-        expected.drawLine(margin, 85,
-                          width-margin, 85)
-        expected.drawText(margin, 95, width, height, 0, 'Across')
-        expected.drawText(320, 95, width, height, 0, 'Down')
-        expected.drawText(margin, 119, 16, height, align_right, '1.\n3.')
-        expected.drawText(26, 119,
+        line_height = CluePainter.find_text_height('X', expected)
+        y += line_height
+        expected.drawLine(margin, y + line_height//2,
+                          width-margin, y + line_height//2)
+        y += line_height
+        expected.drawText(margin, y, width, height, 0, 'Across')
+        expected.drawText(320, y, width, height, 0, 'Down')
+        y += line_height
+        number_width = CluePainter.find_text_width('1. ', expected)
+        expected.drawText(margin, y,
+                          number_width, height,
+                          align_right,
+                          '1. ')
+        expected.drawText(margin, y+line_height,
+                          number_width, height,
+                          align_right,
+                          '3. ')
+        expected.drawText(margin+number_width, y,
                           width, height,
                           0,
-                          ' Part of a sentence\n One at a time')
-        expected.drawText(320, 119, 16, height, align_right, '1.\n2.')
-        expected.drawText(336, 119,
+                          'Part of a sentence\nOne at a time')
+        expected.drawText(320, y,
+                          number_width, height,
+                          align_right,
+                          '1. ')
+        expected.drawText(320, y+line_height,
+                          number_width, height,
+                          align_right,
+                          '2. ')
+        expected.drawText(320+number_width, y,
                           width, height,
                           0,
-                          ' Sour grapes\n Run between words')
+                          'Sour grapes\nRun between words')
 
         actual.fillRect(0, 0, width, height, 'ivory')
         clue_painter.draw_page(actual)
