@@ -8,7 +8,7 @@ from tests.test_puzzle import parse_basic_puzzle
 def test_draw_clues(pixmap_differ: PixmapDiffer):
     puzzle = parse_basic_puzzle()
 
-    width = 660
+    width = 680
     height = 180
     margin = 10
     align_right = int(Qt.AlignRight)
@@ -40,7 +40,7 @@ def test_draw_clues(pixmap_differ: PixmapDiffer):
                           width-margin, y + line_height//2)
         y += line_height
         expected.drawText(margin, y, width, height, 0, 'Across')
-        expected.drawText(330, y, width, height, 0, 'Down')
+        expected.drawText(340, y, width, height, 0, 'Down')
         y += line_height
         number_width = CluePainter.find_text_width('1. ', expected)
         expected.drawText(margin, y,
@@ -55,15 +55,15 @@ def test_draw_clues(pixmap_differ: PixmapDiffer):
                           width, height,
                           0,
                           'Part of a sentence\nOne at a time')
-        expected.drawText(330, y,
+        expected.drawText(340, y,
                           number_width, height,
                           align_right,
                           '1. ')
-        expected.drawText(330, y+line_height,
+        expected.drawText(340, y+line_height,
                           number_width, height,
                           align_right,
                           '2. ')
-        expected.drawText(330+number_width, y,
+        expected.drawText(340+number_width, y,
                           width, height,
                           0,
                           'Sour grapes\nRun between words')
