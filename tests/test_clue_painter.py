@@ -9,7 +9,7 @@ def test_draw_clues(pixmap_differ: PixmapDiffer):
     puzzle = parse_basic_puzzle()
 
     width = 680
-    height = 180
+    height = 190
     margin = 10
     align_right = int(Qt.AlignRight)
     actual: QPainter
