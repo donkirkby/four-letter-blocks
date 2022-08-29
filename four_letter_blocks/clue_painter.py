@@ -5,7 +5,9 @@ from four_letter_blocks.puzzle import Puzzle
 
 
 class CluePainter:
-    def __init__(self, *puzzles: Puzzle, font_size: int = None, margin: int = 0):
+    def __init__(self, *puzzles: Puzzle,
+                 font_size: float = None,
+                 margin: int = 0):
         self.puzzles = puzzles
         self.font_size = font_size
         self.margin = margin
@@ -20,13 +22,15 @@ class CluePainter:
         margin = self.margin
 
         if self.font_size is not None:
-            font_size = self.font_size
+            target_font_size = self.font_size
         else:
-            font_size = painter.window().height() // 60
+            target_font_size = painter.window().height() // 60
+        font_size = self.find_font_size(target_font_size, painter)
+        title_font_size = self.find_font_size(target_font_size*2, painter)
         font = painter.font()
         font.setPixelSize(font_size)
         title_font = QFont(font)
-        title_font.setPixelSize(font_size * 2)
+        title_font.setPixelSize(title_font_size)
         painter.setFont(title_font)
         metrics = painter.fontMetrics()
 
@@ -83,6 +87,33 @@ class CluePainter:
                    right_number_rect,
                    right_clue_rect)
 
+    @staticmethod
+    def find_font_size(target: int, painter: QPainter) -> float:
+        retries = 10
+        font_size = target
+        ratio = 0.1
+        is_growing = False
+        font = painter.font()
+        for i in range(retries):
+            font.setPixelSize(font_size)
+            painter.setFont(font)
+            metrics = painter.fontMetrics()
+            rect = metrics.boundingRect('X')
+            line_height = rect.height()
+            if line_height == target:
+                return font_size
+            if line_height < target:
+                if not is_growing:
+                    ratio /= 2
+                is_growing = True
+                font_size *= 1+ratio
+            else:
+                if is_growing:
+                    ratio /= 2
+                is_growing = False
+                font_size *= 1-ratio
+        return font_size
+
 
 def draw_clues(painter, clues, next_number_rect, next_clue_rect):
     metrics = painter.fontMetrics()
@@ -90,10 +121,11 @@ def draw_clues(painter, clues, next_number_rect, next_clue_rect):
     word_wrap = int(Qt.TextWordWrap)
     bottom = next_clue_rect.bottom()
     for clue in clues:
-        rect = metrics.boundingRect(next_clue_rect, word_wrap, clue.text)
+        clue_text = ' ' + clue.text
+        rect = metrics.boundingRect(next_clue_rect, word_wrap, clue_text)
         if rect.bottom() > bottom:
             return
         painter.drawText(next_number_rect, align_right, f'{clue.number}.')
-        painter.drawText(next_clue_rect, word_wrap, clue.text)
+        painter.drawText(next_clue_rect, word_wrap, clue_text)
         next_number_rect = next_number_rect.translated(0, rect.height())
         next_clue_rect = next_clue_rect.translated(0, rect.height())
