@@ -3,12 +3,13 @@ import sys
 import traceback
 import typing
 from pathlib import Path
+from textwrap import dedent
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from PySide6.QtCore import QSettings, QSize, QSizeF, QObject, QRectF, QRect, QPoint, QBuffer
 from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, \
     Qt, QCloseEvent, QPixmap, QColor, QTextDocument, QTextFormat, QTextCursor, \
-    QTextCharFormat, QPyTextObject, QImage
+    QTextCharFormat, QPyTextObject, QImage, QTextBlockFormat
 from PySide6.QtSvg import QSvgGenerator
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog, QInputDialog, QToolTip, \
     QListWidgetItem
@@ -365,8 +366,9 @@ class FourLetterBlocksWindow(QMainWindow):
         self.settings.setValue('save_path', file_name)
 
         packer = BlockPacker(16, 20, tries=10_000)
-        puzzle_set = PuzzleSet(*self.crossword_set.values(),
-                               block_packer=packer)
+        puzzles = list(self.crossword_set.values())
+        puzzles.sort(key=lambda p: (p.grid.width, p.title))
+        puzzle_set = PuzzleSet(*puzzles, block_packer=packer)
 
         svg_buffer = QBuffer()
         generator = QSvgGenerator()
@@ -399,10 +401,40 @@ class FourLetterBlocksWindow(QMainWindow):
         success = back_image.save(back_buffer, 'PNG')
         assert success
 
+        """ Booklet page images are 1575 x 2475. Safety margin is 75 pixels on
+        every side. """
+        pdf_buffer = QBuffer()
+        pdf_buffer.open(QBuffer.WriteOnly)
+        pdf = QPdfWriter(pdf_buffer)
+        pdf.setPageSize(QPageSize.Letter)
+
+        document = QTextDocument()
+        document.setPageSize(QSize(pdf.width(), pdf.height()))
+        font = document.defaultFont()
+        font.setPixelSize(pdf.height()//60)
+        document.setDefaultFont(font)
+        cursor = QTextCursor(document)
+        title_format = QTextBlockFormat()
+        title_format.setAlignment(Qt.AlignHCenter)
+        for puzzle in puzzle_set.puzzles:
+            cursor.movePosition(cursor.End)
+            cursor.insertBlock(title_format)
+            puzzle.build_clues(document, show_link=False)
+        cursor.movePosition(cursor.End)
+        cursor.insertHtml(dedent("""\
+            <hr class="footer">
+            <p"><center><a href="https://donkirkby.github.io/four-letter-blocks"
+            >https://donkirkby.github.io/four-letter-blocks</a></center></p>
+            <p></p>
+        """))
+
+        document.print_(pdf)
+
         with ZipFile(file_name, 'w', compression=ZIP_DEFLATED) as zip_file:
             zip_file.writestr('cuts.svg', svg_buffer.data())
             zip_file.writestr('front.png', front_buffer.data())
             zip_file.writestr('back.png', back_buffer.data())
+            zip_file.writestr('clues.pdf', pdf_buffer.data())
 
         self.statusBar().showMessage(f'Exported to {file_name}.')
 

@@ -6,8 +6,9 @@ from html import escape
 from itertools import chain
 from operator import attrgetter
 from random import shuffle
+from textwrap import dedent
 
-from PySide6.QtGui import QPainter, QTextDocument
+from PySide6.QtGui import QPainter, QTextDocument, QTextCursor
 
 from four_letter_blocks.clue import Clue
 from four_letter_blocks.grid import Grid
@@ -396,7 +397,19 @@ class Puzzle:
         shuffle(self.blocks)
         self.number_clues()
 
-    def build_clues(self, document: QTextDocument):
+    @property
+    def face_colour(self):
+        return self.blocks[0].face_colour
+
+    @face_colour.setter
+    def face_colour(self, face_colour):
+        for block in self.blocks:
+            block.face_colour = face_colour
+
+    def build_clues(self, document: QTextDocument, show_link=True):
+        cursor = QTextCursor(document)
+        cursor.movePosition(cursor.End)
+
         font_size = document.defaultFont().pixelSize()
         padding = font_size // 5
         document.setDefaultStyleSheet(f"""\
@@ -404,29 +417,34 @@ h1 {{text-align: center}}
 hr.footer {{line-height:10px}}
 p.footer {{page-break-after: always}}
 td {{padding: {padding} }}
-td.num {{text-align: right}}
+td.num {{text-align: right; background: {self.face_colour.name()}}}
 a {{color: black}}
 """)
         across_table = build_clue_table(self.across_clues)
         down_table = build_clue_table(self.down_clues)
         hints = self.build_hints()
-        document.setHtml(f"""\
-<h1>{escape(self.title)}</h1>
-<p>{escape(hints)}</p>
-<hr>
-<table>
-<tr><td>Across</td><td>Down</td></tr>
-<tr><td>
-{across_table}
-</td><td>
-{down_table}
-</td></tr>
-</table>
-<hr class="footer">
-<p class="footer"><center><a href="https://donkirkby.github.io/four-letter-blocks"
->https://donkirkby.github.io/four-letter-blocks</a></center></p>
-<p></p>
-""")
+        html = dedent(f"""\
+            <h1>{escape(self.title)}</h1>
+            <p>{escape(hints)}</p>
+            <hr>
+            <table>
+            <tr><td>Across</td><td>Down</td></tr>
+            <tr><td>
+            {across_table}
+            </td><td>
+            {down_table}
+            </td></tr>
+            </table>
+        """)
+        if show_link:
+            html += dedent("""\
+                <hr class="footer">
+                <p class="footer"><center><a href="https://donkirkby.github.io/four-letter-blocks"
+                >https://donkirkby.github.io/four-letter-blocks</a></center></p>
+                <p></p>
+            """)
+        cursor.insertHtml(html)
+        cursor.movePosition(cursor.End)
 
     def build_hints(self):
         hints = self.HINT

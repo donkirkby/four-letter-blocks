@@ -182,7 +182,7 @@ def test_draw_packed(pixmap_differ: PixmapDiffer):
         blocks[3].set_display(210, 70, 1)
         blocks[4].set_display(210, 10, 3)
 
-        for block in puzzle2.blocks:
+        for block in puzzle1.blocks:
             block.face_colour = QColor.fromHsv(120, 30, 255)
 
         for block in puzzle1.blocks + puzzle2.blocks:

@@ -155,8 +155,7 @@ class PuzzleSet:
             puzzle = self.puzzles[i]
             value = 255
             colour = QColor.fromHsv(hue, saturation, value)
-            for block in puzzle.blocks:
-                block.face_colour = colour
+            puzzle.face_colour = colour
 
     @property
     def square_size(self) -> int:
