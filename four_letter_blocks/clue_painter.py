@@ -11,11 +11,15 @@ from four_letter_blocks.square import Square
 class CluePainter:
     def __init__(self, *puzzles: Puzzle,
                  font_size: float = None,
-                 margin: int = 0):
+                 margin: int = 0,
+                 intro_text: str = '',
+                 footer_text: str = ''):
         self.puzzles = puzzles
         self.font_size = font_size
         self.margin = margin
         self.puzzle_index = self.across_index = self.down_index = 0
+        self.intro_text = intro_text
+        self.footer_text = footer_text
 
     @property
     def is_finished(self):
@@ -56,7 +60,27 @@ class CluePainter:
                 painter)
             clue_width = window_width//2 - margin - number_width
 
+            bottom = window_height - margin
             if self.across_index == 0 and self.down_index == 0:
+                if self.intro_text and self.puzzle_index == 0:
+                    rect = QRect(margin, title_start,
+                                 window_width - 2*margin, window_height)
+                    title_start += self.find_text_height(self.intro_text,
+                                                         painter,
+                                                         rect.width())
+                    painter.drawText(rect, int(Qt.TextWordWrap), self.intro_text)
+                if self.footer_text and self.puzzle_index == 0:
+                    rect = QRect(margin, 0,
+                                 window_width - 2*margin, window_height)
+                    footer_height = self.find_text_height(self.footer_text,
+                                                          painter,
+                                                          rect.width())
+                    bottom -= footer_height
+                    rect.moveTop(bottom)
+                    painter.drawText(rect,
+                                     int(Qt.TextWordWrap | Qt.AlignHCenter),
+                                     self.footer_text)
+
                 clue_start = self.draw_header(title_font,
                                               font,
                                               margin,
@@ -71,7 +95,7 @@ class CluePainter:
 
             left_number_rect = QRect(
                 margin, clue_start,
-                number_width, window_height - margin - clue_start)
+                number_width, bottom - clue_start)
             left_clue_rect = QRect(
                 margin + number_width, clue_start,
                 window_width//2 - margin - number_width, left_number_rect.height())
@@ -98,7 +122,7 @@ class CluePainter:
                 return
             self.puzzle_index += 1
             self.across_index = self.down_index = 0
-            title_start = max(left_bottom, right_bottom)
+            return
 
     def draw_header(self,
                     title_font,
@@ -184,7 +208,9 @@ class CluePainter:
         page_bottom = next_clue_rect.bottom()
         clue_count = 0
         for clue in clues:
-            rect = metrics.boundingRect(next_clue_rect, word_wrap, clue.text)
+            rect = metrics.boundingRect(next_clue_rect,
+                                        word_wrap,
+                                        clue.format_text())
             if rect.bottom() > page_bottom:
                 break
             rect.setLeft(next_number_rect.left())

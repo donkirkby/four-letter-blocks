@@ -17,8 +17,8 @@ from four_letter_blocks.block import Block
 
 @dataclass
 class Puzzle:
-    HINT = 'Clue numbers are shuffled: 1 Across might not be in the top left.'
-    SUIT_HINT = "Each corner uses a different suit."
+    HINT = 'Clue numbers are shuffled: 1 Across might not be the top left.'
+    SUIT_HINT = "Each corner has its own suit."
     DEFAULT_ROW_LENGTH = 16  # Number of squares across a diagram.
 
     title: str
@@ -451,6 +451,7 @@ a {{color: black}}
         if self.use_suits:
             hints += ' '
             hints += self.SUIT_HINT
+        hints += f' {len(self.blocks)} pieces.'
         return hints
 
 

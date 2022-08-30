@@ -119,7 +119,7 @@ Y###
 ''')
     expected_markdown = '''\
 ## Untitled
-Clue numbers are shuffled: 1 Across might not be in the top left.
+Clue numbers are shuffled: 1 Across might not be the top left. 2 pieces.
 
 Across@@
 **1.** Clue for abcd@@
@@ -163,7 +163,7 @@ CCCC
 ''')
     expected_markdown = '''\
 ## Basic Puzzle
-Clue numbers are shuffled: 1 Across might not be in the top left.
+Clue numbers are shuffled: 1 Across might not be the top left. 3 pieces.
 
 Across@@
 **1.** Part of a sentence@@

@@ -652,7 +652,7 @@ a {color: black}
 """)
     expected_doc.setHtml("""\
 <h1>Basic Puzzle</h1>
-<p>Clue numbers are shuffled: 1 Across might not be in the top left.</p>
+<p>Clue numbers are shuffled: 1 Across might not be the top left. 3 pieces.</p>
 <hr>
 <table>
 <tr><td>Across</td><td>Down</td></tr>
@@ -729,7 +729,7 @@ a {color: black}
 """)
     expected_doc.setHtml("""\
 <h1>Basic Puzzle</h1>
-<p>Clue numbers are shuffled: 1 Across might not be in the top left.</p>
+<p>Clue numbers are shuffled: 1 Across might not be the top left. 3 pieces.</p>
 <hr>
 <table>
 <tr><td>Across</td><td>Down</td></tr>

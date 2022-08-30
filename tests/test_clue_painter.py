@@ -34,7 +34,8 @@ def test_draw_clues(pixmap_differ: PixmapDiffer):
             margin, y,
             width, height,
             0,
-            'Clue numbers are shuffled: 1 Across might not be in the top left.')
+            'Clue numbers are shuffled: 1 Across might not be the top left. '
+            '3 pieces.')
         line_height = CluePainter.find_text_height('X', expected)
         y += line_height
         expected.drawLine(margin, y + line_height//2,
@@ -103,7 +104,8 @@ def test_draw_clues_wrapped(pixmap_differ: PixmapDiffer):
             margin, y,
             width, height,
             0,
-            'Clue numbers are shuffled: 1 Across might not be in the top left.')
+            'Clue numbers are shuffled: 1 Across might not be the top left. '
+            '3 pieces.')
         line_height = CluePainter.find_text_height('X', expected)
         y += line_height
         expected.drawLine(margin, y + line_height//2,
@@ -171,45 +173,6 @@ def test_draw_clues_next_page(pixmap_differ: PixmapDiffer):
                           width, height,
                           0,
                           'One at a time')
-        line_height = CluePainter.find_text_height('X', expected)
-        y = margin + line_height
-        font.setPixelSize(40)
-        expected.setFont(font)
-        expected.drawText(0, y,
-                          width, height,
-                          Qt.AlignHCenter,
-                          'Next Puzzle')
-        y += CluePainter.find_text_height('X', expected)
-        font.setPixelSize(20)
-        expected.setFont(font)
-        expected.drawText(
-            margin, y,
-            width, height,
-            0,
-            'Clue numbers are shuffled: 1 Across might not be in the top left.')
-        y += line_height
-        expected.drawLine(margin, y + line_height//2,
-                          width-margin, y + line_height//2)
-        y += line_height
-        expected.drawText(margin, y, width, height, 0, 'Across')
-        expected.drawText(340, y, width, height, 0, 'Down')
-        y += line_height
-        expected.drawText(margin, y,
-                          number_width, height,
-                          align_right,
-                          '1. ')
-        expected.drawText(margin+number_width, y,
-                          width, height,
-                          0,
-                          'Part of a sentence')
-        expected.drawText(340, y,
-                          number_width, height,
-                          align_right,
-                          '1. ')
-        expected.drawText(340+number_width, y,
-                          width, height,
-                          0,
-                          'Sour grapes')
 
         clue_painter.draw_page(actual)
         actual.fillRect(0, 0, width, height, 'white')
@@ -248,7 +211,8 @@ def test_draw_clues_with_suits(pixmap_differ: PixmapDiffer):
             margin, y,
             width, height,
             0,
-            'Clue numbers are shuffled: 1 Across might not be in the top left.')
+            'Clue numbers are shuffled: 1 Across might not be the top left. '
+            '3 pieces.')
         line_height = CluePainter.find_text_height('X', expected)
         y += line_height
         expected.drawLine(margin, y + line_height//2,
@@ -354,7 +318,8 @@ def test_draw_clues_face_colour(pixmap_differ: PixmapDiffer):
             margin, y,
             width, height,
             0,
-            'Clue numbers are shuffled: 1 Across might not be in the top left.')
+            'Clue numbers are shuffled: 1 Across might not be the top left. '
+            '3 pieces.')
         line_height = CluePainter.find_text_height('X', expected)
         y += line_height
         expected.drawLine(margin, y + line_height//2,
@@ -426,7 +391,8 @@ def test_draw_clues_long_title(pixmap_differ: PixmapDiffer):
             margin, y,
             width, height,
             0,
-            'Clue numbers are shuffled: 1 Across might not be in the top left.')
+            'Clue numbers are shuffled: 1 Across might not be the top left. '
+            '3 pieces.')
         line_height = CluePainter.find_text_height('X', expected)
         y += line_height
         expected.drawLine(margin, y + line_height//2,
@@ -460,5 +426,143 @@ def test_draw_clues_long_title(pixmap_differ: PixmapDiffer):
                           width, height,
                           0,
                           "Sour grapes\nRun between words")
+
+        clue_painter.draw_page(actual)
+
+
+# noinspection DuplicatedCode
+def test_draw_clues_intro(pixmap_differ: PixmapDiffer):
+    puzzle = parse_basic_puzzle()
+
+    width = 680
+    height = 190
+    margin = 10
+    align_right = int(Qt.AlignRight)
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(
+            width, height,
+            'test_clue_painter_draw_clues_intro') as (actual, expected):
+        clue_painter = CluePainter(puzzle,
+                                   font_size=20,
+                                   margin=margin,
+                                   intro_text='Introduction...')
+        font = expected.font()
+        font.setPixelSize(20)
+        expected.setFont(font)
+        line_height = CluePainter.find_text_height('X', expected)
+        expected.drawText(margin, margin,
+                          width, height,
+                          0,
+                          'Introduction...')
+        y = margin + line_height
+        font.setPixelSize(40)
+        expected.setFont(font)
+        expected.drawText(0, y,
+                          width, height,
+                          Qt.AlignHCenter,
+                          'Basic Puzzle')
+        y += CluePainter.find_text_height('X', expected)
+        font.setPixelSize(20)
+        expected.setFont(font)
+        expected.drawText(
+            margin, y,
+            width, height,
+            0,
+            'Clue numbers are shuffled: 1 Across might not be the top left.'
+            ' 3 pieces.')
+        y += line_height
+        expected.drawLine(margin, y + line_height//2,
+                          width-margin, y + line_height//2)
+        y += line_height
+        expected.drawText(margin, y, width, height, 0, 'Across')
+        expected.drawText(340, y, width, height, 0, 'Down')
+        y += line_height
+        number_width = CluePainter.find_text_width('1. ', expected)
+        expected.drawText(margin, y,
+                          number_width, height,
+                          align_right,
+                          '1. ')
+        expected.drawText(margin+number_width, y,
+                          width, height,
+                          0,
+                          'Part of a sentence')
+        expected.drawText(340, y,
+                          number_width, height,
+                          align_right,
+                          '1. ')
+        expected.drawText(340+number_width, y,
+                          width, height,
+                          0,
+                          "Sour grapes")
+
+        clue_painter.draw_page(actual)
+
+
+# noinspection DuplicatedCode
+def test_draw_clues_footer(pixmap_differ: PixmapDiffer):
+    puzzle = parse_basic_puzzle()
+
+    width = 680
+    height = 190
+    margin = 10
+    align_right = int(Qt.AlignRight)
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(
+            width, height,
+            'test_clue_painter_draw_clues_footer') as (actual, expected):
+        clue_painter = CluePainter(puzzle,
+                                   font_size=20,
+                                   margin=margin,
+                                   footer_text='https://example.com')
+        font = expected.font()
+        font.setPixelSize(20)
+        expected.setFont(font)
+        line_height = CluePainter.find_text_height('X', expected)
+        expected.drawText(0, height-margin-line_height,
+                          width, height,
+                          Qt.AlignHCenter,
+                          'https://example.com')
+        y = margin
+        font.setPixelSize(40)
+        expected.setFont(font)
+        expected.drawText(0, y,
+                          width, height,
+                          Qt.AlignHCenter,
+                          'Basic Puzzle')
+        y += CluePainter.find_text_height('X', expected)
+        font.setPixelSize(20)
+        expected.setFont(font)
+        expected.drawText(
+            margin, y,
+            width, height,
+            0,
+            'Clue numbers are shuffled: 1 Across might not be the top left.'
+            ' 3 pieces.')
+        y += line_height
+        expected.drawLine(margin, y + line_height//2,
+                          width-margin, y + line_height//2)
+        y += line_height
+        expected.drawText(margin, y, width, height, 0, 'Across')
+        expected.drawText(340, y, width, height, 0, 'Down')
+        y += line_height
+        number_width = CluePainter.find_text_width('1. ', expected)
+        expected.drawText(margin, y,
+                          number_width, height,
+                          align_right,
+                          '1. ')
+        expected.drawText(margin+number_width, y,
+                          width, height,
+                          0,
+                          'Part of a sentence')
+        expected.drawText(340, y,
+                          number_width, height,
+                          align_right,
+                          '1. ')
+        expected.drawText(340+number_width, y,
+                          width, height,
+                          0,
+                          "Sour grapes")
 
         clue_painter.draw_page(actual)

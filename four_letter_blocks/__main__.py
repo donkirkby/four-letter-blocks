@@ -404,7 +404,13 @@ class FourLetterBlocksWindow(QMainWindow):
         """ Booklet page images are 1575 x 2475. Safety margin is 75 pixels on
         every side. """
         page_buffers = []
-        clue_painter = CluePainter(*puzzles, font_size=70, margin=75)
+        clue_painter = CluePainter(
+            *puzzles,
+            font_size=60,
+            margin=75,
+            intro_text='Solve each crossword puzzle with the pieces that match '
+                       'the colour of the clue numbers. Good luck!\n',
+            footer_text='https://donkirkby.github.io/four-letter-blocks')
         page_image = QImage(1575, 2475, QImage.Format_RGB32)
         while not clue_painter.is_finished:
             painter = QPainter(page_image)
