@@ -10,7 +10,7 @@ def test_draw_clues(pixmap_differ: PixmapDiffer):
     puzzle = parse_basic_puzzle()
     puzzle.down_clues[1].text_with_reference = "Run between 1 Across"
 
-    width = 680
+    width = 740
     height = 190
     margin = 10
     align_right = int(Qt.AlignRight)
@@ -42,7 +42,7 @@ def test_draw_clues(pixmap_differ: PixmapDiffer):
                           width-margin, y + line_height//2)
         y += line_height
         expected.drawText(margin, y, width, height, 0, 'Across')
-        expected.drawText(340, y, width, height, 0, 'Down')
+        expected.drawText(370, y, width, height, 0, 'Down')
         y += line_height
         number_width = CluePainter.find_text_width('1. ', expected)
         expected.drawText(margin, y,
@@ -57,15 +57,15 @@ def test_draw_clues(pixmap_differ: PixmapDiffer):
                           width, height,
                           0,
                           'Part of a sentence\nOne at a time')
-        expected.drawText(340, y,
+        expected.drawText(370, y,
                           number_width, height,
                           align_right,
                           '1. ')
-        expected.drawText(340, y+line_height,
+        expected.drawText(370, y+line_height,
                           number_width, height,
                           align_right,
                           '2. ')
-        expected.drawText(340+number_width, y,
+        expected.drawText(370+number_width, y,
                           width, height,
                           0,
                           "Sour grapes\nRun between 1 Across")
@@ -79,8 +79,8 @@ def test_draw_clues(pixmap_differ: PixmapDiffer):
 def test_draw_clues_wrapped(pixmap_differ: PixmapDiffer):
     puzzle = parse_basic_puzzle()
 
-    puzzle.across_clues[0].text = 'Part of a really long, run-on sentence'
-    width = 680
+    puzzle.across_clues[0].text = 'Part of an extremely long, run-on sentence'
+    width = 740
     height = 190
     margin = 10
     align_right = int(Qt.AlignRight)
@@ -112,7 +112,7 @@ def test_draw_clues_wrapped(pixmap_differ: PixmapDiffer):
                           width-margin, y + line_height//2)
         y += line_height
         expected.drawText(margin, y, width, height, 0, 'Across')
-        expected.drawText(340, y, width, height, 0, 'Down')
+        expected.drawText(370, y, width, height, 0, 'Down')
         y += line_height
         number_width = CluePainter.find_text_width('1. ', expected)
         expected.drawText(margin, y,
@@ -122,16 +122,16 @@ def test_draw_clues_wrapped(pixmap_differ: PixmapDiffer):
         expected.drawText(margin+number_width, y,
                           width, height,
                           0,
-                          'Part of a really long, run-on\nsentence')
-        expected.drawText(340, y,
+                          'Part of an extremely long, run-on\nsentence')
+        expected.drawText(370, y,
                           number_width, height,
                           align_right,
                           '1. ')
-        expected.drawText(340, y+line_height,
+        expected.drawText(370, y+line_height,
                           number_width, height,
                           align_right,
                           '2. ')
-        expected.drawText(340+number_width, y,
+        expected.drawText(370+number_width, y,
                           width, height,
                           0,
                           'Sour grapes\nRun between words')
@@ -144,11 +144,11 @@ def test_draw_clues_wrapped(pixmap_differ: PixmapDiffer):
 # noinspection DuplicatedCode
 def test_draw_clues_next_page(pixmap_differ: PixmapDiffer):
     puzzle1 = parse_basic_puzzle()
-    puzzle1.across_clues[0].text = 'Part of a really long, run-on sentence'
+    puzzle1.across_clues[0].text = 'Part of an extremely long, run-on sentence'
     puzzle2 = parse_basic_puzzle()
     puzzle2.title = 'Next Puzzle'
 
-    width = 680
+    width = 740
     height = 190
     margin = 10
     align_right = int(Qt.AlignRight)
@@ -156,7 +156,7 @@ def test_draw_clues_next_page(pixmap_differ: PixmapDiffer):
     expected: QPainter
     with pixmap_differ.create_painters(
             width, height,
-            'test_clue_painter_draw_clues_short') as (actual, expected):
+            'test_clue_painter_draw_clues_next_page') as (actual, expected):
         clue_painter = CluePainter(puzzle1,
                                    puzzle2,
                                    font_size=20,
@@ -187,7 +187,7 @@ def test_draw_clues_with_suits(pixmap_differ: PixmapDiffer):
     puzzle.down_clues[0].suit = 'C'
     puzzle.down_clues[1].suit = 'S'
 
-    width = 680
+    width = 740
     height = 190
     margin = 10
     align_right = int(Qt.AlignRight)
@@ -219,7 +219,7 @@ def test_draw_clues_with_suits(pixmap_differ: PixmapDiffer):
                           width-margin, y + line_height//2)
         y += line_height
         expected.drawText(margin, y, width, height, 0, 'Across')
-        expected.drawText(340, y, width, height, 0, 'Down')
+        expected.drawText(370, y, width, height, 0, 'Down')
         y += line_height
         number_width = CluePainter.find_text_width('1♡. ', expected)
         expected.drawText(margin, y,
@@ -234,15 +234,15 @@ def test_draw_clues_with_suits(pixmap_differ: PixmapDiffer):
                           width, height,
                           0,
                           'Part of a sentence\nOne at a time')
-        expected.drawText(340, y,
+        expected.drawText(370, y,
                           number_width, height,
                           align_right,
                           '1♣. ')
-        expected.drawText(340, y+line_height,
+        expected.drawText(370, y+line_height,
                           number_width, height,
                           align_right,
                           '2♠. ')
-        expected.drawText(340+number_width, y,
+        expected.drawText(370+number_width, y,
                           width, height,
                           0,
                           'Sour grapes\nRun between words')
@@ -253,12 +253,12 @@ def test_draw_clues_with_suits(pixmap_differ: PixmapDiffer):
 # noinspection DuplicatedCode
 def test_draw_clues_first_clue_too_big(pixmap_differ: PixmapDiffer):
     puzzle1 = parse_basic_puzzle()
-    puzzle1.across_clues[0].text = 'Part of a really long, run-on sentence'
-    puzzle1.across_clues[1].text = 'Another really long, run-on sentence'
+    puzzle1.across_clues[0].text = 'Part of an extremely long, run-on sentence'
+    puzzle1.across_clues[1].text = 'Another extremely long, run-on sentence'
     puzzle2 = parse_basic_puzzle()
     puzzle2.title = 'Next Puzzle'
 
-    width = 680
+    width = 740
     height = 190
     margin = 10
     align_right = int(Qt.AlignRight)
@@ -282,7 +282,7 @@ def test_draw_clues_first_clue_too_big(pixmap_differ: PixmapDiffer):
         expected.drawText(margin+number_width, margin,
                           width, height,
                           0,
-                          'Another really long, run-on\nsentence')
+                          'Another extremely long, run-on\nsentence')
 
         clue_painter.draw_page(actual)
         actual.fillRect(0, 0, width, height, 'white')
@@ -294,7 +294,7 @@ def test_draw_clues_face_colour(pixmap_differ: PixmapDiffer):
     puzzle = parse_basic_puzzle()
     puzzle.face_colour = QColor('lightgray')
 
-    width = 680
+    width = 740
     height = 190
     margin = 10
     align_right = int(Qt.AlignRight)
@@ -326,14 +326,14 @@ def test_draw_clues_face_colour(pixmap_differ: PixmapDiffer):
                           width-margin, y + line_height//2)
         y += line_height
         expected.drawText(margin, y, width, height, 0, 'Across')
-        expected.drawText(340, y, width, height, 0, 'Down')
+        expected.drawText(370, y, width, height, 0, 'Down')
         y += line_height
         number_width = CluePainter.find_text_width('1. ', expected)
         space_width = CluePainter.find_text_width(' ', expected)
         shading_width = number_width - space_width//2
         clue_height = CluePainter.find_text_height('P\nO', expected)
         expected.fillRect(margin, y, shading_width, clue_height, 'lightgray')
-        expected.fillRect(340, y, shading_width, clue_height, 'lightgray')
+        expected.fillRect(370, y, shading_width, clue_height, 'lightgray')
         expected.drawText(margin, y,
                           number_width, height,
                           align_right,
@@ -346,15 +346,15 @@ def test_draw_clues_face_colour(pixmap_differ: PixmapDiffer):
                           width, height,
                           0,
                           'Part of a sentence\nOne at a time')
-        expected.drawText(340, y,
+        expected.drawText(370, y,
                           number_width, height,
                           align_right,
                           '1. ')
-        expected.drawText(340, y+line_height,
+        expected.drawText(370, y+line_height,
                           number_width, height,
                           align_right,
                           '2. ')
-        expected.drawText(340+number_width, y,
+        expected.drawText(370+number_width, y,
                           width, height,
                           0,
                           "Sour grapes\nRun between words")
@@ -367,7 +367,7 @@ def test_draw_clues_long_title(pixmap_differ: PixmapDiffer):
     puzzle = parse_basic_puzzle()
     puzzle.title = 'Long Title That Will Not Fit (1000x2000)'
 
-    width = 680
+    width = 740
     height = 250
     margin = 10
     align_right = int(Qt.AlignRight)
@@ -399,7 +399,7 @@ def test_draw_clues_long_title(pixmap_differ: PixmapDiffer):
                           width-margin, y + line_height//2)
         y += line_height
         expected.drawText(margin, y, width, height, 0, 'Across')
-        expected.drawText(340, y, width, height, 0, 'Down')
+        expected.drawText(370, y, width, height, 0, 'Down')
         y += line_height
         number_width = CluePainter.find_text_width('1. ', expected)
         expected.drawText(margin, y,
@@ -414,15 +414,15 @@ def test_draw_clues_long_title(pixmap_differ: PixmapDiffer):
                           width, height,
                           0,
                           'Part of a sentence\nOne at a time')
-        expected.drawText(340, y,
+        expected.drawText(370, y,
                           number_width, height,
                           align_right,
                           '1. ')
-        expected.drawText(340, y+line_height,
+        expected.drawText(370, y+line_height,
                           number_width, height,
                           align_right,
                           '2. ')
-        expected.drawText(340+number_width, y,
+        expected.drawText(370+number_width, y,
                           width, height,
                           0,
                           "Sour grapes\nRun between words")
@@ -434,7 +434,7 @@ def test_draw_clues_long_title(pixmap_differ: PixmapDiffer):
 def test_draw_clues_intro(pixmap_differ: PixmapDiffer):
     puzzle = parse_basic_puzzle()
 
-    width = 680
+    width = 740
     height = 190
     margin = 10
     align_right = int(Qt.AlignRight)
@@ -476,7 +476,7 @@ def test_draw_clues_intro(pixmap_differ: PixmapDiffer):
                           width-margin, y + line_height//2)
         y += line_height
         expected.drawText(margin, y, width, height, 0, 'Across')
-        expected.drawText(340, y, width, height, 0, 'Down')
+        expected.drawText(370, y, width, height, 0, 'Down')
         y += line_height
         number_width = CluePainter.find_text_width('1. ', expected)
         expected.drawText(margin, y,
@@ -487,11 +487,11 @@ def test_draw_clues_intro(pixmap_differ: PixmapDiffer):
                           width, height,
                           0,
                           'Part of a sentence')
-        expected.drawText(340, y,
+        expected.drawText(370, y,
                           number_width, height,
                           align_right,
                           '1. ')
-        expected.drawText(340+number_width, y,
+        expected.drawText(370+number_width, y,
                           width, height,
                           0,
                           "Sour grapes")
@@ -503,7 +503,7 @@ def test_draw_clues_intro(pixmap_differ: PixmapDiffer):
 def test_draw_clues_footer(pixmap_differ: PixmapDiffer):
     puzzle = parse_basic_puzzle()
 
-    width = 680
+    width = 740
     height = 190
     margin = 10
     align_right = int(Qt.AlignRight)
@@ -545,7 +545,7 @@ def test_draw_clues_footer(pixmap_differ: PixmapDiffer):
                           width-margin, y + line_height//2)
         y += line_height
         expected.drawText(margin, y, width, height, 0, 'Across')
-        expected.drawText(340, y, width, height, 0, 'Down')
+        expected.drawText(370, y, width, height, 0, 'Down')
         y += line_height
         number_width = CluePainter.find_text_width('1. ', expected)
         expected.drawText(margin, y,
@@ -556,11 +556,11 @@ def test_draw_clues_footer(pixmap_differ: PixmapDiffer):
                           width, height,
                           0,
                           'Part of a sentence')
-        expected.drawText(340, y,
+        expected.drawText(370, y,
                           number_width, height,
                           align_right,
                           '1. ')
-        expected.drawText(340+number_width, y,
+        expected.drawText(370+number_width, y,
                           width, height,
                           0,
                           "Sour grapes")
