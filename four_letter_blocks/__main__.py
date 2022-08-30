@@ -3,19 +3,19 @@ import sys
 import traceback
 import typing
 from pathlib import Path
-from textwrap import dedent
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from PySide6.QtCore import QSettings, QSize, QSizeF, QObject, QRectF, QRect, QPoint, QBuffer
 from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, \
     Qt, QCloseEvent, QPixmap, QColor, QTextDocument, QTextFormat, QTextCursor, \
-    QTextCharFormat, QPyTextObject, QImage, QTextBlockFormat
+    QTextCharFormat, QPyTextObject, QImage
 from PySide6.QtSvg import QSvgGenerator
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog, QInputDialog, QToolTip, \
     QListWidgetItem
 
 import four_letter_blocks
 from four_letter_blocks.block_packer import BlockPacker
+from four_letter_blocks.clue_painter import CluePainter
 from four_letter_blocks.main_window import Ui_MainWindow
 from four_letter_blocks.puzzle import Puzzle
 from four_letter_blocks.puzzle_set import PuzzleSet
@@ -403,38 +403,25 @@ class FourLetterBlocksWindow(QMainWindow):
 
         """ Booklet page images are 1575 x 2475. Safety margin is 75 pixels on
         every side. """
-        pdf_buffer = QBuffer()
-        pdf_buffer.open(QBuffer.WriteOnly)
-        pdf = QPdfWriter(pdf_buffer)
-        pdf.setPageSize(QPageSize.Letter)
-
-        document = QTextDocument()
-        document.setPageSize(QSize(pdf.width(), pdf.height()))
-        font = document.defaultFont()
-        font.setPixelSize(pdf.height()//60)
-        document.setDefaultFont(font)
-        cursor = QTextCursor(document)
-        title_format = QTextBlockFormat()
-        title_format.setAlignment(Qt.AlignHCenter)
-        for puzzle in puzzle_set.puzzles:
-            cursor.movePosition(cursor.End)
-            cursor.insertBlock(title_format)
-            puzzle.build_clues(document, show_link=False)
-        cursor.movePosition(cursor.End)
-        cursor.insertHtml(dedent("""\
-            <hr class="footer">
-            <p"><center><a href="https://donkirkby.github.io/four-letter-blocks"
-            >https://donkirkby.github.io/four-letter-blocks</a></center></p>
-            <p></p>
-        """))
-
-        document.print_(pdf)
+        page_buffers = []
+        clue_painter = CluePainter(*puzzles, font_size=70, margin=75)
+        page_image = QImage(1575, 2475, QImage.Format_RGB32)
+        while not clue_painter.is_finished:
+            painter = QPainter(page_image)
+            painter.fillRect(page_image.rect(), 'white')
+            clue_painter.draw_page(painter)
+            painter.end()
+            page_buffer = QBuffer()
+            success = page_image.save(page_buffer, 'PNG')
+            assert success
+            page_buffers.append(page_buffer)
 
         with ZipFile(file_name, 'w', compression=ZIP_DEFLATED) as zip_file:
             zip_file.writestr('cuts.svg', svg_buffer.data())
             zip_file.writestr('front.png', front_buffer.data())
             zip_file.writestr('back.png', back_buffer.data())
-            zip_file.writestr('clues.pdf', pdf_buffer.data())
+            for page_number, page_buffer in enumerate(page_buffers, 1):
+                zip_file.writestr(f'page{page_number}.png', page_buffer.data())
 
         self.statusBar().showMessage(f'Exported to {file_name}.')
 
