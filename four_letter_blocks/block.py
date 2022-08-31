@@ -125,28 +125,70 @@ class Block:
 
         self.draw_outline(painter)
 
-    def draw_outline(self, painter):
+    def draw_outline(self, painter, nick_radius=0):
         self.transform_painter(painter, 1)
         square_positions = self.square_positions
         size = self.squares[0].size
         old_pen = painter.pen()
         outer_pen = QPen(self.border_colour)
         outer_pen.setWidth(math.floor(size / 33))
-        outer_pen.setCapStyle(Qt.RoundCap)
+        if nick_radius:
+            outer_pen.setCapStyle(Qt.FlatCap)
+        else:
+            outer_pen.setCapStyle(Qt.RoundCap)
         for square in self.squares:
             painter.setPen(outer_pen)
             x = square.x
             y = square.y
             if (round(x), round(y - size)) not in square_positions:
-                painter.drawLine(x, y, x + size, y)
+                self.draw_nicked_line(painter, nick_radius, x, y, x + size, y)
             if (round(x), round(y + size)) not in square_positions:
-                painter.drawLine(x, y + size, x + size, y + size)
+                self.draw_nicked_line(painter,
+                                      nick_radius,
+                                      x, y + size,
+                                      x + size, y + size)
             if (round(x - size), round(y)) not in square_positions:
-                painter.drawLine(x, y, x, y + size)
+                self.draw_nicked_line(painter, nick_radius, x, y, x, y + size)
             if (round(x + size), round(y)) not in square_positions:
-                painter.drawLine(x + size, y, x + size, y + size)
+                self.draw_nicked_line(painter,
+                                      nick_radius,
+                                      x + size, y,
+                                      x + size, y + size)
             painter.setPen(old_pen)
         self.transform_painter(painter, -1)
+
+    def draw_nicked_line(self,
+                         painter: QPainter,
+                         nick_radius: int,
+                         x1: int,
+                         y1: int,
+                         x2: int,
+                         y2: int):
+        if nick_radius == 0:
+            painter.drawLine(x1, y1, x2, y2)
+            return
+
+        square_size = self.squares[0].size
+        length = max(abs(x2-x1), abs(y2-y1))
+        cell_count = round(length / square_size)
+        xstep = (x2-x1) / (cell_count*2)
+        ystep = (y2-y1) / (cell_count*2)
+        xnick = ynick = 0
+        if xstep > 0:
+            xnick = nick_radius
+        elif xstep < 0:
+            xnick = -nick_radius
+        elif ystep > 0:
+            ynick = nick_radius
+        else:
+            ynick = -nick_radius
+        painter.drawLine(x1, y1, round(x1+xstep-xnick), round(y1+ystep-ynick))
+        for i in range(cell_count-1):
+            painter.drawLine(round(x1+xstep*(2*i+1)+xnick),
+                             round(y1+ystep*(2*i+1)+ynick),
+                             round(x1+xstep*(2*i+3)-xnick),
+                             round(y1+ystep*(2*i+3)-ynick))
+        painter.drawLine(round(x2-xstep+xnick), round(y2-ystep+ynick), x2, y2)
 
     @property
     def square_positions(self):

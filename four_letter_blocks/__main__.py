@@ -379,7 +379,8 @@ class FourLetterBlocksWindow(QMainWindow):
 
         painter = QPainter(generator)
         puzzle_set.square_size = generator.width() / 17
-        puzzle_set.draw_cuts(painter)
+        nick_radius = 5  # DPI is 1000
+        puzzle_set.draw_cuts(painter, nick_radius)
         painter.end()
 
         front_buffer = QBuffer()

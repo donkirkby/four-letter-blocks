@@ -34,9 +34,6 @@ class BlockPacker:
                                             else 1 if char == '#'
                                             else ord(char) - 63)
         self.tries = tries
-        self.cell_size = 940
-        self.margin = 120
-        self.nick_radius = 5
 
     @property
     def positions(self):
@@ -155,38 +152,6 @@ class BlockPacker:
             start_state[target_row, target_col] = 1  # gap
             self.state = start_state
             self.fill(shape_counts)
-
-    def draw_nicked_line(self,
-                         painter: QPainter,
-                         x1: int,
-                         y1: int,
-                         x2: int,
-                         y2: int):
-        pen = QPen('#ed2224')
-        pen.setWidth(self.cell_size / 20)
-        pen.setCapStyle(Qt.FlatCap)
-
-        painter.setPen(pen)
-        length = max(abs(x2-x1), abs(y2-y1))
-        cell_count = round(length / self.cell_size)
-        xstep = (x2-x1) / (cell_count*2)
-        ystep = (y2-y1) / (cell_count*2)
-        xnick = ynick = 0
-        if xstep > 0:
-            xnick = self.nick_radius
-        elif xstep < 0:
-            xnick = -self.nick_radius
-        elif ystep > 0:
-            ynick = self.nick_radius
-        else:
-            ynick = -self.nick_radius
-        painter.drawLine(x1, y1, round(x1+xstep-xnick), round(y1+ystep-ynick))
-        for i in range(cell_count-1):
-            painter.drawLine(round(x1+xstep*(2*i+1)+xnick),
-                             round(y1+ystep*(2*i+1)+ynick),
-                             round(x1+xstep*(2*i+3)-xnick),
-                             round(y1+ystep*(2*i+3)-ynick))
-        painter.drawLine(round(x2-xstep+xnick), round(y2-ystep+ynick), x2, y2)
 
     def flip(self) -> 'BlockPacker':
         flipped_state = np.copy(np.fliplr(self.state))

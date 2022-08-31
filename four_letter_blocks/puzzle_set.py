@@ -182,7 +182,7 @@ class PuzzleSet:
                 block.set_display((x+0.5)*square_size, (y+0.5)*square_size, rotation)
                 yield block
 
-    def draw_cuts(self, painter):
+    def draw_cuts(self, painter, nick_radius=0):
         square_size = self.square_size
         blocks = self.block_packer.create_blocks()
         for block in blocks:
@@ -191,7 +191,7 @@ class PuzzleSet:
                 square.x = (square.x + 0.5) * square_size
                 square.y = (square.y + 0.5) * square_size
             block.border_colour = Block.CUT_COLOUR
-            block.draw_outline(painter)
+            block.draw_outline(painter, nick_radius)
 
     def draw_front(self,
                    painter: typing.Union[QPainter, LineDeduper],
