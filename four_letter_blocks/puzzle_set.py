@@ -143,19 +143,35 @@ class PuzzleSet:
         else:
             self.block_summary = ''
         self.block_packer.fill(self.shape_counts)
-        sizes = [(puzzle.grid.width, i)
-                 for i, puzzle in enumerate(self.puzzles)]
-        sizes.sort()
-        colours = [(120, 30),
-                   (0, 0),
-                   (60, 30),
-                   (30, 30),
-                   (0, 30)]
-        for (width, i), (hue, saturation) in zip(sizes, colours):
-            puzzle = self.puzzles[i]
-            value = 255
-            colour = QColor.fromHsv(hue, saturation, value)
-            puzzle.face_colour = colour
+        size_pairs = [(puzzle.grid.width, i)
+                      for i, puzzle in enumerate(self.puzzles)]
+        size_pairs.sort()
+        sizes = {size for size, i in size_pairs}
+        standard_colours = {7: (120, 30),
+                            9: (0, 0),
+                            11: (60, 30),
+                            13: (30, 30),
+                            15: (0, 30)}
+        unknown_sizes = sizes.difference(standard_colours)
+        if unknown_sizes or len(sizes) != len(self.puzzles):
+            angle = 360 / (len(self.puzzles)-1)
+            for i, (width, puzzle_index) in enumerate(size_pairs):
+                puzzle = self.puzzles[puzzle_index]
+                if i == 0:
+                    hue = saturation = 0
+                else:
+                    hue = 360 - i*angle
+                    saturation = 30
+                value = 255
+                colour = QColor.fromHsv(hue, saturation, value)
+                puzzle.face_colour = colour
+        else:
+            for (width, puzzle_index) in size_pairs:
+                puzzle = self.puzzles[puzzle_index]
+                hue, saturation = standard_colours[puzzle.grid.width]
+                value = 255
+                colour = QColor.fromHsv(hue, saturation, value)
+                puzzle.face_colour = colour
 
     @property
     def square_size(self) -> int:

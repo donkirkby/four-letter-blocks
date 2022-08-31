@@ -1,7 +1,7 @@
 from io import StringIO
 from textwrap import dedent
 
-from PySide6.QtGui import QColor
+import pytest
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
@@ -182,9 +182,6 @@ def test_draw_packed(pixmap_differ: PixmapDiffer):
         blocks[3].set_display(210, 70, 1)
         blocks[4].set_display(210, 10, 3)
 
-        for block in puzzle1.blocks:
-            block.face_colour = QColor.fromHsv(120, 30, 255)
-
         for block in puzzle1.blocks + puzzle2.blocks:
             block.draw(expected, use_text=False)
 
@@ -221,3 +218,33 @@ def test_draw_cuts(pixmap_differ: PixmapDiffer):
         puzzle_set = parse_puzzle_set(BlockPacker(7, 8, tries=1000))
         puzzle_set.square_size = 20
         puzzle_set.draw_cuts(actual)
+
+
+@pytest.mark.parametrize(
+    'sizes, expected',
+    # Standard sizes in order
+    (((7, 9, 11, 13, 15), ((120, 30), (0, 0), (60, 30), (30, 30), (0, 30))),
+     # Standard sizes out of order
+     ((9, 7, 11, 13, 15), ((0, 0), (120, 30), (60, 30), (30, 30), (0, 30))),
+     # Some standard sizes
+     ((9, 11, 13, 15), ((0, 0), (60, 30), (30, 30), (0, 30))),
+     # Nonstandard sizes
+     ((9, 10, 11, 12), ((0, 0), (240, 30), (120, 30), (0, 30))),
+     # Repeated sizes
+     ((9, 9), ((0, 0), (0, 30)))))
+def test_colours(sizes, expected):
+    puzzles = []
+    for size in sizes:
+        grid_text = '\n'.join(['X'*size]*size)
+        puzzle = Puzzle.parse_sections(f'{size=}',
+                                       grid_text,
+                                       '',
+                                       '')
+        puzzles.append(puzzle)
+
+    PuzzleSet(*puzzles)
+
+    colours = (puzzle.face_colour for puzzle in puzzles)
+    colour_params = tuple((colour.hue(), colour.saturation())
+                          for colour in colours)
+    assert colour_params == expected
