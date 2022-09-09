@@ -12,9 +12,6 @@ class PixmapDiffer(LiveImageDiffer):
     def __init__(self, diffs_path: Path = None, request=None, is_displayed=True):
         """ Initialize the object and clean out the diffs path.
 
-        This class requires Pillow to be installed, but you can remove that
-        dependency with a subclass that overrides the start_diff() and
-        end_diff() methods.
         :param diffs_path: The folder to write comparison images in, or None
             if you don't want to write any. Will be created if it doesn't exist.
         :param request: The Pytest request fixture, if you want to generate

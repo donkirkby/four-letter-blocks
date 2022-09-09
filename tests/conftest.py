@@ -12,8 +12,16 @@ def qt_application() -> QApplication:
 
 
 @pytest.fixture(scope='session')
-def pixmap_differ(qt_application, request) -> PixmapDiffer:
+def session_pixmap_differ(qt_application, request) -> PixmapDiffer:
+    """ Track all pixmaps compared in a session. """
     diffs_path = Path(__file__).parent / 'pixmap_diffs'
     differ = PixmapDiffer(diffs_path, request)
     yield differ
     differ.remove_common_prefix()
+
+
+@pytest.fixture
+def pixmap_differ(request, session_pixmap_differ):
+    """ Pass the current request to the session pixmap differ. """
+    session_pixmap_differ.request = request
+    yield session_pixmap_differ

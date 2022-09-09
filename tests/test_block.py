@@ -1,10 +1,10 @@
 from textwrap import dedent
 
-from PySide6.QtGui import QPen, Qt
+from PySide6.QtGui import QPen, Qt, QColor, QPainter
 
 from four_letter_blocks.grid import Grid
 from four_letter_blocks.block import Block
-from four_letter_blocks.square import Square
+from four_letter_blocks.square import Square, draw_gradient_rect
 from tests.test_square import PixmapDiffer
 
 
@@ -194,55 +194,96 @@ def test_shape():
 
 
 def test_draw(pixmap_differ: PixmapDiffer):
-    actual, expected = pixmap_differ.start(
-        310, 260,
-        'test_block_draw')
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(310, 260) as (actual, expected):
+        block = create_basic_block()
+        block.border_colour = 'blue'
+        block.divider_colour = 'magenta'
 
-    block = create_basic_block()
-    block.border_colour = 'blue'
-    block.divider_colour = 'magenta'
+        for square in block.squares:
+            square.draw(expected)
 
-    for square in block.squares:
-        square.draw(expected)
+        pen = QPen('magenta')
+        expected.setPen(pen)
+        expected.drawLine(0, 150, 100, 150)
+        expected.drawLine(100, 50, 100, 150)
+        expected.drawLine(200, 50, 200, 150)
 
-    pen = QPen('magenta')
-    expected.setPen(pen)
-    expected.drawLine(0, 150, 100, 150)
-    expected.drawLine(100, 50, 100, 150)
-    expected.drawLine(200, 50, 200, 150)
+        pen = QPen('blue')
+        pen.setWidth(3)
+        pen.setCapStyle(Qt.RoundCap)
+        expected.setPen(pen)
+        expected.drawLine(0, 50, 300, 50)
+        expected.drawLine(100, 150, 300, 150)
+        expected.drawLine(0, 250, 100, 250)
+        expected.drawLine(0, 50, 0, 250)
+        expected.drawLine(100, 150, 100, 250)
+        expected.drawLine(300, 50, 300, 150)
 
-    pen = QPen('blue')
-    pen.setWidth(3)
-    pen.setCapStyle(Qt.RoundCap)
-    expected.setPen(pen)
-    expected.drawLine(0, 50, 300, 50)
-    expected.drawLine(100, 150, 300, 150)
-    expected.drawLine(0, 250, 100, 250)
-    expected.drawLine(0, 50, 0, 250)
-    expected.drawLine(100, 150, 100, 250)
-    expected.drawLine(300, 50, 300, 150)
-
-    block.draw(actual)
-
-    pixmap_differ.assert_equal()
+        block.draw(actual)
 
 
-def test_draw_path(pixmap_differ: PixmapDiffer):
-    actual, expected = pixmap_differ.start(
-        310, 260,
-        'test_block_draw_path')
-    actual.drawText = lambda *args: None
-    block = create_basic_block()
-    block.squares[0].number = 12
-    block.squares[0].suit = 'D'
-    block.squares[1].number = 5
-    block.squares[1].suit = 'C'
-    block.draw(expected)
+def test_draw_packed(pixmap_differ: PixmapDiffer):
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(310, 260) as (actual, expected):
+        block = create_basic_block()
+        block.border_colour = 'blue'
+        block.divider_colour = 'magenta'
 
-    block.draw(actual, use_text=False)
+        for square in block.squares:
+            square.draw(expected, is_packed=True)
 
-    pixmap_differ.compare()
-    assert pixmap_differ.diff_count <= 2500
+        pen = QPen('magenta')
+        expected.setPen(pen)
+        expected.drawLine(25, 150, 75, 150)
+        expected.drawLine(100, 75, 100, 125)
+        expected.drawLine(200, 75, 200, 125)
+
+        pen = QPen('blue')
+        pen.setWidth(3)
+        pen.setCapStyle(Qt.RoundCap)
+        expected.setPen(pen)
+
+        block.draw(actual, is_packed=True)
+
+
+def test_draw_face_colour(pixmap_differ: PixmapDiffer):
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(310, 260) as (actual, expected):
+        draw_gradient_rect(expected,
+                           QColor.fromHsv(120, 30, 255),
+                           106.25, 56.25,
+                           87.5, 87.5,
+                           31.25)
+        draw_gradient_rect(expected,
+                           QColor.fromHsv(120, 30, 255),
+                           6.25, 56.25,
+                           87.5, 87.5,
+                           31.25)
+        draw_gradient_rect(expected,
+                           QColor.fromHsv(120, 30, 255),
+                           206.25, 56.25,
+                           87.5, 87.5,
+                           31.25)
+        draw_gradient_rect(expected,
+                           QColor.fromHsv(120, 30, 255),
+                           6.25, 156.25,
+                           87.5, 87.5,
+                           31.25)
+
+        block = create_basic_block()
+        block.squares[0].number = 12
+        block.squares[0].suit = 'D'
+        block.squares[1].number = 5
+        block.squares[1].suit = 'C'
+        block.face_colour = QColor.fromHsv(0, 0, 0, 0)
+        block.draw(expected, is_packed=True)
+
+        block.face_colour = QColor.fromHsv(120, 30, 255)
+        block.draw(actual, is_packed=True)
 
 
 def test_rotate180(pixmap_differ: PixmapDiffer):

@@ -183,7 +183,7 @@ def test_draw_packed(pixmap_differ: PixmapDiffer):
         blocks[4].set_display(210, 10, 3)
 
         for block in puzzle1.blocks + puzzle2.blocks:
-            block.draw(expected, use_text=False)
+            block.draw(expected, is_packed=True)
 
         puzzle_set2 = parse_puzzle_set(BlockPacker(7, 8, tries=1000))
         puzzle_set2.square_size = 20
@@ -223,15 +223,15 @@ def test_draw_cuts(pixmap_differ: PixmapDiffer):
 @pytest.mark.parametrize(
     'sizes, expected',
     # Standard sizes in order
-    (((7, 9, 11, 13, 15), ((120, 30), (0, 0), (60, 30), (30, 30), (0, 30))),
+    (((7, 9, 11, 13, 15), ((120, 60), (0, 0), (60, 60), (30, 60), (0, 60))),
      # Standard sizes out of order
-     ((9, 7, 11, 13, 15), ((0, 0), (120, 30), (60, 30), (30, 30), (0, 30))),
+     ((9, 7, 11, 13, 15), ((0, 0), (120, 60), (60, 60), (30, 60), (0, 60))),
      # Some standard sizes
-     ((9, 11, 13, 15), ((0, 0), (60, 30), (30, 30), (0, 30))),
+     ((9, 11, 13, 15), ((0, 0), (60, 60), (30, 60), (0, 60))),
      # Nonstandard sizes
-     ((9, 10, 11, 12), ((0, 0), (240, 30), (120, 30), (0, 30))),
+     ((9, 10, 11, 12), ((0, 0), (240, 60), (120, 60), (0, 60))),
      # Repeated sizes
-     ((9, 9), ((0, 0), (0, 30)))))
+     ((9, 9), ((0, 0), (0, 60)))))
 def test_colours(sizes, expected):
     puzzles = []
     for size in sizes:
@@ -242,7 +242,7 @@ def test_colours(sizes, expected):
                                        '')
         puzzles.append(puzzle)
 
-    PuzzleSet(*puzzles)
+    PuzzleSet(*puzzles, block_packer=BlockPacker(20, 20, tries=1000))
 
     colours = (puzzle.face_colour for puzzle in puzzles)
     colour_params = tuple((colour.hue(), colour.saturation())

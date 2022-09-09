@@ -78,9 +78,10 @@ def test_fill_one_block():
         ......
         ......""")
     packer = BlockPacker(width, height)
-    packer.fill(shape_counts)
+    is_filled = packer.fill(shape_counts)
 
     assert packer.display() == expected_display
+    assert is_filled
 
 
 def test_fill_two_blocks():
@@ -96,6 +97,22 @@ def test_fill_two_blocks():
     packer.fill(shape_counts)
 
     assert packer.display() == expected_display
+
+
+def test_fill_no_shapes():
+    width = height = 5
+    shape_counts = Counter()
+    expected_display = dedent("""\
+        .....
+        .....
+        .....
+        .....
+        .....""")
+    packer = BlockPacker(width, height)
+    is_filled = packer.fill(shape_counts)
+
+    assert packer.display() == expected_display
+    assert is_filled
 
 
 def test_fill_three_blocks():
@@ -188,3 +205,12 @@ def test_fill_overflow():
     packer = BlockPacker(256, 4, tries=500)
     with pytest.raises(ValueError, match='Maximum 254 blocks in packer.'):
         packer.fill(shape_counts)
+
+
+def test_fill_fail():
+    shape_counts = Counter({'O': 2})
+
+    packer = BlockPacker(2, 3, tries=500)
+    is_filled = packer.fill(shape_counts)
+
+    assert not is_filled

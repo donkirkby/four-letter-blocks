@@ -1,5 +1,7 @@
+import math
+
 from PySide6.QtCore import QRect, Qt
-from PySide6.QtGui import QPainter, QColor, QPainterPath
+from PySide6.QtGui import QPainter, QColor, QPainterPath, QLinearGradient, QRadialGradient
 
 from four_letter_blocks.suit import Suit
 
@@ -29,7 +31,7 @@ class Square:
             number_repr = f", {self.number}"
         return f"Square({self.letter!r}{number_repr})"
 
-    def draw(self, painter: QPainter, use_text=True):
+    def draw(self, painter: QPainter, is_packed=False):
         pen = painter.pen()
         pen.setWidth(round(self.size/80))
         painter.setPen(pen)
@@ -43,15 +45,16 @@ class Square:
         suit_fill = QColor(227, 227, 227)
         font = painter.font()
 
-        number_shift = round(self.size / 20)
-        letter_shift = round(self.size * (1 - self.LETTER_SIZE)/2)
-
-        painter.fillRect(rect, face)
+        draw_gradient_rect(painter,
+                           face,
+                           self.x + self.size / 16, self.y + self.size / 16,
+                           self.size * 7 / 8, self.size * 7 / 8,
+                           self.size * 5 / 16)
 
         font.setPixelSize(self.size)
         if self.suit is None:
             pass
-        elif use_text:
+        elif not is_packed:
             suit_display = self.SUIT_DISPLAYS[self.suit]
             painter.setFont(font)
             old_pen = painter.pen()
@@ -62,50 +65,133 @@ class Square:
             painter.drawText(rect, Qt.AlignHCenter, suit_display.display)
             painter.setPen(old_pen)
         else:
-            offset = (rect.left()+self.size*0.051, rect.top()+self.size*0.93)
+            x = rect.left() + self.size / 2
+            y = rect.top() + self.size * 0.775
             suit_display = self.SUIT_DISPLAYS[self.suit]
-            path = QPainterPath()
+            font.setPixelSize(self.size * 0.57)
+            painter.setFont(font)
             if suit_display.filled != suit_display.display:
-                path.addText(0, 0, font, suit_display.filled)
-                path.translate(*offset)
-                painter.fillPath(path, suit_fill)
-                path.clear()
-            path.addText(0, 0, font, suit_display.display)
-            path.translate(*offset)
-            painter.fillPath(path, suit_outline)
+                painter.setPen(suit_fill)
+                draw_text_path(painter,
+                               x,
+                               y,
+                               suit_display.filled,
+                               is_centred=True)
+            painter.setPen(suit_outline)
+            draw_text_path(painter,
+                           x,
+                           y,
+                           suit_display.display,
+                           is_centred=True)
+            painter.setPen(black)
 
-        font.setPixelSize(self.size * self.NUMBER_SIZE)
         if self.number is None:
             pass
-        elif use_text:
+        elif not is_packed:
+            font.setPixelSize(self.size * self.NUMBER_SIZE)
+            number_shift = round(self.size / 20)
             painter.setFont(font)
             rect.translate(number_shift, 0)
             painter.drawText(rect, 0, str(self.number))
             rect.translate(-number_shift, 0)
         else:
-            path = QPainterPath()
-            path.addText(0, 0, font, str(self.number))
-            path.translate(rect.left()+self.size*0.05,
-                           rect.top()+self.size*0.225)
-            painter.fillPath(path, black)
+            font.setPixelSize(self.size * 0.1875)
+            painter.setFont(font)
+            draw_text_path(painter,
+                           rect.left()+self.size*0.225,
+                           rect.top()+self.size*0.3625,
+                           str(self.number))
 
-        font.setPixelSize(self.size * self.LETTER_SIZE)
-        if use_text:
+        if not is_packed:
+            font.setPixelSize(self.size * self.LETTER_SIZE)
+            letter_shift = round(self.size * (1 - self.LETTER_SIZE) / 2)
             painter.setFont(font)
             rect.translate(0, letter_shift)
             painter.drawText(rect, Qt.AlignHCenter, self.letter)
             rect.translate(0, -letter_shift)
         else:
-            path = QPainterPath()
-            path.addText(0, 0, font, self.letter)
-            letter_rect = path.boundingRect()
-            path.translate(
-                rect.left()-letter_rect.left() +
-                (rect.width()-letter_rect.width())/2,
-                rect.top() + self.size*0.824)
-            painter.fillPath(path, black)
+            font.setPixelSize(self.size * 0.57)
+            painter.setFont(font)
+            draw_text_path(painter,
+                           rect.left()+self.size/2,
+                           rect.top() + self.size*0.775,
+                           self.letter,
+                           is_centred=True)
 
     def display_number(self):
         suit_display = self.SUIT_DISPLAYS[self.suit]
         number_display = f'{self.number}{suit_display.display}'
         return number_display
+
+
+def draw_text_path(painter: QPainter,
+                   x: float,
+                   y: float,
+                   text: str,
+                   is_centred: bool = False):
+    path = QPainterPath()
+    font = painter.font()
+    path.addText(x, y, font, text)
+    if is_centred:
+        rect = path.boundingRect()
+        path.translate(x-(rect.left()+rect.right())/2, 0)
+    painter.fillPath(path, painter.pen().color())
+
+
+def draw_gradient_rect(painter: QPainter,
+                       colour: QColor,
+                       x: float,
+                       y: float,
+                       width: float,
+                       height: float,
+                       radius: float):
+    if colour.alpha() == 0:
+        return
+    gradient = QLinearGradient()
+    gradient.setStart(x, y)
+    gradient.setFinalStop(x+radius, y)
+    white = QColor('white')
+    gradient.setStops(((0, white), (1, colour)))
+    ceil = math.ceil
+    painter.fillRect(x, y+radius,
+                     ceil(width/2), ceil(height-2*radius),
+                     gradient)
+
+    gradient.setStart(x+width, y)
+    gradient.setFinalStop(x+width-radius, y)
+    painter.fillRect(x+width/2, y+radius,
+                     ceil(width/2), ceil(height-2*radius),
+                     gradient)
+
+    gradient.setStart(x, y)
+    gradient.setFinalStop(x, y+radius)
+    painter.fillRect(x+radius, y,
+                     ceil(width-2*radius), ceil(height/2),
+                     gradient)
+
+    gradient.setStart(x, y+height)
+    gradient.setFinalStop(x, y+height-radius)
+    painter.fillRect(x+radius, y+height/2,
+                     ceil(width-2*radius), ceil(height/2),
+                     gradient)
+
+    gradient = QRadialGradient()
+    gradient.setStops(((0, colour), (1, white)))
+    gradient.setRadius(radius)
+    gradient.setCenter(x+radius, y+radius)
+    gradient.setFocalPoint(gradient.center())
+    painter.fillRect(x, y, ceil(radius), ceil(radius), gradient)
+
+    gradient.setCenter(x+width-radius, y+radius)
+    gradient.setFocalPoint(gradient.center())
+    painter.fillRect(x+width-radius, y, ceil(radius), ceil(radius), gradient)
+
+    gradient.setCenter(x+radius, y+height-radius)
+    gradient.setFocalPoint(gradient.center())
+    painter.fillRect(x, y+height-radius, ceil(radius), ceil(radius), gradient)
+
+    gradient.setCenter(x+width-radius, y+height-radius)
+    gradient.setFocalPoint(gradient.center())
+    painter.fillRect(x+width-radius, y+height-radius,
+                     ceil(radius), ceil(radius),
+                     gradient)

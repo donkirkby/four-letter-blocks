@@ -3,7 +3,6 @@ from collections import defaultdict
 from functools import cache
 
 import numpy as np
-from PySide6.QtGui import QPainter, QPen, Qt
 
 from four_letter_blocks.block import shape_rotations, normalize_coordinates, Block
 from four_letter_blocks.square import Square
@@ -14,6 +13,7 @@ class BlockPacker:
                  width=0,
                  height=0,
                  tries=-1,
+                 min_tries=-1,
                  start_text: str = None,
                  start_state: np.ndarray = None):
         if start_state is not None:
@@ -34,6 +34,9 @@ class BlockPacker:
                                             else 1 if char == '#'
                                             else ord(char) - 63)
         self.tries = tries
+        self.stop_tries = 0
+        if 0 <= min_tries < tries:
+            self.stop_tries = tries - min_tries
 
     @property
     def positions(self):
@@ -78,7 +81,7 @@ class BlockPacker:
                 squares.append(square)
             yield Block(*squares)
 
-    def fill(self, shape_counts: typing.Counter[str]):
+    def fill(self, shape_counts: typing.Counter[str]) -> bool:
         """ Fill in the current state with the given shapes.
 
         Cycles through the available shapes in shape_counts, and tries them in
@@ -86,10 +89,11 @@ class BlockPacker:
         to a filled in copy, not changing the original.
 
         :param shape_counts: number of blocks of each shape
+        :return: True, if successful, otherwise False.
         """
         if self.tries == 0:
             self.state = None
-            return
+            return False
         if self.tries > 0:
             self.tries -= 1
         blocks = shape_coordinates()
@@ -99,7 +103,7 @@ class BlockPacker:
         if len(empty[0]) == 0:
             # No empty spaces left, fail.
             self.state = None
-            return
+            return False
         target_row = empty[0][0]
         target_col = empty[1][0]
         next_block = np.amax(start_state) + 1
@@ -108,11 +112,13 @@ class BlockPacker:
         elif next_block > 255:
             raise ValueError('Maximum 254 blocks in packer.')
 
+        has_shapes = False
         fewest_rows = start_state.shape[0]+1
         for shape_name, _ in shape_counts.most_common():
             old_count = shape_counts[shape_name]
             if old_count == 0:
                 continue
+            has_shapes = True
             shape_counts[shape_name] = old_count - 1
             for block in blocks[shape_name]:
                 first_square_index = np.where(block[0])[0][0]
@@ -145,13 +151,19 @@ class BlockPacker:
                 if used_rows < fewest_rows:
                     best_state = self.state
                     fewest_rows = used_rows
+                if 0 <= self.tries <= self.stop_tries and best_state is not None:
+                    break
             shape_counts[shape_name] = old_count
+            if 0 <= self.tries <= self.stop_tries and best_state is not None:
+                break
+        if not has_shapes:
+            return True
         if best_state is not None:
             self.state = best_state
-        else:
-            start_state[target_row, target_col] = 1  # gap
-            self.state = start_state
-            self.fill(shape_counts)
+            return True
+        start_state[target_row, target_col] = 1  # gap
+        self.state = start_state
+        return self.fill(shape_counts)
 
     def flip(self) -> 'BlockPacker':
         flipped_state = np.copy(np.fliplr(self.state))

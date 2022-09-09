@@ -365,7 +365,7 @@ class FourLetterBlocksWindow(QMainWindow):
             return
         self.settings.setValue('save_path', file_name)
 
-        packer = BlockPacker(16, 20, tries=10_000)
+        packer = BlockPacker(15, 19, tries=10_000_000, min_tries=1_000)
         puzzles = list(self.crossword_set.values())
         puzzles.sort(key=lambda p: (p.grid.width, p.title))
         puzzle_set = PuzzleSet(*puzzles, block_packer=packer)
@@ -378,7 +378,7 @@ class FourLetterBlocksWindow(QMainWindow):
         generator.setViewBox(QRect(0, 0, 8250, 10500))
 
         painter = QPainter(generator)
-        puzzle_set.square_size = generator.width() / 17
+        puzzle_set.square_size = generator.width() / 16
         nick_radius = 5  # DPI is 1000
         puzzle_set.draw_cuts(painter, nick_radius)
         painter.end()
@@ -387,7 +387,7 @@ class FourLetterBlocksWindow(QMainWindow):
         front_image = QImage(2475, 3150, QImage.Format_RGB32)
         painter = QPainter(front_image)
         painter.fillRect(front_image.rect(), 'white')
-        puzzle_set.square_size = front_image.width() / 17
+        puzzle_set.square_size = front_image.width() / 16
         puzzle_set.draw_front(painter)
         painter.end()
         success = front_image.save(front_buffer, 'PNG')

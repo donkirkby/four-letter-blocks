@@ -142,16 +142,18 @@ class PuzzleSet:
             self.block_summary = 'Extras: ' + ', '.join(extras)
         else:
             self.block_summary = ''
-        self.block_packer.fill(self.shape_counts)
+        is_filled = self.block_packer.fill(self.shape_counts)
+        if not is_filled:
+            raise RuntimeError("Blocks wouldn't fit.")
         size_pairs = [(puzzle.grid.width, i)
                       for i, puzzle in enumerate(self.puzzles)]
         size_pairs.sort()
         sizes = {size for size, i in size_pairs}
-        standard_colours = {7: (120, 30),
+        standard_colours = {7: (120, 60),
                             9: (0, 0),
-                            11: (60, 30),
-                            13: (30, 30),
-                            15: (0, 30)}
+                            11: (60, 60),
+                            13: (30, 60),
+                            15: (0, 60)}
         unknown_sizes = sizes.difference(standard_colours)
         if unknown_sizes or len(sizes) != len(self.puzzles):
             angle = 360 / (len(self.puzzles)-1)
@@ -161,7 +163,7 @@ class PuzzleSet:
                     hue = saturation = 0
                 else:
                     hue = 360 - i*angle
-                    saturation = 30
+                    saturation = 60
                 value = 255
                 colour = QColor.fromHsv(hue, saturation, value)
                 puzzle.face_colour = colour
@@ -215,7 +217,7 @@ class PuzzleSet:
         for block in self.display_blocks(self.block_packer,
                                          self.front_blocks,
                                          x_offset):
-            block.draw(painter, use_text=False)
+            block.draw(painter, is_packed=True)
 
     def draw_back(self,
                   painter: typing.Union[QPainter, LineDeduper],
@@ -224,4 +226,4 @@ class PuzzleSet:
         for block in self.display_blocks(block_packer,
                                          self.back_blocks,
                                          x_offset):
-            block.draw(painter, use_text=False)
+            block.draw(painter, is_packed=True)

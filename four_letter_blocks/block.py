@@ -104,7 +104,7 @@ class Block:
         bottom = self.squares[0].size + max(square.y for square in self.squares)
         return bottom - self.y
 
-    def draw(self, painter: QPainter, use_text=True):
+    def draw(self, painter: QPainter, is_packed=False):
         self.transform_painter(painter, 1)
         square_positions = self.square_positions
         size = self.squares[0].size
@@ -112,18 +112,25 @@ class Block:
         divider_pen = QPen(self.divider_colour)
         divider_pen.setWidth(old_pen.width())
         for square in self.squares:
-            square.draw(painter, use_text=use_text)
+            square.draw(painter, is_packed=is_packed)
             x = square.x
             y = square.y
             painter.setPen(divider_pen)
             if (round(x), round(y-size)) in square_positions:
-                painter.drawLine(x, y, x+size, y)
+                if is_packed:
+                    painter.drawLine(x+size/4, y, x+size*3/4, y)
+                else:
+                    painter.drawLine(x, y, x + size, y)
             if (round(x-size), round(y)) in square_positions:
-                painter.drawLine(x, y, x, y+size)
+                if is_packed:
+                    painter.drawLine(x, y+size/4, x, y+size*3/4)
+                else:
+                    painter.drawLine(x, y, x, y+size)
             painter.setPen(old_pen)
         self.transform_painter(painter, -1)
 
-        self.draw_outline(painter)
+        if not is_packed:
+            self.draw_outline(painter)
 
     def draw_outline(self, painter, nick_radius=0):
         self.transform_painter(painter, 1)
