@@ -1,6 +1,7 @@
 from PySide6.QtGui import QPainter, Qt, QColor
 
 from four_letter_blocks.clue_painter import CluePainter
+from four_letter_blocks.square import draw_gradient_rect
 from tests.pixmap_differ import PixmapDiffer
 from tests.test_puzzle import parse_basic_puzzle
 
@@ -292,7 +293,7 @@ def test_draw_clues_first_clue_too_big(pixmap_differ: PixmapDiffer):
 # noinspection DuplicatedCode
 def test_draw_clues_face_colour(pixmap_differ: PixmapDiffer):
     puzzle = parse_basic_puzzle()
-    puzzle.face_colour = QColor('lightgray')
+    puzzle.face_colour = QColor.fromHsv(120, 60, 255)
 
     width = 740
     height = 190
@@ -300,9 +301,7 @@ def test_draw_clues_face_colour(pixmap_differ: PixmapDiffer):
     align_right = int(Qt.AlignRight)
     actual: QPainter
     expected: QPainter
-    with pixmap_differ.create_painters(
-            width, height,
-            'test_clue_painter_draw_clues_face_colour') as (actual, expected):
+    with pixmap_differ.create_painters(width, height) as (actual, expected):
         clue_painter = CluePainter(puzzle, font_size=20, margin=margin)
         font = expected.font()
         font.setPixelSize(40)
@@ -330,10 +329,18 @@ def test_draw_clues_face_colour(pixmap_differ: PixmapDiffer):
         y += line_height
         number_width = CluePainter.find_text_width('1. ', expected)
         space_width = CluePainter.find_text_width(' ', expected)
-        shading_width = number_width - space_width//2
+        shading_width = number_width + space_width
         clue_height = CluePainter.find_text_height('P\nO', expected)
-        expected.fillRect(margin, y, shading_width, clue_height, 'lightgray')
-        expected.fillRect(370, y, shading_width, clue_height, 'lightgray')
+        draw_gradient_rect(expected,
+                           puzzle.face_colour,
+                           margin - space_width, y,
+                           shading_width, clue_height,
+                           space_width*2)
+        draw_gradient_rect(expected,
+                           puzzle.face_colour,
+                           370 - space_width, y,
+                           shading_width, clue_height,
+                           space_width*2)
         expected.drawText(margin, y,
                           number_width, height,
                           align_right,

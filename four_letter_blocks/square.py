@@ -68,7 +68,7 @@ class Square:
             x = rect.left() + self.size / 2
             y = rect.top() + self.size * 0.775
             suit_display = self.SUIT_DISPLAYS[self.suit]
-            font.setPixelSize(self.size * 0.57)
+            font.setPixelSize(self.size * 0.82)
             painter.setFont(font)
             if suit_display.filled != suit_display.display:
                 painter.setPen(suit_fill)

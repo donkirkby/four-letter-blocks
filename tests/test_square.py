@@ -219,7 +219,7 @@ def test_paint_packed_with_suit(pixmap_differ: PixmapDiffer):
     expected: QPainter
     with pixmap_differ.create_painters(180, 180) as (actual, expected):
         font = expected.font()
-        font.setPixelSize(45)
+        font.setPixelSize(65)
         expected.setFont(font)
         gray1 = 227
         gray2 = 166

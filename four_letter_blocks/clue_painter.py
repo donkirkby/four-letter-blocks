@@ -5,7 +5,7 @@ from PySide6.QtGui import QPainter, QFont, Qt
 
 from four_letter_blocks.clue import Clue
 from four_letter_blocks.puzzle import Puzzle
-from four_letter_blocks.square import Square
+from four_letter_blocks.square import Square, draw_gradient_rect
 
 
 class CluePainter:
@@ -207,6 +207,7 @@ class CluePainter:
         word_wrap = int(Qt.TextWordWrap)
         page_bottom = next_clue_rect.bottom()
         clue_count = 0
+        number_entries = []  # [(rect, text)]
         for clue in clues:
             rect = metrics.boundingRect(next_clue_rect,
                                         word_wrap,
@@ -214,11 +215,21 @@ class CluePainter:
             if rect.bottom() > page_bottom:
                 break
             rect.setLeft(next_number_rect.left())
-            rect.setRight(next_number_rect.right() - space_width//2)
-            painter.fillRect(rect, face_color)
-            painter.drawText(next_number_rect, align_right, f'{clue.format_number()}. ')
+            rect.setRight(next_number_rect.right())
+
+            number_entries.append((rect, f'{clue.format_number()}. '))
             painter.drawText(next_clue_rect, word_wrap, clue.format_text())
             next_number_rect = next_number_rect.translated(0, rect.height())
             next_clue_rect = next_clue_rect.translated(0, rect.height())
             clue_count += 1
+        if number_entries:
+            rect = QRect(number_entries[0][0])
+            rect.setBottom(number_entries[-1][0].bottom())
+            draw_gradient_rect(painter,
+                               face_color,
+                               rect.x()-space_width, rect.y(),
+                               rect.width()+space_width, rect.height(),
+                               space_width*2)
+            for rect, text in number_entries:
+                painter.drawText(rect, align_right, text)
         return clue_count, next_clue_rect.top()
