@@ -45,11 +45,14 @@ class Square:
         suit_fill = QColor(227, 227, 227)
         font = painter.font()
 
-        draw_gradient_rect(painter,
-                           face,
-                           self.x + self.size / 16, self.y + self.size / 16,
-                           self.size * 7 / 8, self.size * 7 / 8,
-                           self.size * 5 / 16)
+        if is_packed:
+            draw_gradient_rect(painter,
+                               face,
+                               self.x + self.size / 16, self.y + self.size / 16,
+                               self.size * 7 / 8, self.size * 7 / 8,
+                               self.size * 5 / 16)
+        else:
+            painter.fillRect(self.x, self.y, self.size, self.size, face)
 
         font.setPixelSize(self.size)
         if self.suit is None:

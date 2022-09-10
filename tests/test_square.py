@@ -25,25 +25,26 @@ def test_repr():
 
 # noinspection DuplicatedCode
 def test_paint(pixmap_differ: PixmapDiffer):
-    actual, expected = pixmap_differ.start(
-        180, 180,
-        'test_square_paint')
-    font = expected.font()
-    font.setPixelSize(60)
-    expected.setFont(font)
-    expected.drawText(20, 30, 80, 80, Qt.AlignHCenter, 'W')
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(180, 180) as (actual, expected):
+        for painter in (actual, expected):
+            painter.fillRect(0, 0, 180, 180, 'ivory')
+        expected.fillRect(20, 20, 80, 80, 'white')
+        font = expected.font()
+        font.setPixelSize(60)
+        expected.setFont(font)
+        expected.drawText(20, 30, 80, 80, Qt.AlignHCenter, 'W')
 
-    square = Square('W')
-    square.x = 20
-    square.y = 20
-    square.size = 80
+        square = Square('W')
+        square.x = 20
+        square.y = 20
+        square.size = 80
 
-    square.draw(actual)
+        square.draw(actual)
 
-    expected.drawRect(20, 20, 80, 80)
-    actual.drawRect(20, 20, 80, 80)
-
-    pixmap_differ.assert_equal()
+        expected.drawRect(20, 20, 80, 80)
+        actual.drawRect(20, 20, 80, 80)
 
 
 # noinspection DuplicatedCode
