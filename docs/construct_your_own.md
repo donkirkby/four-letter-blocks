@@ -158,6 +158,10 @@ If you want to publish a professional-quality set of puzzles, [Game Crafter] is
 a good option. Construct a set of three to five puzzles, then combine them on
 the Set tab.
 
+Upload the front, back, and cuts to make a large custom punchout. In the
+surfacing section, choose UV coating and linen texture. Then upload all the
+pages to make a book of clues.
+
 If you are careful with the number of each shape, you should be able to fit them
 all on one large custom punchout. To avoid unused shapes, follow these rules:
 

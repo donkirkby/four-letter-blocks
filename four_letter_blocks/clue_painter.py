@@ -103,16 +103,17 @@ class CluePainter:
                                       number_width, left_number_rect.height())
             right_clue_rect = QRect(window_width//2 + number_width, clue_start,
                                     left_clue_rect.width(), left_number_rect.height())
-            left_clue_count, left_bottom = self.draw_clues(
-                painter,
-                puzzle.across_clues[self.across_index:],
-                left_number_rect,
-                left_clue_rect)
+            # Do right column first, in case of slight overlap.
             right_clue_count, right_bottom = self.draw_clues(
                 painter,
                 puzzle.down_clues[self.down_index:],
                 right_number_rect,
                 right_clue_rect)
+            left_clue_count, left_bottom = self.draw_clues(
+                painter,
+                puzzle.across_clues[self.across_index:],
+                left_number_rect,
+                left_clue_rect)
             self.across_index += left_clue_count
             self.down_index += right_clue_count
 
