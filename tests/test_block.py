@@ -1,6 +1,7 @@
 from textwrap import dedent
 
-from PySide6.QtGui import QPen, Qt, QColor, QPainter
+from PySide6.QtCore import QPoint
+from PySide6.QtGui import QPen, Qt, QColor, QPainter, QPainterPath
 
 from four_letter_blocks.grid import Grid
 from four_letter_blocks.block import Block
@@ -220,6 +221,62 @@ def test_draw(pixmap_differ: PixmapDiffer):
         expected.drawLine(0, 50, 0, 250)
         expected.drawLine(100, 150, 100, 250)
         expected.drawLine(300, 50, 300, 150)
+
+        block.draw(actual)
+
+
+def test_draw_with_tabs(pixmap_differ: PixmapDiffer):
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(400, 260) as (actual, expected):
+        block = create_basic_block()
+        block.has_tabs = True
+
+        for square in block.squares:
+            square.draw(expected)
+
+        expected.drawLine(25, 150, 75, 150)
+        expected.drawLine(100, 75, 100, 125)
+        expected.drawLine(200, 75, 200, 125)
+
+        pen = QPen()
+        pen.setWidth(3)
+        pen.setCapStyle(Qt.RoundCap)
+        expected.setPen(pen)
+        path = QPainterPath(QPoint(-50, 0))
+        path.lineTo(-37.5, 0)
+        path.cubicTo(-25, 0, -20, -12.5, -12.5, -12.5)
+        path.cubicTo(-8, -12.5, -7, -7, -8, -5)
+        path.cubicTo(-9, -3, -14, 5, -12, 7)
+        path.cubicTo(-10, 9, -10, 12.5, 0, 12.5)
+        path.cubicTo(10, 12.5, 14, 5, 12, 7)
+        path.cubicTo(14, 5, 9, -3, 8, -5)
+        path.cubicTo(7, -7, 8, -12.5, 12.5, -12.5)
+        path.cubicTo(20, -12.5, 25, 0, 37.5, 0)
+        path.lineTo(50, 0)
+        path.translate(50, 50)
+        expected.drawPath(path)
+        path.translate(0, 200)
+        expected.drawPath(path)
+        path.translate(100, -200)
+        expected.drawPath(path)
+        path.translate(0, 100)
+        expected.drawPath(path)
+        path.translate(100, -100)
+        expected.drawPath(path)
+        path.translate(0, 100)
+        expected.drawPath(path)
+        path.translate(0, -100)
+        expected.rotate(-90)
+        path.translate(-350, 250)
+        expected.drawPath(path)
+        path.translate(0, -300)
+        expected.drawPath(path)
+        path.translate(-100, 0)
+        expected.drawPath(path)
+        path.translate(0, 100)
+        expected.drawPath(path)
+        expected.rotate(90)
 
         block.draw(actual)
 

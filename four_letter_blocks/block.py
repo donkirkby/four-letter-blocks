@@ -6,7 +6,8 @@ from functools import cache
 from operator import attrgetter
 from textwrap import dedent
 
-from PySide6.QtGui import QPainter, QPen, Qt
+from PySide6.QtCore import QPoint
+from PySide6.QtGui import QPainter, QPen, Qt, QPainterPath
 
 from four_letter_blocks.grid import Grid
 from four_letter_blocks.square import Square
@@ -28,6 +29,7 @@ class Block:
         self.display_x: typing.Optional[int] = None
         self.display_y: typing.Optional[int] = None
         self.display_rotation: typing.Optional[int] = None
+        self.has_tabs = False
 
     def __repr__(self):
         squares = ', '.join(repr(square) for square in self.squares)
@@ -117,12 +119,12 @@ class Block:
             y = square.y
             painter.setPen(divider_pen)
             if (round(x), round(y-size)) in square_positions:
-                if is_packed:
+                if is_packed or self.has_tabs:
                     painter.drawLine(x+size/4, y, x+size*3/4, y)
                 else:
                     painter.drawLine(x, y, x + size, y)
             if (round(x-size), round(y)) in square_positions:
-                if is_packed:
+                if is_packed or self.has_tabs:
                     painter.drawLine(x, y+size/4, x, y+size*3/4)
                 else:
                     painter.drawLine(x, y, x, y+size)
@@ -171,7 +173,7 @@ class Block:
                          y1: int,
                          x2: int,
                          y2: int):
-        if nick_radius == 0:
+        if nick_radius == 0 and not self.has_tabs:
             painter.drawLine(x1, y1, x2, y2)
             return
 
@@ -180,22 +182,61 @@ class Block:
         cell_count = round(length / square_size)
         xstep = (x2-x1) / (cell_count*2)
         ystep = (y2-y1) / (cell_count*2)
-        xnick = ynick = 0
         if xstep > 0:
-            xnick = nick_radius
+            x0, y0 = x1, y1
+            angle = 0
+            step = xstep
         elif xstep < 0:
-            xnick = -nick_radius
+            x0, y0 = x2, y2
+            angle = 0
+            step = -xstep
         elif ystep > 0:
-            ynick = nick_radius
+            x0, y0 = -y2, x2
+            angle = -90
+            step = ystep
         else:
-            ynick = -nick_radius
-        painter.drawLine(x1, y1, round(x1+xstep-xnick), round(y1+ystep-ynick))
-        for i in range(cell_count-1):
-            painter.drawLine(round(x1+xstep*(2*i+1)+xnick),
-                             round(y1+ystep*(2*i+1)+ynick),
-                             round(x1+xstep*(2*i+3)-xnick),
-                             round(y1+ystep*(2*i+3)-ynick))
-        painter.drawLine(round(x2-xstep+xnick), round(y2-ystep+ynick), x2, y2)
+            x0, y0 = -y1, x1
+            angle = -90
+            step = -ystep
+        path = QPainterPath(QPoint(-square_size/2, 0))
+        if not self.has_tabs:
+            path.lineTo(-nick_radius, 0)
+            path.moveTo(nick_radius, 0)
+            path.lineTo(square_size/2, 0)
+        else:
+            path.lineTo(-3/8*square_size, 0)
+            path.cubicTo(-square_size/4, 0,
+                         -square_size/5, -square_size/8,
+                         -square_size/8, -square_size/8)
+            path.cubicTo(-.08*square_size, -square_size/8,
+                         -.07*square_size, -.07*square_size,
+                         -.08*square_size, -.05*square_size)
+            path.cubicTo(-.09*square_size, -.03*square_size,
+                         -.14*square_size, .05*square_size,
+                         -.12*square_size, .07*square_size)
+            path.cubicTo(-.1*square_size, .09*square_size,
+                         -.1*square_size, square_size/8,
+                         0, square_size/8)
+            path.cubicTo(.1*square_size, square_size/8,
+                         .14*square_size, .05*square_size,
+                         .12*square_size, .07*square_size)
+            path.cubicTo(.14*square_size, .05*square_size,
+                         .09*square_size, -.03*square_size,
+                         .08*square_size, -.05*square_size)
+            path.cubicTo(.07*square_size, -.07*square_size,
+                         .08*square_size, -square_size/8,
+                         square_size/8, -square_size/8)
+            path.cubicTo(square_size/5, -square_size/8,
+                         square_size/4, 0,
+                         3*square_size/8, 0)
+            path.lineTo(square_size/2, 0)
+        path.translate(square_size/2, 0)
+        painter.rotate(angle)
+        path.translate(x0, y0)
+        for i in range(cell_count):
+            painter.drawPath(path)
+            path.translate(step, 0)
+        painter.rotate(-angle)
 
     @property
     def square_positions(self):
