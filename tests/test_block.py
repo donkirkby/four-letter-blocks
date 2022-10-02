@@ -249,7 +249,7 @@ def test_draw_with_tabs(pixmap_differ: PixmapDiffer):
         path.cubicTo(-8, -12.5, -7, -7, -8, -5)
         path.cubicTo(-9, -3, -14, 5, -12, 7)
         path.cubicTo(-10, 9, -10, 12.5, 0, 12.5)
-        path.cubicTo(10, 12.5, 14, 5, 12, 7)
+        path.cubicTo(10, 12.5, 10, 9, 12, 7)
         path.cubicTo(14, 5, 9, -3, 8, -5)
         path.cubicTo(7, -7, 8, -12.5, 12.5, -12.5)
         path.cubicTo(20, -12.5, 25, 0, 37.5, 0)

@@ -204,31 +204,35 @@ class Block:
             path.moveTo(nick_radius, 0)
             path.lineTo(square_size/2, 0)
         else:
-            path.lineTo(-3/8*square_size, 0)
-            path.cubicTo(-square_size/4, 0,
-                         -square_size/5, -square_size/8,
-                         -square_size/8, -square_size/8)
-            path.cubicTo(-.08*square_size, -square_size/8,
-                         -.07*square_size, -.07*square_size,
-                         -.08*square_size, -.05*square_size)
-            path.cubicTo(-.09*square_size, -.03*square_size,
-                         -.14*square_size, .05*square_size,
-                         -.12*square_size, .07*square_size)
-            path.cubicTo(-.1*square_size, .09*square_size,
-                         -.1*square_size, square_size/8,
-                         0, square_size/8)
-            path.cubicTo(.1*square_size, square_size/8,
-                         .14*square_size, .05*square_size,
-                         .12*square_size, .07*square_size)
-            path.cubicTo(.14*square_size, .05*square_size,
-                         .09*square_size, -.03*square_size,
-                         .08*square_size, -.05*square_size)
-            path.cubicTo(.07*square_size, -.07*square_size,
-                         .08*square_size, -square_size/8,
-                         square_size/8, -square_size/8)
-            path.cubicTo(square_size/5, -square_size/8,
-                         square_size/4, 0,
-                         3*square_size/8, 0)
+            curved_portion = 0.75*square_size
+            tab_width = 0.24*square_size
+            stem_width = 0.16*square_size
+            stem_length = 0.25*square_size
+            path.lineTo(-curved_portion/2, 0)  # E
+            path.cubicTo(-curved_portion/3, 0,  # inner E
+                         -1.25*stem_width, -.5*stem_length,  # outer D
+                         -.781*stem_width, -.5*stem_length)  # D
+            path.cubicTo(-.5*stem_width, -.5*stem_length,  # inner D
+                         -.44*stem_width, -.28*stem_length,  # outer C
+                         -.5*stem_width, -.2*stem_length)  # C
+            path.cubicTo(-.56*stem_width, -.12*stem_length,  # inner C
+                         -.5833*tab_width, .2*stem_length,  # outer B
+                         -tab_width/2, .28*stem_length)  # B
+            path.cubicTo(-.416667*tab_width, .36*stem_length,  # inner B
+                         -.416667*tab_width, 0.5*stem_length,  # outer A
+                         0, 0.5*stem_length)  # A
+            path.cubicTo(.416667*tab_width, 0.5*stem_length,  # outer A
+                         .416667*tab_width, .36*stem_length,  # inner B
+                         tab_width/2, .28*stem_length)  # B
+            path.cubicTo(.5833*tab_width, .2*stem_length,  # outer B
+                         .56*stem_width, -.12*stem_length,  # inner C
+                         .5*stem_width, -.2*stem_length)  # C
+            path.cubicTo(.44*stem_width, -.28*stem_length,  # outer C
+                         .5*stem_width, -.5*stem_length,  # inner D
+                         .781*stem_width, -.5*stem_length)  # D
+            path.cubicTo(1.25*stem_width, -.5*stem_length,  # outer D
+                         curved_portion/3, 0,  # inner E
+                         curved_portion/2, 0)  # E
             path.lineTo(square_size/2, 0)
         path.translate(square_size/2, 0)
         painter.rotate(angle)
