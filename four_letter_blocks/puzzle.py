@@ -2,6 +2,7 @@ import re
 import typing
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
+from enum import Enum, auto
 from html import escape
 from itertools import chain
 from operator import attrgetter
@@ -13,6 +14,12 @@ from PySide6.QtGui import QPainter, QTextDocument, QTextCursor
 from four_letter_blocks.clue import Clue
 from four_letter_blocks.grid import Grid
 from four_letter_blocks.block import Block
+
+
+class RotationsDisplay(Enum):
+    OFF = auto()
+    FRONT = auto()
+    BACK = auto()
 
 
 @dataclass
@@ -29,6 +36,7 @@ class Puzzle:
     down_clues: typing.List[Clue] = field(init=False)
     use_suits: bool = False
     is_packed: bool = False
+    rotations_display: RotationsDisplay = RotationsDisplay.OFF
 
     @staticmethod
     def parse(source_file: typing.IO) -> 'Puzzle':
@@ -362,9 +370,34 @@ class Puzzle:
 
     @property
     def shape_counts(self):
-        return Counter(block.shape
-                       for block in self.blocks
-                       if block.shape is not None)
+        if self.rotations_display == RotationsDisplay.OFF:
+            return Counter(block.shape
+                           for block in self.blocks
+                           if block.shape is not None)
+        counter = Counter()
+        for block in self.blocks:
+            shape = block.shape
+            rotation = block.shape_rotation
+            if self.rotations_display == RotationsDisplay.BACK:
+                rotation = -rotation % 4
+                match shape:
+                    case 'S':
+                        shape = 'Z'
+                    case 'Z':
+                        shape = 'S'
+                    case 'J':
+                        shape = 'L'
+                    case 'L':
+                        shape = 'J'
+            match shape:
+                case None:
+                    continue
+                case 'I' | 'S' | 'Z':
+                    shape = f'{shape}{rotation%2}'
+                case 'J' | 'L' | 'T':
+                    shape = f'{shape}{rotation}'
+            counter[shape] += 1
+        return counter
 
     @property
     def shape_blocks(self):

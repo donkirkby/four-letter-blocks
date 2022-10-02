@@ -8,7 +8,7 @@ from zipfile import ZipFile, ZIP_DEFLATED
 from PySide6.QtCore import QSettings, QSize, QSizeF, QObject, QRectF, QRect, QPoint, QBuffer
 from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, \
     Qt, QCloseEvent, QPixmap, QColor, QTextDocument, QTextFormat, QTextCursor, \
-    QTextCharFormat, QPyTextObject, QImage
+    QTextCharFormat, QPyTextObject, QImage, QActionGroup
 from PySide6.QtSvg import QSvgGenerator
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog, QInputDialog, QToolTip, \
     QListWidgetItem
@@ -17,7 +17,7 @@ import four_letter_blocks
 from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.clue_painter import CluePainter
 from four_letter_blocks.main_window import Ui_MainWindow
-from four_letter_blocks.puzzle import Puzzle
+from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
 from four_letter_blocks.puzzle_set import PuzzleSet
 
 DIAGRAM_TEXT_FORMAT = QTextFormat.UserObject + 1
@@ -67,6 +67,14 @@ class FourLetterBlocksWindow(QMainWindow):
         ui.clues_text.textChanged.connect(self.clues_changed)
 
         ui.warnings_label.setVisible(False)
+
+        self.rotations_group = QActionGroup(self)
+        self.rotations_group.addAction(ui.no_rotations_action)
+        self.rotations_group.addAction(ui.front_rotations_action)
+        self.rotations_group.addAction(ui.back_rotations_action)
+        ui.no_rotations_action.triggered.connect(self.on_rotations_display_changed)
+        ui.front_rotations_action.triggered.connect(self.on_rotations_display_changed)
+        ui.back_rotations_action.triggered.connect(self.on_rotations_display_changed)
 
         self.state_fields = (ui.title_text,
                              ui.grid_text,
@@ -143,6 +151,10 @@ class FourLetterBlocksWindow(QMainWindow):
                       self.ui.clues_text,
                       self.ui.blocks_text):
             field.setOverwriteMode(overwrite_mode)
+
+    def on_rotations_display_changed(self):
+        self.current_state = None
+        self.blocks_changed()
 
     def about(self):
         QMessageBox.about(self,
@@ -525,6 +537,12 @@ class FourLetterBlocksWindow(QMainWindow):
         if warnings:
             warnings.insert(0, 'Warnings')
             self.ui.warnings_label.setText('\n  '.join(warnings))
+        if self.ui.no_rotations_action.isChecked():
+            puzzle.rotations_display = RotationsDisplay.OFF
+        elif self.ui.front_rotations_action.isChecked():
+            puzzle.rotations_display = RotationsDisplay.FRONT
+        else:
+            puzzle.rotations_display = RotationsDisplay.BACK
         block_summary = puzzle.display_block_summary()
         if block_summary:
             self.statusBar().showMessage(block_summary)

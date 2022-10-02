@@ -5,7 +5,7 @@ import pytest
 from PySide6.QtGui import QTextDocument
 
 from four_letter_blocks.clue import Clue
-from four_letter_blocks.puzzle import Puzzle
+from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
 import four_letter_blocks.puzzle
 from tests.pixmap_differ import PixmapDiffer
 
@@ -355,6 +355,54 @@ CCCC
     block_summary = puzzle.display_block_summary()
 
     assert block_summary == 'Block sizes: 2x4, A=3, D=2, Shapes: I: 1, L: 1'
+
+
+def test_display_block_summary_with_rotations():
+    source_file = StringIO("""\
+Title
+
+X#XX
+XXX#
+XX#X
+XXXX
+
+-
+
+D#BB
+DBB#
+DD#C
+ACCC
+""")
+    puzzle = Puzzle.parse(source_file)
+    puzzle.rotations_display = RotationsDisplay.FRONT
+
+    block_summary = puzzle.display_block_summary()
+
+    assert block_summary == 'Block sizes: 3x4, A=1, Shapes: L0: 1, L1: 1, S0: 1'
+
+
+def test_display_block_summary_with_rotations_back():
+    source_file = StringIO("""\
+Title
+
+XX#X
+#XXX
+X#XX
+XXXX
+
+-
+
+BB#D
+#BBD
+C#DD
+CCCA
+""")
+    puzzle = Puzzle.parse(source_file)
+    puzzle.rotations_display = RotationsDisplay.BACK
+
+    block_summary = puzzle.display_block_summary()
+
+    assert block_summary == 'Block sizes: 3x4, A=1, Shapes: L0: 1, L1: 1, S0: 1'
 
 
 def test_display_block_sizes_all_correct():
