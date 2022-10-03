@@ -2,6 +2,7 @@ import os
 import sys
 import traceback
 import typing
+from functools import partial
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 
@@ -75,6 +76,10 @@ class FourLetterBlocksWindow(QMainWindow):
         ui.no_rotations_action.triggered.connect(self.on_rotations_display_changed)
         ui.front_rotations_action.triggered.connect(self.on_rotations_display_changed)
         ui.back_rotations_action.triggered.connect(self.on_rotations_display_changed)
+
+        ui.front_open_button.clicked.connect(partial(self.open_pair, 0))
+        ui.back_open_button.clicked.connect(partial(self.open_pair, 1))
+        self.pair_puzzles: typing.List[None | Puzzle] = [None, None]
 
         self.state_fields = (ui.title_text,
                              ui.grid_text,
@@ -222,6 +227,30 @@ class FourLetterBlocksWindow(QMainWindow):
                 i += 1
 
         self.summarize_crossword_set()
+
+    def open_pair(self, puzzle_index: int):
+        side = ('front', 'back')[puzzle_index]
+        edit_field = (self.ui.front_name, self.ui.back_name)[puzzle_index]
+        save_dir = self.get_save_dir()
+        kwargs = get_file_dialog_options()
+        file_name, _ = QFileDialog.getOpenFileName(
+            self,
+            f'Open {side} puzzle',
+            dir=save_dir,
+            filter='Text files (*.txt);;All files (*.*)',
+            **kwargs)
+        if not file_name:
+            return
+
+        self.settings.setValue('save_path', file_name)
+        with open(file_name) as source_file:
+            puzzle = Puzzle.parse(source_file)
+
+        edit_field.setText(puzzle.title)
+        self.pair_puzzles[puzzle_index] = puzzle
+
+    def summarize_crossword_pair(self):
+        self.statusBar().showMessage('Choose a pair.')
 
     def summarize_crossword_set(self):
         puzzles = []
@@ -568,17 +597,22 @@ class FourLetterBlocksWindow(QMainWindow):
 
     def select_tab(self, tab_index):
         is_single = tab_index == 0
+        is_pair = tab_index == 1
+        is_set = tab_index == 2
         self.ui.new_action.setEnabled(is_single)
         self.ui.open_action.setEnabled(is_single)
         self.ui.save_action.setEnabled(is_single)
         self.ui.save_as_action.setEnabled(is_single)
         self.ui.shuffle_action.setEnabled(is_single)
         self.ui.export_action.setEnabled(is_single)
-        self.ui.export_set_action.setEnabled(not is_single)
+        self.ui.export_pair_action.setEnabled(is_pair)
+        self.ui.export_set_action.setEnabled(is_set)
         if is_single:
             puzzle = self.parse_puzzle()
             block_summary = puzzle.display_block_summary()
             self.statusBar().showMessage(block_summary)
+        elif is_pair:
+            self.summarize_crossword_pair()
         else:
             self.summarize_crossword_set()
 

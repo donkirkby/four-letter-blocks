@@ -59,6 +59,8 @@ class Ui_MainWindow(object):
         self.back_rotations_action = QAction(MainWindow)
         self.back_rotations_action.setObjectName(u"back_rotations_action")
         self.back_rotations_action.setCheckable(True)
+        self.export_pair_action = QAction(MainWindow)
+        self.export_pair_action.setObjectName(u"export_pair_action")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
@@ -118,6 +120,51 @@ class Ui_MainWindow(object):
         self.verticalLayout_2.addWidget(self.warnings_label)
 
         self.main_tabs.addTab(self.single_tab, "")
+        self.pair_tab = QWidget()
+        self.pair_tab.setObjectName(u"pair_tab")
+        self.gridLayout_2 = QGridLayout(self.pair_tab)
+        self.gridLayout_2.setObjectName(u"gridLayout_2")
+        self.vertical_spacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+
+        self.gridLayout_2.addItem(self.vertical_spacer, 6, 1, 1, 1)
+
+        self.horizontal_spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.gridLayout_2.addItem(self.horizontal_spacer, 2, 0, 1, 1)
+
+        self.front_name = QLineEdit(self.pair_tab)
+        self.front_name.setObjectName(u"front_name")
+        self.front_name.setReadOnly(True)
+
+        self.gridLayout_2.addWidget(self.front_name, 1, 0, 1, 2)
+
+        self.back_name = QLineEdit(self.pair_tab)
+        self.back_name.setObjectName(u"back_name")
+        self.back_name.setReadOnly(True)
+
+        self.gridLayout_2.addWidget(self.back_name, 4, 0, 1, 2)
+
+        self.front_open_button = QPushButton(self.pair_tab)
+        self.front_open_button.setObjectName(u"front_open_button")
+
+        self.gridLayout_2.addWidget(self.front_open_button, 2, 1, 1, 1)
+
+        self.back_open_button = QPushButton(self.pair_tab)
+        self.back_open_button.setObjectName(u"back_open_button")
+
+        self.gridLayout_2.addWidget(self.back_open_button, 5, 1, 1, 1)
+
+        self.front_label = QLabel(self.pair_tab)
+        self.front_label.setObjectName(u"front_label")
+
+        self.gridLayout_2.addWidget(self.front_label, 0, 0, 1, 2)
+
+        self.back_label = QLabel(self.pair_tab)
+        self.back_label.setObjectName(u"back_label")
+
+        self.gridLayout_2.addWidget(self.back_label, 3, 0, 1, 2)
+
+        self.main_tabs.addTab(self.pair_tab, "")
         self.set_tab = QWidget()
         self.set_tab.setObjectName(u"set_tab")
         self.gridLayout = QGridLayout(self.set_tab)
@@ -166,13 +213,17 @@ class Ui_MainWindow(object):
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
         MainWindow.setStatusBar(self.statusbar)
-        QWidget.setTabOrder(self.main_tabs, self.title_text)
+        QWidget.setTabOrder(self.front_name, self.front_open_button)
+        QWidget.setTabOrder(self.front_open_button, self.back_name)
+        QWidget.setTabOrder(self.back_name, self.back_open_button)
+        QWidget.setTabOrder(self.back_open_button, self.title_text)
         QWidget.setTabOrder(self.title_text, self.grid_text)
         QWidget.setTabOrder(self.grid_text, self.clues_text)
         QWidget.setTabOrder(self.clues_text, self.blocks_text)
         QWidget.setTabOrder(self.blocks_text, self.crossword_files)
         QWidget.setTabOrder(self.crossword_files, self.add_button)
         QWidget.setTabOrder(self.add_button, self.remove_button)
+        QWidget.setTabOrder(self.remove_button, self.main_tabs)
 
         self.menubar.addAction(self.file_menu.menuAction())
         self.menubar.addAction(self.edit_menu.menuAction())
@@ -184,6 +235,7 @@ class Ui_MainWindow(object):
         self.file_menu.addAction(self.save_as_action)
         self.file_menu.addSeparator()
         self.file_menu.addAction(self.export_action)
+        self.file_menu.addAction(self.export_pair_action)
         self.file_menu.addAction(self.export_set_action)
         self.file_menu.addSeparator()
         self.file_menu.addAction(self.exit_action)
@@ -251,17 +303,23 @@ class Ui_MainWindow(object):
         self.no_rotations_action.setText(QCoreApplication.translate("MainWindow", u"&No Rotations", None))
         self.front_rotations_action.setText(QCoreApplication.translate("MainWindow", u"&Front Rotations", None))
         self.back_rotations_action.setText(QCoreApplication.translate("MainWindow", u"Back Rotations", None))
+        self.export_pair_action.setText(QCoreApplication.translate("MainWindow", u"Export &Pair...", None))
         self.title_label.setText(QCoreApplication.translate("MainWindow", u"Title", None))
         self.grid_label.setText(QCoreApplication.translate("MainWindow", u"Grid", None))
         self.grid_text.setPlainText("")
         self.clues_label.setText(QCoreApplication.translate("MainWindow", u"Clues", None))
         self.blocks_label.setText(QCoreApplication.translate("MainWindow", u"Blocks", None))
         self.warnings_label.setText(QCoreApplication.translate("MainWindow", u"Warnings", None))
-        self.main_tabs.setTabText(self.main_tabs.indexOf(self.single_tab), QCoreApplication.translate("MainWindow", u"Single", None))
+        self.main_tabs.setTabText(self.main_tabs.indexOf(self.single_tab), QCoreApplication.translate("MainWindow", u"&Single", None))
+        self.front_open_button.setText(QCoreApplication.translate("MainWindow", u"Open...", None))
+        self.back_open_button.setText(QCoreApplication.translate("MainWindow", u"Open...", None))
+        self.front_label.setText(QCoreApplication.translate("MainWindow", u"Front Puzzle", None))
+        self.back_label.setText(QCoreApplication.translate("MainWindow", u"Back Puzzle", None))
+        self.main_tabs.setTabText(self.main_tabs.indexOf(self.pair_tab), QCoreApplication.translate("MainWindow", u"&Pair", None))
         self.remove_button.setText(QCoreApplication.translate("MainWindow", u"Remove", None))
         self.add_button.setText(QCoreApplication.translate("MainWindow", u"Add...", None))
         self.crossword_label.setText(QCoreApplication.translate("MainWindow", u"Crossword Files", None))
-        self.main_tabs.setTabText(self.main_tabs.indexOf(self.set_tab), QCoreApplication.translate("MainWindow", u"Set", None))
+        self.main_tabs.setTabText(self.main_tabs.indexOf(self.set_tab), QCoreApplication.translate("MainWindow", u"Se&t", None))
         self.file_menu.setTitle(QCoreApplication.translate("MainWindow", u"&File", None))
         self.help_menu.setTitle(QCoreApplication.translate("MainWindow", u"&Help", None))
         self.edit_menu.setTitle(QCoreApplication.translate("MainWindow", u"&Edit", None))
