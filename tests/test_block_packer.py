@@ -130,6 +130,36 @@ def test_fill_three_blocks():
     assert packer.display() == expected_display
 
 
+def test_no_rotations():
+    width = height = 5
+    shape_counts = Counter(('O', 'I0', 'O'))
+    expected_display = dedent("""\
+        AABBC
+        AABBC
+        ....C
+        ....C
+        .....""")
+    packer = BlockPacker(width, height)
+    packer.fill(shape_counts)
+
+    assert packer.display() == expected_display
+
+
+def test_no_rotations_needs_gap():
+    width = height = 5
+    shape_counts = Counter(('O', 'J3', 'O'))
+    expected_display = dedent("""\
+        AA#BB
+        AACBB
+        ..CCC
+        .....
+        .....""")
+    packer = BlockPacker(width, height)
+    packer.fill(shape_counts)
+
+    assert packer.display() == expected_display
+
+
 def test_positions():
     packer = BlockPacker(start_text=dedent("""\
         AA#CC

@@ -88,7 +88,8 @@ class BlockPacker:
         different positions, looking for the fewest rows. Set the current state
         to a filled in copy, not changing the original.
 
-        :param shape_counts: number of blocks of each shape
+        :param shape_counts: number of blocks of each shape, disables rotation
+            if any of the shapes contain a letter and rotation number
         :return: True, if successful, otherwise False.
         """
         if self.tries == 0:
@@ -113,6 +114,7 @@ class BlockPacker:
             raise ValueError('Maximum 254 blocks in packer.')
 
         has_shapes = False
+        is_rotation_allowed = True
         fewest_rows = start_state.shape[0]+1
         for shape_name, _ in shape_counts.most_common():
             old_count = shape_counts[shape_name]
@@ -120,7 +122,14 @@ class BlockPacker:
                 continue
             has_shapes = True
             shape_counts[shape_name] = old_count - 1
-            for block in blocks[shape_name]:
+            if len(shape_name) == 1:
+                allowed_blocks = blocks[shape_name]
+            else:
+                assert len(shape_name) == 2
+                is_rotation_allowed = False
+                rotation = int(shape_name[1])
+                allowed_blocks = blocks[shape_name[0]][rotation:rotation+1]
+            for block in allowed_blocks:
                 first_square_index = np.where(block[0])[0][0]
                 new_state = start_state.copy()
                 start_col = target_col
@@ -143,11 +152,7 @@ class BlockPacker:
                     self.fill(shape_counts)
                     if self.state is None:
                         continue
-                filled = np.nonzero(self.state != 0)
-                if not filled[0].size:
-                    used_rows = 0
-                else:
-                    used_rows = filled[0][-1] + 1
+                used_rows = self.count_filled_rows()
                 if used_rows < fewest_rows:
                     best_state = self.state
                     fewest_rows = used_rows
@@ -158,12 +163,27 @@ class BlockPacker:
                 break
         if not has_shapes:
             return True
+        if not is_rotation_allowed or best_state is None:
+            new_state = start_state.copy()
+            new_state[target_row, target_col] = 1  # gap
+            self.state = new_state
+            if self.fill(shape_counts):
+                used_rows = self.count_filled_rows()
+                if used_rows < fewest_rows:
+                    best_state = self.state
         if best_state is not None:
             self.state = best_state
             return True
-        start_state[target_row, target_col] = 1  # gap
-        self.state = start_state
-        return self.fill(shape_counts)
+        self.state = None
+        return False
+
+    def count_filled_rows(self):
+        filled = np.nonzero(self.state != 0)
+        if not filled[0].size:
+            used_rows = 0
+        else:
+            used_rows = filled[0][-1] + 1
+        return used_rows
 
     def flip(self) -> 'BlockPacker':
         flipped_state = np.copy(np.fliplr(self.state))
@@ -180,4 +200,4 @@ def shape_coordinates() -> typing.Dict[str, typing.List[np.ndarray]]:
         for x, y in coordinates:
             grid[y, x] = 1
         coordinate_lists[name].append(grid)
-    return coordinate_lists
+    return dict(coordinate_lists)
