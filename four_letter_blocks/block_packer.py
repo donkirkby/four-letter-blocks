@@ -9,6 +9,9 @@ from four_letter_blocks.square import Square
 
 
 class BlockPacker:
+    UNUSED = 0
+    GAP = 1
+
     def __init__(self,
                  width=0,
                  height=0,
@@ -69,17 +72,21 @@ class BlockPacker:
 
     def create_blocks(self) -> typing.Iterable[Block]:
         max_block = np.max(self.state)
-        for block in range(2, max_block+1):
-            # convert row, col to x, y
-            y_coordinates, x_coordinates = np.nonzero(self.state == block)
-            coordinates = list(zip(x_coordinates, y_coordinates))
-            squares = []
-            for x, y in coordinates:
-                square = Square('X')
-                square.x = x
-                square.y = y
-                squares.append(square)
-            yield Block(*squares)
+        for block_num in range(2, max_block + 1):
+            yield self.create_block(block_num)
+
+    def create_block(self, block_num):
+        # convert row, col to x, y
+        y_coordinates, x_coordinates = np.nonzero(self.state == block_num)
+        coordinates = list(zip(x_coordinates, y_coordinates))
+        squares = []
+        for x, y in coordinates:
+            square = Square('X')
+            square.x = x
+            square.y = y
+            squares.append(square)
+        block = Block(*squares)
+        return block
 
     def fill(self, shape_counts: typing.Counter[str]) -> bool:
         """ Fill in the current state with the given shapes.
@@ -97,7 +104,6 @@ class BlockPacker:
             return False
         if self.tries > 0:
             self.tries -= 1
-        blocks = shape_coordinates()
         best_state = None
         start_state = self.state
         empty = np.nonzero(self.state == 0)
@@ -108,8 +114,8 @@ class BlockPacker:
         target_row = empty[0][0]
         target_col = empty[1][0]
         next_block = np.amax(start_state) + 1
-        if next_block == 1:
-            next_block = 2  # Skip blank value
+        if next_block == self.GAP:
+            next_block += 1
         elif next_block > 255:
             raise ValueError('Maximum 254 blocks in packer.')
 
@@ -122,31 +128,13 @@ class BlockPacker:
                 continue
             has_shapes = True
             shape_counts[shape_name] = old_count - 1
-            if len(shape_name) == 1:
-                allowed_blocks = blocks[shape_name]
-            else:
-                assert len(shape_name) == 2
+            if len(shape_name) > 1:
                 is_rotation_allowed = False
-                rotation = int(shape_name[1])
-                allowed_blocks = blocks[shape_name[0]][rotation:rotation+1]
-            for block in allowed_blocks:
-                first_square_index = np.where(block[0])[0][0]
-                new_state = start_state.copy()
-                start_col = target_col
-                end_col = target_col + block.shape[1]
-                if start_col >= first_square_index:
-                    start_col -= first_square_index
-                    end_col -= first_square_index
-                target = new_state[
-                         target_row:target_row+block.shape[0],
-                         start_col:end_col]
-                if target.shape != block.shape:
-                    # hanging over the edge
-                    continue
-                collisions = np.logical_and(block, target)
-                if collisions.any():
-                    continue
-                target += next_block*block
+            self.state = start_state
+            for new_state in self.place_block(shape_name,
+                                              target_row,
+                                              target_col,
+                                              next_block):
                 self.state = new_state
                 if sum(shape_counts.values()):
                     self.fill(shape_counts)
@@ -177,6 +165,49 @@ class BlockPacker:
         self.state = None
         return False
 
+    def place_block(self,
+                    shape_name: str,
+                    target_row: int,
+                    target_col: int,
+                    block_num: int):
+        """ Try to place the block at the given target
+
+        :param shape_name: name of the shape to place. If it's a single letter,
+        try all possible rotations. If it's a letter and number, only use
+        the rotation given by the number
+        :param target_row: row to try placing the block at
+        :param target_col: column to try placing the block at
+        :param block_num: block value to place in the state
+        :return: an iterator of states for each successful placement
+        """
+        start_state = self.state
+        blocks = shape_coordinates()
+        if len(shape_name) == 1:
+            allowed_blocks = blocks[shape_name]
+        else:
+            assert len(shape_name) == 2
+            rotation = int(shape_name[1])
+            allowed_blocks = blocks[shape_name[0]][rotation:rotation + 1]
+        for block in allowed_blocks:
+            first_square_index = np.where(block[0])[0][0]
+            new_state = start_state.copy()
+            start_col = target_col
+            end_col = target_col + block.shape[1]
+            if start_col >= first_square_index:
+                start_col -= first_square_index
+                end_col -= first_square_index
+            target = new_state[
+                     target_row:target_row + block.shape[0],
+                     start_col:end_col]
+            if target.shape != block.shape:
+                # hanging over the edge
+                continue
+            collisions = np.logical_and(block, target)
+            if collisions.any():
+                continue
+            target += block_num * block
+            yield new_state
+
     def count_filled_rows(self):
         filled = np.nonzero(self.state != 0)
         if not filled[0].size:
@@ -184,6 +215,33 @@ class BlockPacker:
         else:
             used_rows = filled[0][-1] + 1
         return used_rows
+
+    def random_fill(self, shape_counts: typing.Counter[str]):
+        """ Randomly place pieces from shape_counts on empty spaces. """
+        empty = np.argwhere(self.state == 0)
+        np.random.shuffle(empty)
+        used_blocks = np.unique(self.state)
+        for i, block in enumerate(used_blocks[:-1]):
+            if block >= self.GAP and used_blocks[i+1] != block+1:
+                next_block = block + 1
+                break
+        else:
+            next_block = used_blocks[-1] + 1
+            if next_block == self.GAP:
+                next_block += 1
+        shape_items = list((shape, count)
+                           for shape, count in shape_counts.items()
+                           if count > 0)
+        if not shape_items:
+            return
+        np.random.shuffle(shape_items)
+        shape = shape_items[0][0]
+        for row, col in empty:
+            for new_state in self.place_block(shape, row, col, next_block):
+                shape_counts[shape] -= 1
+                self.state = new_state
+                self.random_fill(shape_counts)
+                return
 
     def flip(self) -> 'BlockPacker':
         flipped_state = np.copy(np.fliplr(self.state))

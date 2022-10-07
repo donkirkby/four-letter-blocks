@@ -160,6 +160,47 @@ def test_no_rotations_needs_gap():
     assert packer.display() == expected_display
 
 
+def test_random_fill():
+    for _ in range(100):
+        shape_counts = Counter({'O': 5})
+        start_text = dedent("""\
+            .##..
+            .....
+            ..#..
+            .....
+            ..##.""")
+        packer = BlockPacker(start_text=start_text)
+        packer.random_fill(shape_counts)
+
+        assert 1 <= shape_counts['O'] <= 3
+
+
+def test_random_fill_lower_numbers():
+    for _ in range(100):
+        shape_counts = Counter({'O': 5})
+        start_text = dedent("""\
+            .##..
+            .....
+            ..#..
+            ..DDD
+            ..##D""")
+        packer = BlockPacker(start_text=start_text)
+        packer.random_fill(shape_counts)
+
+        assert 2 <= shape_counts['O'] <= 3
+        assert packer.state.max() == 5
+
+
+def test_random_fill_no_gaps():
+    for _ in range(100):
+        shape_counts = Counter({'O': 1})
+        packer = BlockPacker(2, 2)
+        packer.random_fill(shape_counts)
+
+        assert shape_counts['O'] == 0
+        assert packer.state.max() == 2
+
+
 def test_positions():
     packer = BlockPacker(start_text=dedent("""\
         AA#CC

@@ -94,20 +94,14 @@
         <string>&amp;Pair</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_2">
-        <item row="6" column="1">
-         <spacer name="vertical_spacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
         <item row="2" column="0">
+         <widget class="QLabel" name="back_label">
+          <property name="text">
+           <string>Back Puzzle</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="0">
          <spacer name="horizontal_spacer">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -120,45 +114,82 @@
           </property>
          </spacer>
         </item>
-        <item row="1" column="0" colspan="2">
-         <widget class="QLineEdit" name="front_name">
-          <property name="readOnly">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="0" colspan="2">
-         <widget class="QLineEdit" name="back_name">
-          <property name="readOnly">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="1">
-         <widget class="QPushButton" name="front_open_button">
+        <item row="12" column="0" colspan="5">
+         <widget class="QLabel" name="needed_shapes_label">
           <property name="text">
-           <string>Open...</string>
+           <string>Needed Shapes:</string>
           </property>
          </widget>
         </item>
-        <item row="5" column="1">
+        <item row="8" column="1">
+         <widget class="QPushButton" name="front_fill_button">
+          <property name="text">
+           <string>Fill</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="4">
          <widget class="QPushButton" name="back_open_button">
           <property name="text">
-           <string>Open...</string>
+           <string>&amp;Open...</string>
           </property>
          </widget>
         </item>
-        <item row="0" column="0" colspan="2">
+        <item row="3" column="0" colspan="5">
+         <widget class="QLineEdit" name="back_name">
+          <property name="focusPolicy">
+           <enum>Qt::ClickFocus</enum>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="4">
+         <widget class="QPushButton" name="front_open_button">
+          <property name="text">
+           <string>Op&amp;en...</string>
+          </property>
+         </widget>
+        </item>
+        <item row="11" column="0" colspan="5">
+         <widget class="QPlainTextEdit" name="front_blocks_text"/>
+        </item>
+        <item row="8" column="2">
+         <widget class="QPushButton" name="front_clear_button">
+          <property name="text">
+           <string>Clear</string>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="0">
+         <widget class="QLabel" name="front_blocks_label">
+          <property name="text">
+           <string>Front Blocks</string>
+          </property>
+         </widget>
+        </item>
+        <item row="6" column="0">
          <widget class="QLabel" name="front_label">
           <property name="text">
            <string>Front Puzzle</string>
           </property>
          </widget>
         </item>
-        <item row="3" column="0" colspan="2">
-         <widget class="QLabel" name="back_label">
+        <item row="7" column="0" colspan="5">
+         <widget class="QLineEdit" name="front_name">
+          <property name="focusPolicy">
+           <enum>Qt::ClickFocus</enum>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="3">
+         <widget class="QPushButton" name="front_save_button">
           <property name="text">
-           <string>Back Puzzle</string>
+           <string>S&amp;ave</string>
           </property>
          </widget>
         </item>
@@ -253,10 +284,6 @@
      <string>&amp;View</string>
     </property>
     <addaction name="options_action"/>
-    <addaction name="separator"/>
-    <addaction name="no_rotations_action"/>
-    <addaction name="front_rotations_action"/>
-    <addaction name="back_rotations_action"/>
    </widget>
    <addaction name="file_menu"/>
    <addaction name="edit_menu"/>
@@ -347,33 +374,6 @@
     <string>Alt+X</string>
    </property>
   </action>
-  <action name="no_rotations_action">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;No Rotations</string>
-   </property>
-  </action>
-  <action name="front_rotations_action">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Front Rotations</string>
-   </property>
-  </action>
-  <action name="back_rotations_action">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Back Rotations</string>
-   </property>
-  </action>
   <action name="export_pair_action">
    <property name="text">
     <string>Export &amp;Pair...</string>
@@ -388,17 +388,19 @@
   </customwidget>
  </customwidgets>
  <tabstops>
-  <tabstop>front_name</tabstop>
-  <tabstop>front_open_button</tabstop>
-  <tabstop>back_name</tabstop>
   <tabstop>back_open_button</tabstop>
-  <tabstop>title_text</tabstop>
-  <tabstop>grid_text</tabstop>
+  <tabstop>front_fill_button</tabstop>
+  <tabstop>front_clear_button</tabstop>
+  <tabstop>front_save_button</tabstop>
+  <tabstop>front_open_button</tabstop>
+  <tabstop>front_blocks_text</tabstop>
   <tabstop>clues_text</tabstop>
-  <tabstop>blocks_text</tabstop>
-  <tabstop>crossword_files</tabstop>
+  <tabstop>title_text</tabstop>
   <tabstop>add_button</tabstop>
+  <tabstop>grid_text</tabstop>
   <tabstop>remove_button</tabstop>
+  <tabstop>crossword_files</tabstop>
+  <tabstop>blocks_text</tabstop>
   <tabstop>main_tabs</tabstop>
  </tabstops>
  <resources/>

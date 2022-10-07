@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import traceback
 import typing
@@ -9,7 +10,7 @@ from zipfile import ZipFile, ZIP_DEFLATED
 from PySide6.QtCore import QSettings, QSize, QSizeF, QObject, QRectF, QRect, QPoint, QBuffer
 from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, \
     Qt, QCloseEvent, QPixmap, QColor, QTextDocument, QTextFormat, QTextCursor, \
-    QTextCharFormat, QPyTextObject, QImage, QActionGroup
+    QTextCharFormat, QPyTextObject, QImage
 from PySide6.QtSvg import QSvgGenerator
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog, QInputDialog, QToolTip, \
     QListWidgetItem
@@ -17,6 +18,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialo
 import four_letter_blocks
 from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.clue_painter import CluePainter
+from four_letter_blocks.evo_packer import EvoPacker
 from four_letter_blocks.main_window import Ui_MainWindow
 from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
 from four_letter_blocks.puzzle_set import PuzzleSet
@@ -69,17 +71,12 @@ class FourLetterBlocksWindow(QMainWindow):
 
         ui.warnings_label.setVisible(False)
 
-        self.rotations_group = QActionGroup(self)
-        self.rotations_group.addAction(ui.no_rotations_action)
-        self.rotations_group.addAction(ui.front_rotations_action)
-        self.rotations_group.addAction(ui.back_rotations_action)
-        ui.no_rotations_action.triggered.connect(self.on_rotations_display_changed)
-        ui.front_rotations_action.triggered.connect(self.on_rotations_display_changed)
-        ui.back_rotations_action.triggered.connect(self.on_rotations_display_changed)
-
         ui.front_open_button.clicked.connect(partial(self.open_pair, 0))
         ui.back_open_button.clicked.connect(partial(self.open_pair, 1))
+        ui.front_clear_button.clicked.connect(self.clear_front)
+        ui.front_fill_button.clicked.connect(self.fill_front)
         self.pair_puzzles: typing.List[None | Puzzle] = [None, None]
+        ui.front_blocks_text.textChanged.connect(self.front_blocks_changed)
 
         self.state_fields = (ui.title_text,
                              ui.grid_text,
@@ -154,7 +151,8 @@ class FourLetterBlocksWindow(QMainWindow):
         overwrite_mode = not self.ui.grid_text.overwriteMode()
         for field in (self.ui.grid_text,
                       self.ui.clues_text,
-                      self.ui.blocks_text):
+                      self.ui.blocks_text,
+                      self.ui.front_blocks_text):
             field.setOverwriteMode(overwrite_mode)
 
     def on_rotations_display_changed(self):
@@ -247,10 +245,77 @@ class FourLetterBlocksWindow(QMainWindow):
             puzzle = Puzzle.parse(source_file)
 
         edit_field.setText(puzzle.title)
+        puzzle.rotations_display = (RotationsDisplay.FRONT,
+                                    RotationsDisplay.BACK)[puzzle_index]
+        if side == 'front':
+            self.ui.front_blocks_text.setPlainText(puzzle.format_blocks())
         self.pair_puzzles[puzzle_index] = puzzle
+        self.summarize_crossword_pair()
 
     def summarize_crossword_pair(self):
-        self.statusBar().showMessage('Choose a pair.')
+        info = '...'
+        front_puzzle, back_puzzle = self.pair_puzzles
+        if not any(self.pair_puzzles):
+            status = 'Open a pair of puzzles.'
+        elif back_puzzle is None:
+            status = 'Open a back puzzle.'
+        elif front_puzzle is None:
+            status = 'Open a front puzzle.'
+        else:
+            needed_counts = self.calculate_needed_counts()
+            needed_shapes = ', '.join(
+                f'{shape}: {count}'
+                for shape, count in sorted(needed_counts.items()))
+            messages = front_puzzle.check_style()
+            messages.append('Needed shapes: ' + needed_shapes)
+            info = '\n'.join(messages)
+            status = front_puzzle.display_block_summary()
+
+        self.ui.needed_shapes_label.setText(info)
+        self.statusBar().showMessage(status)
+
+    def calculate_needed_counts(self):
+        front_puzzle, back_puzzle = self.pair_puzzles
+        needed_counts = back_puzzle.shape_counts
+        needed_counts.subtract(front_puzzle.shape_counts)
+        return needed_counts
+
+    def front_blocks_changed(self):
+        front_puzzle = self.pair_puzzles[0]
+        if front_puzzle is None:
+            return
+        new_blocks = self.ui.front_blocks_text.toPlainText()
+        if front_puzzle.format_blocks() == new_blocks:
+            return
+        new_puzzle = Puzzle.parse_sections(front_puzzle.title,
+                                           front_puzzle.format_grid(),
+                                           front_puzzle.format_clues(),
+                                           new_blocks)
+        self.pair_puzzles[0] = new_puzzle
+        self.summarize_crossword_pair()
+
+    def clear_front(self):
+        old_blocks = self.ui.front_blocks_text.toPlainText()
+        new_blocks = re.sub(r'[^#\s]', '?', old_blocks)
+        self.ui.front_blocks_text.setPlainText(new_blocks)
+
+    def fill_front(self):
+        needed_counts = self.calculate_needed_counts()
+        min_count = min(needed_counts.values())
+        if min_count < 0:
+            self.statusBar().showMessage('Cannot fill with negative counts.')
+            return
+
+        front_puzzle = self.pair_puzzles[0]
+        start_text = front_puzzle.format_blocks().replace('?', '.')
+        print(start_text)
+        print(needed_counts)
+        packer = EvoPacker(start_text=start_text)
+        packer.epochs = 1000
+        if not packer.fill(needed_counts):
+            self.statusBar().showMessage('Filling failed.')
+        else:
+            self.ui.front_blocks_text.setPlainText(packer.display())
 
     def summarize_crossword_set(self):
         puzzles = []
@@ -566,12 +631,6 @@ class FourLetterBlocksWindow(QMainWindow):
         if warnings:
             warnings.insert(0, 'Warnings')
             self.ui.warnings_label.setText('\n  '.join(warnings))
-        if self.ui.no_rotations_action.isChecked():
-            puzzle.rotations_display = RotationsDisplay.OFF
-        elif self.ui.front_rotations_action.isChecked():
-            puzzle.rotations_display = RotationsDisplay.FRONT
-        else:
-            puzzle.rotations_display = RotationsDisplay.BACK
         block_summary = puzzle.display_block_summary()
         if block_summary:
             self.statusBar().showMessage(block_summary)
@@ -633,7 +692,8 @@ class FourLetterBlocksWindow(QMainWindow):
         font.setPointSize(font_size)
         for target in (self.ui.grid_text,
                        self.ui.clues_text,
-                       self.ui.blocks_text):
+                       self.ui.blocks_text,
+                       self.ui.front_blocks_text):
             target.setFont(font)
 
 

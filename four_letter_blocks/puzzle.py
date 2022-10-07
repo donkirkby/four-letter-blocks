@@ -369,7 +369,7 @@ class Puzzle:
                            f'{(x2 + 1, y2 + 1)}')
 
     @property
-    def shape_counts(self):
+    def shape_counts(self) -> typing.Counter[str]:
         if self.rotations_display == RotationsDisplay.OFF:
             return Counter(block.shape
                            for block in self.blocks
