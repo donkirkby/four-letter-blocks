@@ -65,17 +65,30 @@ class PackingFitnessCalculator:
         self.details.clear()
         return display
 
-    def calculate(self, problem):
+    def calculate(self, packing):
         """ Calculate fitness score based on the solution.
 
         -1 for every unused block in shape_counts.
         """
-        value = problem.value
+        value = packing.value
         fitness = value.get('fitness')
         if fitness is not None:
             return fitness
+        state = value['state']
+        empty = np.nonzero(state == 0)
+
+        if empty[0].size == 0:
+            empty_fraction = 0
+        else:
+            min_row = min(empty[0])
+            max_row = max(empty[0])
+            min_col = min(empty[1])
+            max_col = max(empty[1])
+            total_area = state.shape[0] * state.shape[1]
+            empty_area = (max_row-min_row+1) * (max_col-min_col+1)
+            empty_fraction = empty_area / total_area
         shape_counts: Counter = value['shape_counts']
-        fitness = -sum(shape_counts.values())
+        fitness = -sum(shape_counts.values()) - empty_fraction
         self.summaries.append(str(fitness))
 
         value['fitness'] = fitness

@@ -1,7 +1,7 @@
 from collections import Counter
 from textwrap import dedent
 
-from four_letter_blocks.evo_packer import EvoPacker, Packing
+from four_letter_blocks.evo_packer import EvoPacker, Packing, PackingFitnessCalculator
 
 
 def test_no_rotations():
@@ -12,6 +12,7 @@ def test_no_rotations():
         ..#..
         .....
         ..##.""")
+    # Block letters don't necessarily match.
     # expected_display = dedent("""\
     #     A##BB
     #     AABBC
@@ -52,3 +53,35 @@ def test_mutate():
         unused_counts.append(unused_count)
     assert min(unused_counts) == 1
     assert max(unused_counts) == 3
+
+
+def test_fitness():
+    start_state = EvoPacker(start_text=dedent("""\
+        .##..
+        ...AA
+        ..#AA
+        BBCCC
+        BB##C""")).state
+    packing = Packing(dict(state=start_state, shape_counts={'O': 3}))
+    calculator = PackingFitnessCalculator()
+    unused_count = 3
+    empty_rect = 0.6
+
+    fitness = calculator.calculate(packing)
+
+    assert fitness == -(unused_count + empty_rect)
+
+
+def test_fitness_full():
+    start_state = EvoPacker(start_text=dedent("""\
+        D##EA
+        DEEEA
+        DD#AA
+        BBCCC
+        BB##C""")).state
+    packing = Packing(dict(state=start_state, shape_counts={}))
+    calculator = PackingFitnessCalculator()
+
+    fitness = calculator.calculate(packing)
+
+    assert fitness == 0
