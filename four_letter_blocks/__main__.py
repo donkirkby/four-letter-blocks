@@ -13,12 +13,12 @@ from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, \
     QTextCharFormat, QPyTextObject, QImage
 from PySide6.QtSvg import QSvgGenerator
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog, QInputDialog, QToolTip, \
-    QListWidgetItem
+    QListWidgetItem, QPlainTextEdit
 
 import four_letter_blocks
 from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.clue_painter import CluePainter
-from four_letter_blocks.evo_packer import EvoPacker
+from four_letter_blocks.fill_thread import FillThread
 from four_letter_blocks.main_window import Ui_MainWindow
 from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
 from four_letter_blocks.puzzle_set import PuzzleSet
@@ -74,9 +74,13 @@ class FourLetterBlocksWindow(QMainWindow):
         ui.front_open_button.clicked.connect(partial(self.open_pair, 0))
         ui.back_open_button.clicked.connect(partial(self.open_pair, 1))
         ui.front_clear_button.clicked.connect(self.clear_front)
+        ui.back_clear_button.clicked.connect(self.clear_back)
         ui.front_fill_button.clicked.connect(self.fill_front)
+        ui.back_fill_button.clicked.connect(self.fill_back)
         self.pair_puzzles: typing.List[None | Puzzle] = [None, None]
+        ui.back_blocks_text.textChanged.connect(self.back_blocks_changed)
         ui.front_blocks_text.textChanged.connect(self.front_blocks_changed)
+        self.fill_thread: FillThread | None = None
 
         self.state_fields = (ui.title_text,
                              ui.grid_text,
@@ -89,6 +93,9 @@ class FourLetterBlocksWindow(QMainWindow):
 
     def closeEvent(self, event: QCloseEvent):
         if self.can_abandon('quit'):
+            if self.fill_thread is not None:
+                self.fill_thread.requestInterruption()
+                self.fill_thread.wait()
             return  # Default behaviour: window will close.
         event.ignore()
 
@@ -247,13 +254,16 @@ class FourLetterBlocksWindow(QMainWindow):
         edit_field.setText(puzzle.title)
         puzzle.rotations_display = (RotationsDisplay.FRONT,
                                     RotationsDisplay.BACK)[puzzle_index]
-        if side == 'front':
-            self.ui.front_blocks_text.setPlainText(puzzle.format_blocks())
+        blocks_field = (self.ui.front_blocks_text,
+                        self.ui.back_blocks_text)[puzzle_index]
+        blocks_field.setPlainText(puzzle.format_blocks())
         self.pair_puzzles[puzzle_index] = puzzle
         self.summarize_crossword_pair()
 
     def summarize_crossword_pair(self):
         info = '...'
+        front_puzzle: Puzzle
+        back_puzzle: Puzzle
         front_puzzle, back_puzzle = self.pair_puzzles
         if not any(self.pair_puzzles):
             status = 'Open a pair of puzzles.'
@@ -261,11 +271,16 @@ class FourLetterBlocksWindow(QMainWindow):
             status = 'Open a back puzzle.'
         elif front_puzzle is None:
             status = 'Open a front puzzle.'
+        elif front_puzzle.grid.letter_count != back_puzzle.grid.letter_count:
+            front_count = front_puzzle.grid.letter_count
+            back_count = back_puzzle.grid.letter_count
+            status = f'Front has {front_count} letters, back has {back_count}.'
         else:
             needed_counts = self.calculate_needed_counts()
             needed_shapes = ', '.join(
                 f'{shape}: {count}'
-                for shape, count in sorted(needed_counts.items()))
+                for shape, count in sorted(needed_counts.items())
+                if count != 0)
             messages = front_puzzle.check_style()
             messages.append('Needed shapes: ' + needed_shapes)
             info = '\n'.join(messages)
@@ -275,47 +290,122 @@ class FourLetterBlocksWindow(QMainWindow):
         self.statusBar().showMessage(status)
 
     def calculate_needed_counts(self):
+        front_puzzle: Puzzle
+        back_puzzle: Puzzle
         front_puzzle, back_puzzle = self.pair_puzzles
+        front_puzzle.rotations_display = RotationsDisplay.FRONT
+        back_puzzle.rotations_display = RotationsDisplay.BACK
         needed_counts = back_puzzle.shape_counts
         needed_counts.subtract(front_puzzle.shape_counts)
         return needed_counts
 
+    def back_blocks_changed(self):
+        new_puzzle = self.update_pair_blocks(self.pair_puzzles[1],
+                                             self.ui.back_blocks_text)
+        if new_puzzle is not None:
+            self.pair_puzzles[1] = new_puzzle
+            self.summarize_crossword_pair()
+
     def front_blocks_changed(self):
-        front_puzzle = self.pair_puzzles[0]
-        if front_puzzle is None:
+        new_puzzle = self.update_pair_blocks(self.pair_puzzles[0],
+                                             self.ui.front_blocks_text)
+        if new_puzzle is not None:
+            self.pair_puzzles[0] = new_puzzle
+            self.summarize_crossword_pair()
+
+    def update_pair_blocks(self,
+                           puzzle: Puzzle | None,
+                           blocks_text: QPlainTextEdit) -> Puzzle | None:
+        if self.fill_thread is not None:
             return
-        new_blocks = self.ui.front_blocks_text.toPlainText()
-        if front_puzzle.format_blocks() == new_blocks:
+        if puzzle is None:
             return
-        new_puzzle = Puzzle.parse_sections(front_puzzle.title,
-                                           front_puzzle.format_grid(),
-                                           front_puzzle.format_clues(),
-                                           new_blocks)
-        self.pair_puzzles[0] = new_puzzle
-        self.summarize_crossword_pair()
+        new_blocks = blocks_text.toPlainText()
+        if puzzle.format_blocks() == new_blocks:
+            return
+        return Puzzle.parse_sections(puzzle.title,
+                                     puzzle.format_grid(),
+                                     puzzle.format_clues(),
+                                     new_blocks)
+
+    def clear_back(self):
+        old_blocks = self.ui.back_blocks_text.toPlainText()
+        new_blocks = re.sub(r'[^#\s]', '?', old_blocks)
+        self.ui.back_blocks_text.setPlainText(new_blocks)
 
     def clear_front(self):
         old_blocks = self.ui.front_blocks_text.toPlainText()
         new_blocks = re.sub(r'[^#\s]', '?', old_blocks)
         self.ui.front_blocks_text.setPlainText(new_blocks)
 
-    def fill_front(self):
-        needed_counts = self.calculate_needed_counts()
-        min_count = min(needed_counts.values())
-        if min_count < 0:
-            self.statusBar().showMessage('Cannot fill with negative counts.')
+    def fill_back(self):
+        if self.fill_thread is not None:
+            self.interrupt_fill()
             return
+        front_puzzle, back_puzzle = self.pair_puzzles
+        self.fill_thread = FillThread(self,
+                                      back_puzzle,
+                                      front_puzzle,
+                                      is_packing_back=True)
+        self.fill_thread.status_update.connect(self.on_fill_update_status)
+        self.fill_thread.completed.connect(self.on_fill_completed)
+        self.statusBar().showMessage('Filling back...')
+        self.fill_thread.start()
+        self.ui.back_fill_button.setText('Stop')
+        self.ui.front_fill_button.setEnabled(False)
 
-        front_puzzle = self.pair_puzzles[0]
-        start_text = front_puzzle.format_blocks().replace('?', '.')
-        print(start_text)
-        print(needed_counts)
-        packer = EvoPacker(start_text=start_text)
-        packer.epochs = 1000
-        if not packer.fill(needed_counts):
-            self.statusBar().showMessage('Filling failed.')
+    def interrupt_fill(self):
+        self.fill_thread.requestInterruption()
+        self.ui.back_fill_button.setText('Fill')
+        self.ui.front_fill_button.setText('Fill')
+        self.ui.back_fill_button.setEnabled(True)
+        self.ui.front_fill_button.setEnabled(True)
+        self.statusBar().showMessage('Stopped filling.')
+        self.fill_thread.wait()
+        self.fill_thread = None
+
+    def fill_front(self):
+        if self.fill_thread is not None:
+            self.interrupt_fill()
+            return
+        front_puzzle, back_puzzle = self.pair_puzzles
+        self.fill_thread = FillThread(self,
+                                      back_puzzle,
+                                      front_puzzle,
+                                      is_packing_back=False)
+        self.fill_thread.status_update.connect(self.on_fill_update_status)
+        self.fill_thread.completed.connect(self.on_fill_completed)
+        self.statusBar().showMessage('Filling front...')
+        self.fill_thread.start()
+        self.ui.front_fill_button.setText('Stop')
+        self.ui.back_fill_button.setEnabled(False)
+
+    def on_fill_update_status(self,
+                              status: str,
+                              back_blocks: str,
+                              front_blocks: str):
+        self.statusBar().showMessage(status)
+        self.ui.back_blocks_text.setPlainText(back_blocks)
+        self.ui.front_blocks_text.setPlainText(front_blocks)
+
+    def on_fill_completed(self,
+                          is_filled: bool,
+                          summary: str,
+                          back_puzzle: Puzzle,
+                          front_puzzle: Puzzle):
+        self.statusBar().showMessage(summary)
+        if is_filled:
+            self.pair_puzzles[0] = front_puzzle
+            self.pair_puzzles[1] = back_puzzle
+            self.ui.back_blocks_text.setPlainText(back_puzzle.format_blocks())
+            self.ui.front_blocks_text.setPlainText(front_puzzle.format_blocks())
         else:
-            self.ui.front_blocks_text.setPlainText(packer.display())
+            front_puzzle: Puzzle
+            back_puzzle: Puzzle
+            front_puzzle, back_puzzle = self.pair_puzzles
+            self.ui.back_blocks_text.setPlainText(back_puzzle.format_blocks())
+            self.ui.front_blocks_text.setPlainText(front_puzzle.format_blocks())
+        self.fill_thread = None
 
     def summarize_crossword_set(self):
         puzzles = []
@@ -693,6 +783,7 @@ class FourLetterBlocksWindow(QMainWindow):
         for target in (self.ui.grid_text,
                        self.ui.clues_text,
                        self.ui.blocks_text,
+                       self.ui.back_blocks_text,
                        self.ui.front_blocks_text):
             target.setFont(font)
 

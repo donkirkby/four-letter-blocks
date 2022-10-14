@@ -112,7 +112,8 @@ class Evolution:
             is_stale = is_stale or pool.is_stale
 
         if 1 < self.pool_count and is_stale:
-            self.pools.sort(key=lambda p: (-p.best_fitness, p.unimproved_count))
+            self.pools.sort(key=lambda p: (p.best_fitness, -p.unimproved_count),
+                            reverse=True)
             while 1 < len(self.pools) and self.pools[-1].is_stale:
                 self.pools.pop()
             self.add_pools()

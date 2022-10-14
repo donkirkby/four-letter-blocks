@@ -35,6 +35,10 @@ class Block:
         squares = ', '.join(repr(square) for square in self.squares)
         return f"Block({squares})"
 
+    @staticmethod
+    def shape_names() -> typing.List[str]:
+        return sorted({name for name, rotation in shape_rotations().values()})
+
     @property
     def face_colour(self):
         return self.squares[0].face_colour

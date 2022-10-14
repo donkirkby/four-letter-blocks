@@ -423,3 +423,7 @@ def test_fractional_position(pixmap_differ: PixmapDiffer):
     block1.draw(actual)
 
     pixmap_differ.assert_equal()
+
+
+def test_shape_names():
+    assert Block.shape_names() == ['I', 'J', 'L', 'O', 'S', 'T', 'Z']

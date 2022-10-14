@@ -1,7 +1,7 @@
 from collections import Counter
 from textwrap import dedent
 
-from four_letter_blocks.evo_packer import EvoPacker, Packing, PackingFitnessCalculator
+from four_letter_blocks.evo_packer import EvoPacker, Packing, PackingFitnessCalculator, FitnessScore
 
 
 def test_no_rotations():
@@ -13,18 +13,20 @@ def test_no_rotations():
         .....
         ..##.""")
     # Block letters don't necessarily match.
-    # expected_display = dedent("""\
-    #     A##BB
-    #     AABBC
-    #     DA#EC
-    #     DEEEC
-    #     DD##C""")
+    expected_display = dedent("""\
+        A##BB
+        AABBC
+        DA#EC
+        DEEEC
+        DD##C""")
     packer = EvoPacker(start_text=start_text)
     packer.is_logging = False
 
-    packer.fill(shape_counts)
+    is_filled = packer.fill(shape_counts)
+    packer.sort_blocks()
 
-    assert '.' not in packer.display()
+    assert is_filled
+    assert packer.display() == expected_display
 
 
 def test_mutate():
@@ -64,12 +66,10 @@ def test_fitness():
         BB##C""")).state
     packing = Packing(dict(state=start_state, shape_counts={'O': 3}))
     calculator = PackingFitnessCalculator()
-    unused_count = 3
-    empty_rect = 0.6
 
     fitness = calculator.calculate(packing)
 
-    assert fitness == -(unused_count + empty_rect)
+    assert fitness == FitnessScore(empty_spaces=-8, empty_area=-0.6)
 
 
 def test_fitness_full():
@@ -84,4 +84,6 @@ def test_fitness_full():
 
     fitness = calculator.calculate(packing)
 
-    assert fitness == 0
+    assert fitness == FitnessScore(empty_spaces=0,
+                                   empty_area=0,
+                                   warning_count=-3)

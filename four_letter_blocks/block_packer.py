@@ -70,6 +70,26 @@ class BlockPacker:
                     for c in row)
             for row in state)
 
+    def sort_blocks(self):
+        state = np.zeros(self.state.shape, np.uint8)
+        gap_spaces = self.state == 1
+        state += gap_spaces
+        next_block = 2
+        for row in range(state.shape[0]):
+            for col in range(state.shape[1]):
+                new_block = state[row, col]
+                if new_block != 0:
+                    # already filled as part of a block
+                    continue
+                old_block = self.state[row, col]
+                if old_block <= 1:
+                    # gap or space
+                    continue
+                block_spaces = (self.state == old_block).astype(np.uint8)
+                state += next_block * block_spaces
+                next_block += 1
+        self.state = state
+
     def create_blocks(self) -> typing.Iterable[Block]:
         max_block = np.max(self.state)
         for block_num in range(2, max_block + 1):
@@ -235,13 +255,13 @@ class BlockPacker:
         if not shape_items:
             return
         np.random.shuffle(shape_items)
-        shape = shape_items[0][0]
-        for row, col in empty:
-            for new_state in self.place_block(shape, row, col, next_block):
-                shape_counts[shape] -= 1
-                self.state = new_state
-                self.random_fill(shape_counts)
-                return
+        for shape, count in shape_items:
+            for row, col in empty:
+                for new_state in self.place_block(shape, row, col, next_block):
+                    shape_counts[shape] -= 1
+                    self.state = new_state
+                    self.random_fill(shape_counts)
+                    return
 
     def flip(self) -> 'BlockPacker':
         flipped_state = np.copy(np.fliplr(self.state))

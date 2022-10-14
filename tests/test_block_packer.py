@@ -4,6 +4,7 @@ from textwrap import dedent
 import numpy as np
 import pytest
 
+from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
 
 
@@ -56,6 +57,20 @@ def test_display_beyond_ascii():
 
     with pytest.raises(RuntimeError, match='Too many blocks for text display'):
         packer.display()
+
+
+def test_sort_blocks():
+    state = np.array([[3, 3, 0, 2, 1, 1],
+                      [3, 3, 0, 2, 2, 2]])
+    expected_display = dedent("""\
+        AA.B##
+        AA.BBB""")
+    packer = BlockPacker(start_state=state)
+
+    packer.sort_blocks()
+    display = packer.display()
+
+    assert display == expected_display
 
 
 def test_start_text():
@@ -189,6 +204,18 @@ def test_random_fill_lower_numbers():
 
         assert 2 <= shape_counts['O'] <= 3
         assert packer.state.max() == 5
+
+
+def test_random_fill_tries_multiple_shapes():
+    for _ in range(100):
+        shape_counts = Counter({shape: 1 for shape in Block.shape_names()})
+        start_text = dedent("""\
+            AA...B
+            AA.BBB""")
+        packer = BlockPacker(start_text=start_text)
+        packer.random_fill(shape_counts)
+
+        assert shape_counts['L'] == 0
 
 
 def test_random_fill_no_gaps():
