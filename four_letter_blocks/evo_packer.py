@@ -113,7 +113,7 @@ class PackingFitnessCalculator:
             max_col = max(empty[1])
             total_area = state.shape[0] * state.shape[1]
             empty_area = (max_row-min_row+1) * (max_col-min_col+1)
-            empty_fraction = empty_area / total_area
+            empty_fraction = round(empty_area / total_area, 3)
         fitness = FitnessScore(empty_spaces=-empty_spaces,
                                empty_area=-empty_fraction,
                                warning_count=-warning_count)
@@ -137,7 +137,7 @@ class EvoPacker(BlockPacker):
                          min_tries,
                          start_text,
                          start_state)
-        self.is_logging = True
+        self.is_logging = False
         self.epochs = 100
         self.current_epoch = 0
         self.shape_counts: typing.Counter[str] = Counter()

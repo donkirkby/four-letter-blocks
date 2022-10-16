@@ -77,6 +77,7 @@ class FourLetterBlocksWindow(QMainWindow):
         ui.back_clear_button.clicked.connect(self.clear_back)
         ui.front_fill_button.clicked.connect(self.fill_front)
         ui.back_fill_button.clicked.connect(self.fill_back)
+        ui.front_refill_button.clicked.connect(self.refill_front)
         self.pair_puzzles: typing.List[None | Puzzle] = [None, None]
         ui.back_blocks_text.textChanged.connect(self.back_blocks_changed)
         ui.front_blocks_text.textChanged.connect(self.front_blocks_changed)
@@ -339,32 +340,44 @@ class FourLetterBlocksWindow(QMainWindow):
         self.ui.front_blocks_text.setPlainText(new_blocks)
 
     def fill_back(self):
+        self.statusBar().showMessage('Filling back...')
+        self.launch_fill(self.ui.back_fill_button, is_packing_back=True)
+
+    def fill_front(self):
+        self.statusBar().showMessage('Filling front...')
+        self.launch_fill(self.ui.front_fill_button)
+
+    def refill_front(self):
         if self.fill_thread is not None:
             self.interrupt_fill()
             return
-        front_puzzle, back_puzzle = self.pair_puzzles
-        self.fill_thread = FillThread(self,
-                                      back_puzzle,
-                                      front_puzzle,
-                                      is_packing_back=True)
-        self.fill_thread.status_update.connect(self.on_fill_update_status)
-        self.fill_thread.completed.connect(self.on_fill_completed)
-        self.statusBar().showMessage('Filling back...')
-        self.fill_thread.start()
-        self.ui.back_fill_button.setText('Stop')
-        self.ui.front_fill_button.setEnabled(False)
+
+        file_name = self.get_save_file_name(
+            'Save refilled solutions',
+            'Text files (*.txt);;All files (*.*)')
+        if not file_name:
+            return
+        self.statusBar().showMessage('Refilling blocks...')
+
+        self.launch_fill(self.ui.front_refill_button,
+                         report_path=Path(file_name))
 
     def interrupt_fill(self):
         self.fill_thread.requestInterruption()
         self.ui.back_fill_button.setText('Fill')
         self.ui.front_fill_button.setText('Fill')
+        self.ui.front_refill_button.setText('Refill...')
         self.ui.back_fill_button.setEnabled(True)
         self.ui.front_fill_button.setEnabled(True)
+        self.ui.front_refill_button.setEnabled(True)
         self.statusBar().showMessage('Stopped filling.')
         self.fill_thread.wait()
         self.fill_thread = None
 
-    def fill_front(self):
+    def launch_fill(self,
+                    clicked_button,
+                    is_packing_back=False,
+                    report_path=None):
         if self.fill_thread is not None:
             self.interrupt_fill()
             return
@@ -372,13 +385,18 @@ class FourLetterBlocksWindow(QMainWindow):
         self.fill_thread = FillThread(self,
                                       back_puzzle,
                                       front_puzzle,
-                                      is_packing_back=False)
+                                      is_packing_back,
+                                      report_path)
         self.fill_thread.status_update.connect(self.on_fill_update_status)
         self.fill_thread.completed.connect(self.on_fill_completed)
-        self.statusBar().showMessage('Filling front...')
         self.fill_thread.start()
-        self.ui.front_fill_button.setText('Stop')
-        self.ui.back_fill_button.setEnabled(False)
+        for fill_button in (self.ui.back_fill_button,
+                            self.ui.front_fill_button,
+                            self.ui.front_refill_button):
+            if fill_button is clicked_button:
+                continue
+            fill_button.setEnabled(False)
+        clicked_button.setText('Stop')
 
     def on_fill_update_status(self,
                               status: str,

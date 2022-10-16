@@ -31,8 +31,14 @@ class FillThread(QThread):
                                                   front_puzzle.format_blocks())
         self.is_packing_back = is_packing_back
         self.report_path = report_path
+        self.attempt_count = 0
+        self.solutions = []
 
     def run(self):
+        if self.report_path is not None:
+            self.pack_until_interrupted()
+            return
+
         if self.is_packing_back:
             is_packed = self.pack_back_puzzle()
             if is_packed:
@@ -56,6 +62,48 @@ class FillThread(QThread):
                                 status,
                                 self.back_puzzle,
                                 self.front_puzzle)
+
+    def pack_until_interrupted(self):
+        back_start_blocks = self.back_puzzle.format_blocks()
+        front_start_blocks = self.front_puzzle.format_blocks()
+        with open(self.report_path, 'w') as f:
+            print('No solutions found.', file=f)
+            print(self.back_puzzle.title, file=f)
+            print(back_start_blocks, file=f)
+            print(file=f)
+            print(self.front_puzzle.title, file=f)
+            print(front_start_blocks, file=f)
+
+        while not self.isInterruptionRequested():
+            self.attempt_count += 1
+            self.back_puzzle = Puzzle.parse_sections(
+                self.back_puzzle.title,
+                self.back_puzzle.format_grid(),
+                self.back_puzzle.format_clues(),
+                back_start_blocks)
+            if not self.pack_back_puzzle():
+                continue
+
+            self.front_puzzle = Puzzle.parse_sections(
+                self.front_puzzle.title,
+                self.front_puzzle.format_grid(),
+                self.front_puzzle.format_clues(),
+                front_start_blocks)
+            if not self.pack_front_puzzle():
+                continue
+
+            self.solutions.append((self.back_puzzle.format_blocks(),
+                                   self.front_puzzle.format_blocks()))
+            with open(self.report_path, 'w') as f:
+                for i, (back_blocks, front_blocks) in enumerate(self.solutions):
+                    if i > 0:
+                        print(file=f)
+                        print('===', file=f)
+                    print(self.back_puzzle.title, file=f)
+                    print(back_blocks, file=f)
+                    print(file=f)
+                    print(self.front_puzzle.title, file=f)
+                    print(front_blocks, file=f)
 
     def pack_back_puzzle(self) -> bool:
         back_puzzle = self.back_puzzle
@@ -114,7 +162,11 @@ class FillThread(QThread):
                 side = 'back'
                 new_back = packer.top_blocks
                 new_front = front_blocks
-            status = f'Packing {side}: epoch {packer.current_epoch}, ' \
+            if self.attempt_count:
+                prefix = f'found {len(self.solutions)}/{self.attempt_count}, '
+            else:
+                prefix = ''
+            status = f'Packing {side}: {prefix}epoch {packer.current_epoch}, ' \
                      f'{packer.top_fitness}'
 
             # noinspection PyUnresolvedReferences
