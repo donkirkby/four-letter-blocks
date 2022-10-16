@@ -41,7 +41,9 @@ def test_mutate():
             ..##.""")
         packer = EvoPacker(start_text=start_text)
         start_state = packer.state
-        packing = Packing(dict(state=start_state, shape_counts=shape_counts))
+        packing = Packing(dict(state=start_state,
+                               shape_counts=shape_counts,
+                               can_rotate=True))
         mutate_params = None
 
         packing.mutate(mutate_params)
