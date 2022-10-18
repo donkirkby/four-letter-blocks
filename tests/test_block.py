@@ -310,6 +310,7 @@ def test_draw_face_colour(pixmap_differ: PixmapDiffer):
     actual: QPainter
     expected: QPainter
     with pixmap_differ.create_painters(310, 260) as (actual, expected):
+        expected.fillRect(0, 0, 310, 260, 'cornsilk')
         draw_gradient_rect(expected,
                            QColor.fromHsv(120, 30, 255),
                            106.25, 56.25,
@@ -339,6 +340,7 @@ def test_draw_face_colour(pixmap_differ: PixmapDiffer):
         block.face_colour = QColor.fromHsv(0, 0, 0, 0)
         block.draw(expected, is_packed=True)
 
+        actual.fillRect(0, 0, 310, 260, 'cornsilk')
         block.face_colour = QColor.fromHsv(120, 30, 255)
         block.draw(actual, is_packed=True)
 

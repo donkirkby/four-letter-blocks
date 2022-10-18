@@ -3,7 +3,7 @@ import typing
 from collections import Counter, defaultdict
 from collections.abc import Iterable
 
-from PySide6.QtGui import QPainter, QColor
+from PySide6.QtGui import QPainter, QColor, QPixmap
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
@@ -227,3 +227,9 @@ class PuzzleSet:
                                          self.back_blocks,
                                          x_offset):
             block.draw(painter, is_packed=True)
+
+    @staticmethod
+    def draw_background(painter: QPainter, tile: QPixmap):
+        for y in range(0, painter.window().height(), tile.height()):
+            for x in range(0, painter.window().width(), tile.width()):
+                painter.drawPixmap(x, y, tile)

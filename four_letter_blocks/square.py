@@ -153,7 +153,7 @@ def draw_gradient_rect(painter: QPainter,
     gradient = QLinearGradient()
     gradient.setStart(x, y)
     gradient.setFinalStop(x+radius, y)
-    white = QColor('white')
+    white = QColor(255, 255, 255, 0)
     gradient.setStops(((0, white), (1, colour)))
     ceil = math.ceil
     painter.fillRect(x, y+radius,

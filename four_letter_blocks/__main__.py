@@ -19,9 +19,14 @@ import four_letter_blocks
 from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.clue_painter import CluePainter
 from four_letter_blocks.fill_thread import FillThread
+from four_letter_blocks.line_deduper import LineDeduper
 from four_letter_blocks.main_window import Ui_MainWindow
 from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
 from four_letter_blocks.puzzle_set import PuzzleSet
+
+from four_letter_blocks import four_letter_blocks_rc
+
+assert four_letter_blocks_rc  # Need to import this module to load resources.
 
 DIAGRAM_TEXT_FORMAT = QTextFormat.UserObject + 1
 DIAGRAM_DATA = 1
@@ -591,17 +596,18 @@ class FourLetterBlocksWindow(QMainWindow):
         generator.setResolution(1000)  # dots per inch
         generator.setViewBox(QRect(0, 0, 8250, 10500))
 
-        painter = QPainter(generator)
+        painter = LineDeduper(QPainter(generator))
         puzzle_set.square_size = generator.width() / 16
         nick_radius = 5  # DPI is 1000
         puzzle_set.draw_cuts(painter, nick_radius)
         painter.end()
 
+        wood_tile = QPixmap(':/light-wood-texture.jpg')
         front_buffer = QBuffer()
         front_image = QImage(2475, 3150, QImage.Format_RGB32)
         painter = QPainter(front_image)
-        painter.fillRect(front_image.rect(), 'white')
         puzzle_set.square_size = front_image.width() / 16
+        puzzle_set.draw_background(painter, wood_tile)
         puzzle_set.draw_front(painter)
         painter.end()
         success = front_image.save(front_buffer, 'PNG')
@@ -610,7 +616,7 @@ class FourLetterBlocksWindow(QMainWindow):
         back_buffer = QBuffer()
         back_image = QImage(2475, 3150, QImage.Format_RGB32)
         painter = QPainter(back_image)
-        painter.fillRect(back_image.rect(), 'white')
+        puzzle_set.draw_background(painter, wood_tile)
         puzzle_set.draw_back(painter)
         painter.end()
         success = back_image.save(back_buffer, 'PNG')
@@ -619,6 +625,7 @@ class FourLetterBlocksWindow(QMainWindow):
         """ Booklet page images are 1575 x 2475. Safety margin is 75 pixels on
         every side. """
         page_buffers = []
+        paper = QPixmap(':/paper.jpg')
         clue_painter = CluePainter(
             *puzzles,
             font_size=60,
@@ -629,7 +636,7 @@ class FourLetterBlocksWindow(QMainWindow):
         page_image = QImage(1575, 2475, QImage.Format_RGB32)
         while not clue_painter.is_finished:
             painter = QPainter(page_image)
-            painter.fillRect(page_image.rect(), 'white')
+            painter.drawPixmap(0, 0, paper)
             clue_painter.draw_page(painter)
             painter.end()
             page_buffer = QBuffer()

@@ -2,12 +2,16 @@ from io import StringIO
 from textwrap import dedent
 
 import pytest
+from PySide6.QtGui import QPainter, QPixmap
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.puzzle import Puzzle
 from four_letter_blocks.puzzle_set import PuzzleSet
+from four_letter_blocks import four_letter_blocks_rc
 from tests.pixmap_differ import PixmapDiffer
+
+assert four_letter_blocks_rc  # Need to import this module to load resources.
 
 
 def parse_puzzle_set(block_packer: BlockPacker = None):
@@ -158,6 +162,25 @@ def test_shape_counts_z_only():
                       for block in blocks
                       if block is not None)
     assert block_count == 12
+
+
+def test_draw_background(pixmap_differ: PixmapDiffer):
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(360, 180) as (actual, expected):
+        full_tile = QPixmap(':/light-wood-texture.jpg')
+        tile = full_tile.copy(0, 0, 100, 100)
+        expected.drawPixmap(0, 0, tile)
+        expected.drawPixmap(100, 0, tile)
+        expected.drawPixmap(200, 0, tile)
+        expected.drawPixmap(300, 0, tile)
+        expected.drawPixmap(0, 100, tile)
+        expected.drawPixmap(100, 100, tile)
+        expected.drawPixmap(200, 100, tile)
+        expected.drawPixmap(300, 100, tile)
+
+        puzzle_set = parse_puzzle_set()
+        puzzle_set.draw_background(actual, tile)
 
 
 def test_draw_packed(pixmap_differ: PixmapDiffer):

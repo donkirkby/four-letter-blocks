@@ -112,10 +112,11 @@ def test_gradient_rect(pixmap_differ: PixmapDiffer):
     actual: QPainter
     expected: QPainter
     with pixmap_differ.create_painters(380, 180) as (actual, expected):
+        expected.fillRect(0, 0, 380, 180, 'cornsilk')
         gradient = QLinearGradient()
         gradient.setStart(12.5, 0)
         gradient.setFinalStop(37.5, 0)
-        white = QColor('white')
+        white = QColor(255, 255, 255, 0)
         face_colour = QColor.fromHsv(120, 50, 255)
         gradient.setStops(((0, white), (1, face_colour)))
         expected.fillRect(12.5, 37.5, 38, 25, gradient)
@@ -151,6 +152,7 @@ def test_gradient_rect(pixmap_differ: PixmapDiffer):
         gradient.setFocalPoint(gradient.center())
         expected.fillRect(62.5, 62.5, 25, 25, gradient)
 
+        actual.fillRect(0, 0, 380, 180, 'cornsilk')
         draw_gradient_rect(actual, face_colour, 12.5, 12.5, 75, 75, radius=25)
 
 

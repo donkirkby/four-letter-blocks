@@ -76,6 +76,15 @@ To add a new screen to the project:
 2. In the Files and Classes: Qt section, choose Qt Designer Form.
 3. Select a widget type, like "Widget", and choose a file name.
 
+To edit image files or other resources:
+
+1. Edit the original files in the `resources` folder.
+2. If you added new files, include them in `resources/resources.qrc`.
+3. Compile all the resources into a Python module:
+
+       $ cd /path/to/four-letter-blocks/resources
+       $ pyside6-rcc -o ../four_letter_blocks/four_letter_blocks_rc.py resources.qrc
+
 [Qt Creator]: https://www.qt.io/download-qt-installer
 [Qt Designer documentation]: https://doc.qt.io/qt-5/designer-quick-start.html
 
