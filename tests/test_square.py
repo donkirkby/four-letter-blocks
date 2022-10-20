@@ -1,5 +1,6 @@
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QPen, QColor, QPainter, QRadialGradient, QLinearGradient, QPainterPath
+from PySide6.QtGui import QPen, QColor, QPainter, QRadialGradient, \
+    QLinearGradient, QPainterPath
 
 from four_letter_blocks.square import Square, draw_gradient_rect, draw_text_path
 from tests.pixmap_differ import PixmapDiffer
@@ -114,43 +115,43 @@ def test_gradient_rect(pixmap_differ: PixmapDiffer):
     with pixmap_differ.create_painters(380, 180) as (actual, expected):
         expected.fillRect(0, 0, 380, 180, 'cornsilk')
         gradient = QLinearGradient()
-        gradient.setStart(12.5, 0)
-        gradient.setFinalStop(37.5, 0)
+        gradient.setStart(12, 0)
+        gradient.setFinalStop(38, 0)
         white = QColor(255, 255, 255, 0)
         face_colour = QColor.fromHsv(120, 50, 255)
         gradient.setStops(((0, white), (1, face_colour)))
-        expected.fillRect(12.5, 37.5, 38, 25, gradient)
+        expected.fillRect(12, 38, 26, 24, gradient)
 
-        gradient.setStart(87.5, 0)
-        gradient.setFinalStop(62.5, 0)
-        expected.fillRect(50, 37.5, 37.5, 25, gradient)
+        gradient.setStart(88, 0)
+        gradient.setFinalStop(62, 0)
+        expected.fillRect(62, 38, 26, 24, gradient)
 
-        gradient.setStart(0, 12.5)
-        gradient.setFinalStop(0, 37.5)
-        expected.fillRect(37.5, 12.5, 25, 38, gradient)
+        gradient.setStart(0, 12)
+        gradient.setFinalStop(0, 38)
+        expected.fillRect(38, 12, 24, 38, gradient)
 
-        gradient.setStart(0, 87.5)
-        gradient.setFinalStop(0, 62.5)
-        expected.fillRect(37.5, 50, 25, 37.5, gradient)
+        gradient.setStart(0, 88)
+        gradient.setFinalStop(0, 62)
+        expected.fillRect(38, 50, 24, 38, gradient)
 
         gradient = QRadialGradient()
         gradient.setStops(((0, face_colour), (1, white)))
         gradient.setRadius(25)
-        gradient.setCenter(37.5, 37.5)
+        gradient.setCenter(38, 38)
         gradient.setFocalPoint(gradient.center())
-        expected.fillRect(12.5, 12.5, 25, 25, gradient)
+        expected.fillRect(12, 12, 26, 26, gradient)
 
-        gradient.setCenter(62.5, 37.5)
+        gradient.setCenter(62, 38)
         gradient.setFocalPoint(gradient.center())
-        expected.fillRect(62.5, 12.5, 25, 25, gradient)
+        expected.fillRect(62, 12, 26, 26, gradient)
 
-        gradient.setCenter(37.5, 62.5)
+        gradient.setCenter(38, 62)
         gradient.setFocalPoint(gradient.center())
-        expected.fillRect(12.5, 62.5, 25, 25, gradient)
+        expected.fillRect(12, 62, 26, 26, gradient)
 
-        gradient.setCenter(62.5, 62.5)
+        gradient.setCenter(62, 62)
         gradient.setFocalPoint(gradient.center())
-        expected.fillRect(62.5, 62.5, 25, 25, gradient)
+        expected.fillRect(62, 62, 26, 26, gradient)
 
         actual.fillRect(0, 0, 380, 180, 'cornsilk')
         draw_gradient_rect(actual, face_colour, 12.5, 12.5, 75, 75, radius=25)
@@ -171,6 +172,7 @@ def test_draw_text_path(pixmap_differ: PixmapDiffer):
         path.addText(x, y, font, '42')
         rect = path.boundingRect()
         path.translate(50 - (rect.left()+rect.right())/2, 0)
+        expected.setRenderHint(painter.Antialiasing)
         expected.fillPath(path, QColor('blue'))
 
         actual.setFont(font)

@@ -1,7 +1,10 @@
 from collections import Counter
 from textwrap import dedent
 
-from four_letter_blocks.evo_packer import EvoPacker, Packing, PackingFitnessCalculator, FitnessScore
+import numpy as np
+
+from four_letter_blocks.evo_packer import EvoPacker, Packing,\
+    PackingFitnessCalculator, FitnessScore, distance_ranking, ranked_offsets
 
 
 def test_no_rotations():
@@ -89,3 +92,35 @@ def test_fitness_full():
     assert fitness == FitnessScore(empty_spaces=0,
                                    empty_area=0,
                                    warning_count=-3)
+
+
+def test_distance_ranking():
+    expected_ranking = np.fromstring("""\
+        22  13  12  11  21
+        14   4   3   2  10
+        15   5   0   1   9
+        16   6   7   8  20
+        23  17  18  19  24
+    """, dtype=int, sep=" ").reshape(5, 5)
+
+    ranking = distance_ranking(5)
+
+    assert np.array_equal(ranking, expected_ranking)
+
+
+def test_ranked_offsets():
+    expected_positions = np.array(
+        [[0, 0], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1], [1, 0],
+         [1, 1], [0, 2], [-1, 2], [-2, 1], [-2, 0], [-2, -1], [-1, -2], [0, -2],
+         [1, -2], [2, -1], [2, 0], [2, 1], [1, 2], [-2, 2], [-2, -2], [2, -2],
+         [2, 2]])
+
+    positions = ranked_offsets(3)
+
+    assert np.array_equal(positions, expected_positions)
+
+
+def test_distance_ranking_big():
+    ranking = distance_ranking(15)
+
+    assert np.max(ranking) == 15*15 - 1

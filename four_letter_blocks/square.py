@@ -1,5 +1,3 @@
-import math
-
 from PySide6.QtCore import QRect, Qt
 from PySide6.QtGui import QPainter, QColor, QPainterPath, QLinearGradient, QRadialGradient
 
@@ -138,9 +136,14 @@ def draw_text_path(painter: QPainter,
     if is_centred:
         rect = path.boundingRect()
         path.translate(x-(rect.left()+rect.right())/2, 0)
+
+    old_hint = painter.testRenderHint(painter.Antialiasing)
+    painter.setRenderHint(painter.Antialiasing)
     painter.fillPath(path, painter.pen().color())
+    painter.setRenderHint(painter.Antialiasing, old_hint)
 
 
+# noinspection DuplicatedCode
 def draw_gradient_rect(painter: QPainter,
                        colour: QColor,
                        x: float,
@@ -150,51 +153,57 @@ def draw_gradient_rect(painter: QPainter,
                        radius: float):
     if colour.alpha() == 0:
         return
+    x0 = round(x)
+    x1 = round(x + radius)
+    x2 = round(x + width - radius)
+    x3 = round(x + width)
+    y0 = round(y)
+    y1 = round(y + radius)
+    y2 = round(y + height - radius)
+    y3 = round(y + height)
+
+    # left
     gradient = QLinearGradient()
-    gradient.setStart(x, y)
-    gradient.setFinalStop(x+radius, y)
+    gradient.setStart(x0, y0)
+    gradient.setFinalStop(x1, y0)
     white = QColor(255, 255, 255, 0)
     gradient.setStops(((0, white), (1, colour)))
-    ceil = math.ceil
-    painter.fillRect(x, y+radius,
-                     ceil(width/2), ceil(height-2*radius),
-                     gradient)
+    painter.fillRect(x0, y1, x1 - x0, y2 - y1, gradient)
 
-    gradient.setStart(x+width, y)
-    gradient.setFinalStop(x+width-radius, y)
-    painter.fillRect(x+width/2, y+radius,
-                     ceil(width/2), ceil(height-2*radius),
-                     gradient)
+    # right
+    gradient.setStart(x3, y0)
+    gradient.setFinalStop(x2, y0)
+    painter.fillRect(x2, y1, x3 - x2, y2 - y1, gradient)
 
-    gradient.setStart(x, y)
-    gradient.setFinalStop(x, y+radius)
-    painter.fillRect(x+radius, y,
-                     ceil(width-2*radius), ceil(height/2),
-                     gradient)
+    # top
+    gradient.setStart(x0, y0)
+    gradient.setFinalStop(x0, y1)
+    painter.fillRect(x1, y0, x2 - x1, y2 - y0, gradient)
 
-    gradient.setStart(x, y+height)
-    gradient.setFinalStop(x, y+height-radius)
-    painter.fillRect(x+radius, y+height/2,
-                     ceil(width-2*radius), ceil(height/2),
-                     gradient)
+    # bottom
+    gradient.setStart(x0, y3)
+    gradient.setFinalStop(x0, y2)
+    painter.fillRect(x1, y2, x2 - x1, y3 - y2, gradient)
 
+    # top left
     gradient = QRadialGradient()
     gradient.setStops(((0, colour), (1, white)))
     gradient.setRadius(radius)
-    gradient.setCenter(x+radius, y+radius)
+    gradient.setCenter(x1, y1)
     gradient.setFocalPoint(gradient.center())
-    painter.fillRect(x, y, ceil(radius), ceil(radius), gradient)
+    painter.fillRect(x0, y0, x1-x0, y1-y0, gradient)
 
-    gradient.setCenter(x+width-radius, y+radius)
+    # top right
+    gradient.setCenter(x2, y1)
     gradient.setFocalPoint(gradient.center())
-    painter.fillRect(x+width-radius, y, ceil(radius), ceil(radius), gradient)
+    painter.fillRect(x2, y0, x3 - x2, y1 - y0, gradient)
 
-    gradient.setCenter(x+radius, y+height-radius)
+    # bottom left
+    gradient.setCenter(x1, y2)
     gradient.setFocalPoint(gradient.center())
-    painter.fillRect(x, y+height-radius, ceil(radius), ceil(radius), gradient)
+    painter.fillRect(x0, y2, x1 - x0, y3 - y2, gradient)
 
-    gradient.setCenter(x+width-radius, y+height-radius)
+    # bottom right
+    gradient.setCenter(x2, y2)
     gradient.setFocalPoint(gradient.center())
-    painter.fillRect(x+width-radius, y+height-radius,
-                     ceil(radius), ceil(radius),
-                     gradient)
+    painter.fillRect(x2, y2, x3 - x2, y3 - y2, gradient)

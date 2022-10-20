@@ -1,6 +1,8 @@
+import random
 import typing
 from collections import Counter
 from dataclasses import dataclass
+from functools import cache
 from random import randrange
 
 import numpy as np
@@ -24,23 +26,37 @@ class Packing(Individual):
         shape_counts = Counter(self.value['shape_counts'])
         can_rotate: bool = self.value['can_rotate']
         block_packer = BlockPacker(start_state=state)
-        used_blocks = np.unique(state)
-        if used_blocks[0] == 0:
-            used_blocks = used_blocks[1:]
-        if used_blocks[0] == 1:
-            used_blocks = used_blocks[1:]
-        np.random.shuffle(used_blocks)
-        min_removed = min(3, len(used_blocks))
-        max_removed = min(10, len(used_blocks))
+        grid_size = state.shape[0]
+        gaps = np.argwhere(state == 0)
+        if gaps.size > 0:
+            row0, col0 = random.choice(gaps)
+        else:
+            row0 = random.randrange(grid_size)
+            col0 = random.randrange(grid_size)
+        block_count = (state > 1).sum() // 4
+        min_removed = min(3, block_count)
+        max_removed = min(10, block_count)
         remove_count = randrange(min_removed, max_removed+1)
 
-        for block_num in used_blocks[:remove_count]:
+        positions = ranked_offsets(grid_size) + [row0, col0]
+        for row, col in positions[1:]:
+            if not 0 <= row < grid_size:
+                continue
+            if not 0 <= col < grid_size:
+                continue
+
+            block_num = state[row, col]
+            if block_num <= 1:
+                continue
             block = block_packer.create_block(block_num)
             shape = block.shape
             if not can_rotate:
                 shape += str(block.shape_rotation)
             shape_counts[shape] += 1
             state[state == block_num] = 0
+            remove_count -= 1
+            if remove_count == 0:
+                break
 
         block_packer.random_fill(shape_counts)
 
@@ -209,3 +225,45 @@ class EvoPacker(BlockPacker):
             return True
         self.state = None
         return False
+
+
+@cache
+def distance_ranking(grid_size: int) -> np.ndarray:
+    """ Rank the positions in a grid by their distance from the centre.
+
+    :param grid_size: the size of the square grid
+    :return: an array with 0 at the centre and increasing numbers as they move
+    out. Ties are broken by the angle counterclockwise from the x-axis.
+    """
+    x0 = y0 = grid_size // 2
+    x = np.arange(grid_size)
+    y = np.arange(grid_size)
+    xs, ys = np.meshgrid(x, y, sparse=True)
+    xs -= x0
+    ys = y0 - ys
+    distances = np.sqrt(xs*xs + ys*ys).round()
+    angles = np.mod(np.arctan2(ys, xs), 2*np.pi) / (2*np.pi)
+    scores = distances + angles
+    indexes = scores.argsort(axis=None)
+    ranks = indexes.argsort(axis=None).reshape(grid_size, grid_size)
+    ranks.setflags(write=False)
+    return ranks.view()
+
+
+@cache
+def ranked_offsets(grid_size: int) -> np.ndarray:
+    """ List the offsets of a grid position in ranked order by distance.
+
+    :param grid_size: the size of the square grid
+    :return: an array of [d_row, d_column] entries for the positions, in order
+    of distance from the starting point. Ties are broken by the angle
+    counterclockwise from the x-axis. Positions go in all directions, so the
+    final grid is almost twice as big.
+    """
+    expanded_size = grid_size * 2 - 1
+    rankings = distance_ranking(expanded_size)
+    positions = rankings.argsort(axis=None)
+    position_pairs = np.column_stack(divmod(positions, expanded_size))
+    position_pairs -= [grid_size-1, grid_size-1]
+    position_pairs.setflags(write=False)
+    return position_pairs.view()
