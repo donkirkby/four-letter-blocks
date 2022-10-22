@@ -1,9 +1,9 @@
-import random
 import typing
 from collections import Counter
 from dataclasses import dataclass
 from functools import cache
-from random import randrange
+from itertools import count
+from random import randrange, choices, choice
 
 import numpy as np
 
@@ -12,12 +12,99 @@ from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.puzzle import Puzzle
 
 
+class BlockMover:
+    def __init__(self,
+                 source: np.ndarray,
+                 target: np.ndarray,
+                 can_rotate: bool,
+                 shape_counts: typing.Counter[str] = None):
+        self.source = source
+        self.target = target
+        self.can_rotate = can_rotate
+        self.packer = BlockPacker(start_state=self.source)
+        self.blocks = {
+            block_number: block
+            for block_number, block in self.packer.create_blocks(
+                with_block_num=True)}
+        if shape_counts is not None:
+            self.shape_counts = shape_counts
+        else:
+            self.shape_counts = Counter()
+            for block in self.blocks.values():
+                shape = block.shape
+                if shape != 'O' and not can_rotate:
+                    shape += str(block.shape_rotation)
+                self.shape_counts[shape] += 1
+
+    def move(self, row: int, col: int):
+        grid_size = self.source.shape[0]
+        if not 0 <= row < grid_size:
+            return
+        if not 0 <= col < grid_size:
+            return
+        block_num = self.source[row, col]
+        if block_num == 1:
+            self.target[row, col] = 1
+            return
+        try:
+            block = self.blocks.pop(block_num)
+        except KeyError:
+            return
+        shape = block.shape
+        if shape != 'O' and not self.can_rotate:
+            shape += str(block.shape_rotation)
+        if self.shape_counts[shape] == 0:
+            return
+        for square in block.squares:
+            if self.target[square.y, square.x] != 0:
+                return
+        if (self.target == block_num).any():
+            used_nums = set(np.unique(self.target))
+            for block_num in count(2):
+                if block_num not in used_nums:
+                    break
+        for square in block.squares:
+            self.target[square.y, square.x] = block_num
+        self.shape_counts[shape] -= 1
+
+
 class Packing(Individual):
     def __repr__(self):
         return f'Packing({self.value!r})'
 
     def pair(self, other, pair_params):
-        return Packing(other.value)
+        scenario = choices(('mother', 'father', 'mix'),
+                           weights=(5, 5, 1))
+        if scenario == 'mother':
+            return Packing(self.value)
+        if scenario == 'father':
+            return Packing(other.value)
+        state1 = self.value['state']
+        state2 = other.value['state']
+        grid_size = state1.shape[0]
+        new_state = np.zeros((grid_size, grid_size), dtype=np.uint8)
+        counts1 = self.value['shape_counts']
+        can_rotate = self.value['can_rotate']
+        mover1 = BlockMover(state1, new_state, can_rotate)
+        mover1.shape_counts += counts1
+        mover2 = BlockMover(state2, new_state, can_rotate, mover1.shape_counts)
+        row1 = randrange(grid_size)
+        col1 = randrange(grid_size)
+        row2 = randrange(grid_size)
+        col2 = randrange(grid_size)
+
+        positions1 = ranked_offsets(grid_size) + [row1, col1]
+        positions2 = ranked_offsets(grid_size) + [row2, col2]
+        for (i1, j1), (i2, j2) in zip(positions1, positions2):
+            mover1.move(i1, j1)
+            mover2.move(i2, j2)
+        packer = BlockPacker(start_state=new_state)
+        packer.random_fill(mover1.shape_counts)
+        return Packing(dict(state=packer.state,
+                            shape_counts=mover1.shape_counts,
+                            can_rotate=can_rotate,
+                            pos1=(row1, col1),
+                            pos2=(row2, col2)))
 
     def mutate(self, mutate_params):
         self.value: dict
@@ -29,12 +116,12 @@ class Packing(Individual):
         grid_size = state.shape[0]
         gaps = np.argwhere(state == 0)
         if gaps.size > 0:
-            row0, col0 = random.choice(gaps)
+            row0, col0 = choice(gaps)
         else:
-            row0 = random.randrange(grid_size)
-            col0 = random.randrange(grid_size)
+            row0 = randrange(grid_size)
+            col0 = randrange(grid_size)
         block_count = (state > 1).sum() // 4
-        min_removed = min(3, block_count)
+        min_removed = 0  # min(3, block_count)
         max_removed = min(10, block_count)
         remove_count = randrange(min_removed, max_removed+1)
 

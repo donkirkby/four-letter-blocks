@@ -90,20 +90,27 @@ class BlockPacker:
                 next_block += 1
         self.state = state
 
-    def create_blocks(self) -> typing.Iterable[Block]:
+    def create_blocks(self, with_block_num=False) -> typing.Iterable[Block]:
         max_block = np.max(self.state)
         for block_num in range(2, max_block + 1):
-            yield self.create_block(block_num)
+            try:
+                block = self.create_block(block_num)
+            except ValueError:
+                continue
+            if with_block_num:
+                yield block_num, block
+            else:
+                yield block
 
     def create_block(self, block_num):
-        # convert row, col to x, y
-        y_coordinates, x_coordinates = np.nonzero(self.state == block_num)
-        coordinates = list(zip(x_coordinates, y_coordinates))
+        coordinates = np.column_stack(np.nonzero(self.state == block_num))
+        if coordinates.size == 0:
+            raise ValueError(f'No blocks have value {block_num}.')
         squares = []
-        for x, y in coordinates:
+        for row, col in coordinates:
             square = Square('X')
-            square.x = x
-            square.y = y
+            square.x = col
+            square.y = row
             squares.append(square)
         block = Block(*squares)
         return block

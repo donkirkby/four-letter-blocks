@@ -163,7 +163,7 @@ class FillThread(QThread):
                 new_back = packer.top_blocks
                 new_front = front_blocks
             if self.attempt_count:
-                prefix = f'found {len(self.solutions)}/{self.attempt_count}, '
+                prefix = f'found {len(self.solutions)}/{self.attempt_count-1}, '
             else:
                 prefix = ''
             status = f'Packing {side}: {prefix}epoch {packer.current_epoch}, ' \

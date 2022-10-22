@@ -2,6 +2,9 @@
 # Added my own features in https://github.com/donkirkby/donimoes
 from abc import ABC, abstractmethod
 from datetime import datetime
+from random import shuffle
+
+from four_letter_blocks.block_packer import BlockPacker
 
 
 class Individual(ABC):
@@ -60,6 +63,7 @@ class Population:
     def get_parents(self, n_offsprings):
         mothers = self.individuals[-2 * n_offsprings::2]
         fathers = self.individuals[-2 * n_offsprings + 1::2]
+        shuffle(fathers)
 
         return mothers, fathers
 
@@ -99,13 +103,41 @@ class Evolution:
 
     def step(self):
         is_stale = False
+        block_packer = BlockPacker()
         for pool in self.pools:
             mothers, fathers = pool.get_parents(self.n_offsprings)
             offsprings = []
 
             for mother, father in zip(mothers, fathers):
                 offspring = mother.pair(father, self.pair_params)
+                mother_fitness = pool.fitness(mother)
+                father_fitness = pool.fitness(father)
+                should_display = (mother_fitness.empty_spaces >= -4 or
+                                  father_fitness.empty_spaces >= -4) and False
+                if should_display:
+                    mother_pos = offspring.value['pos1']
+                    print(f'mother {mother_fitness} {mother_pos}:')
+                    block_packer.state = mother.value['state']
+                    block_packer.sort_blocks()
+                    print(block_packer.display())
+                    father_pos = offspring.value['pos2']
+                    print(f'father {father_fitness} {father_pos}:')
+                    block_packer.state = father.value['state']
+                    block_packer.sort_blocks()
+                    print(block_packer.display())
+                    offspring_fitness = pool.fitness(offspring)
+                    print(f'offspring {offspring_fitness}:')
+                    block_packer.state = offspring.value['state']
+                    block_packer.sort_blocks()
+                    print(block_packer.display())
                 offspring.mutate(self.mutate_params)
+                if should_display:
+                    mutated_fitness = pool.fitness(offspring)
+                    print(f'mutated {mutated_fitness}:')
+                    block_packer.state = offspring.value['state']
+                    block_packer.sort_blocks()
+                    print(block_packer.display())
+                    print()
                 offsprings.append(offspring)
 
             pool.replace(offsprings)

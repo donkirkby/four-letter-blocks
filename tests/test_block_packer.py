@@ -258,6 +258,17 @@ def test_create_blocks():
     assert b.shape == 'L'
 
 
+def test_create_blocks_with_gap():
+    packer = BlockPacker(start_text=dedent("""\
+        AA#DD
+        AAB.D
+        BBB.D"""))
+
+    blocks = list(packer.create_blocks())
+
+    assert len(blocks) == 3
+
+
 def test_flip():
     packer = BlockPacker(start_text=dedent("""\
         AA#CC

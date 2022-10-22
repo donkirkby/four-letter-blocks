@@ -1,5 +1,6 @@
 from collections import Counter
 from textwrap import dedent
+from unittest.mock import patch
 
 import numpy as np
 
@@ -60,6 +61,86 @@ def test_mutate():
         unused_counts.append(unused_count)
     assert min(unused_counts) == 1
     assert max(unused_counts) == 3
+
+
+@patch('four_letter_blocks.evo_packer.randrange')
+def test_pair(mock_randrange):
+    mock_randrange.side_effect = [0, 0, 4, 4]
+
+    shape_counts1 = Counter({'I0': 4})
+    start_text1 = dedent("""\
+        .##CC
+        AA.CC
+        AA#DD
+        BB.DD
+        BB##.""")
+    packer1 = EvoPacker(start_text=start_text1)
+    packing1 = Packing(dict(state=packer1.state,
+                            shape_counts=shape_counts1,
+                            can_rotate=False))
+    shape_counts2 = Counter({'O': 4})
+    start_text2 = dedent("""\
+        D##B.
+        DC.BA
+        DC#BA
+        DC.BA
+        .C##A""")
+    packer2 = EvoPacker(start_text=start_text2)
+    packing2 = Packing(dict(state=packer2.state,
+                            shape_counts=shape_counts2,
+                            can_rotate=False))
+    expected_display = dedent("""\
+        .##B.
+        CC.BA
+        CC#BA
+        DD.BA
+        DD##A""")
+    expected_shape_counts = {'I0': 2, 'O': 2}
+
+    child = packing1.pair(packing2, {})
+
+    assert packer2.display(child.value['state']) == expected_display
+    assert child.value['shape_counts'] == expected_shape_counts
+
+
+@patch('four_letter_blocks.evo_packer.randrange')
+def test_pair_with_fill(mock_randrange):
+    mock_randrange.side_effect = [0, 0, 4, 4]
+
+    shape_counts1 = Counter({'L1': 1})
+    start_text1 = dedent("""\
+        .##..
+        AA.CC
+        AA#CC
+        BBDDD
+        BB##D""")
+    packer1 = EvoPacker(start_text=start_text1)
+    packing1 = Packing(dict(state=packer1.state,
+                            shape_counts=shape_counts1,
+                            can_rotate=False))
+    shape_counts2 = Counter({'O': 1, 'J1': 1})
+    start_text2 = dedent("""\
+        .##B.
+        .BBB.
+        AA#CC
+        AA.CC
+        ..##.""")
+    packer2 = EvoPacker(start_text=start_text2)
+    packing2 = Packing(dict(state=packer2.state,
+                            shape_counts=shape_counts2,
+                            can_rotate=False))
+    expected_display = dedent("""\
+        .##.D
+        AADDD
+        AA#CC
+        BB.CC
+        BB##.""")
+    expected_shape_counts = Counter({'J1': 1})
+
+    child = packing1.pair(packing2, {})
+
+    assert packer2.display(child.value['state']) == expected_display
+    assert child.value['shape_counts'] == expected_shape_counts
 
 
 def test_fitness():

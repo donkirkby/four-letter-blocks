@@ -39,6 +39,9 @@ duplicate cut lines.
 
 Experimenting with changes to evolutionary search. The totally random mutation
 averages 199 +/- 121 epochs over 33 trials to fill the back grid with no
-restrictions.
+restrictions. Mutating by removing the blocks closest to one of the gaps
+averages 224 +/- 119 epochs over 204 trials. Bizarrely, adding pairing made it
+worse! Not only did it increase to 481 +/- 216 epochs over 29 trials, but each
+epoch was noticeably slower.
 
 [first puzzle]: https://puzzling.stackexchange.com/q/111376/38
