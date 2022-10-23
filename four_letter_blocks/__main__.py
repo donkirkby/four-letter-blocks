@@ -21,7 +21,7 @@ from four_letter_blocks.clue_painter import CluePainter
 from four_letter_blocks.fill_thread import FillThread
 from four_letter_blocks.line_deduper import LineDeduper
 from four_letter_blocks.main_window import Ui_MainWindow
-from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
+from four_letter_blocks.puzzle import Puzzle
 from four_letter_blocks.puzzle_set import PuzzleSet
 
 from four_letter_blocks import four_letter_blocks_rc
@@ -258,8 +258,6 @@ class FourLetterBlocksWindow(QMainWindow):
             puzzle = Puzzle.parse(source_file)
 
         edit_field.setText(puzzle.title)
-        puzzle.rotations_display = (RotationsDisplay.FRONT,
-                                    RotationsDisplay.BACK)[puzzle_index]
         blocks_field = (self.ui.front_blocks_text,
                         self.ui.back_blocks_text)[puzzle_index]
         blocks_field.setPlainText(puzzle.format_blocks())
@@ -299,9 +297,7 @@ class FourLetterBlocksWindow(QMainWindow):
         front_puzzle: Puzzle
         back_puzzle: Puzzle
         front_puzzle, back_puzzle = self.pair_puzzles
-        front_puzzle.rotations_display = RotationsDisplay.FRONT
-        back_puzzle.rotations_display = RotationsDisplay.BACK
-        needed_counts = back_puzzle.shape_counts
+        needed_counts = back_puzzle.flipped_shape_counts
         needed_counts.subtract(front_puzzle.shape_counts)
         return needed_counts
 

@@ -400,6 +400,18 @@ class Puzzle:
         return counter
 
     @property
+    def flipped_shape_counts(self):
+        if self.rotations_display != RotationsDisplay.OFF:
+            raise RuntimeError(
+                ' flipped_shape_counts is incompatible with rotations display.')
+        shape_counts = self.shape_counts
+        shape_counts['J'], shape_counts['L'] = (shape_counts['L'],
+                                                shape_counts['J'])
+        shape_counts['S'], shape_counts['Z'] = (shape_counts['Z'],
+                                                shape_counts['S'])
+        return shape_counts
+
+    @property
     def shape_blocks(self):
         d = defaultdict(list)
         for block in self.blocks:

@@ -1,3 +1,4 @@
+from collections import Counter
 from io import StringIO
 from textwrap import dedent
 
@@ -403,6 +404,52 @@ CCCA
     block_summary = puzzle.display_block_summary()
 
     assert block_summary == 'Block sizes: 3x4, A=1, Shapes: L0: 1, L1: 1, S0: 1'
+
+
+def test_shape_counts():
+    source_file = StringIO("""\
+Title
+
+XX#X
+#XXX
+X#XX
+XXXX
+
+-
+
+BB#D
+#BBD
+C#DD
+CCCA
+""")
+    puzzle = Puzzle.parse(source_file)
+
+    counts = puzzle.shape_counts
+
+    assert counts == Counter({'J': 2, 'Z': 1})
+
+
+def test_flipped_shape_counts():
+    source_file = StringIO("""\
+Title
+
+XX#X
+#XXX
+X#XX
+XXXX
+
+-
+
+BB#D
+#BBD
+C#DD
+CCCA
+""")
+    puzzle = Puzzle.parse(source_file)
+
+    counts = puzzle.flipped_shape_counts
+
+    assert counts == Counter({'L': 2, 'S': 1})
 
 
 def test_display_block_sizes_all_correct():

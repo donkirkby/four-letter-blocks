@@ -6,7 +6,7 @@ from PySide6.QtCore import QThread, Signal, QObject
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.evo_packer import EvoPacker
-from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
+from four_letter_blocks.puzzle import Puzzle
 
 
 class FillThread(QThread):
@@ -122,9 +122,7 @@ class FillThread(QThread):
     def pack_front_puzzle(self) -> bool:
         packed_back_puzzle = self.back_puzzle
         front_puzzle = self.front_puzzle
-        packed_back_puzzle.rotations_display = RotationsDisplay.BACK
-        needed_counts = packed_back_puzzle.shape_counts
-        front_puzzle.rotations_display = RotationsDisplay.FRONT
+        needed_counts = packed_back_puzzle.flipped_shape_counts
         needed_counts.subtract(front_puzzle.shape_counts)
         min_count = min(needed_counts.values())
         if min_count < 0:
