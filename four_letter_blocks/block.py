@@ -13,6 +13,78 @@ from four_letter_blocks.grid import Grid
 from four_letter_blocks.square import Square
 
 
+def create_tab_path(path, square_size):
+    curved_portion = 0.75 * square_size
+    tab_width = 0.24 * square_size
+    stem_width = 0.16 * square_size
+    stem_length = 0.25 * square_size
+    path.lineTo(-curved_portion / 2, 0)  # E
+    path.cubicTo(-curved_portion / 3, 0,  # inner E
+                 -1.25 * stem_width, -.5 * stem_length,  # outer D
+                 -.781 * stem_width, -.5 * stem_length)  # D
+    path.cubicTo(-.5 * stem_width, -.5 * stem_length,  # inner D
+                 -.44 * stem_width, -.28 * stem_length,  # outer C
+                 -.5 * stem_width, -.2 * stem_length)  # C
+    path.cubicTo(-.56 * stem_width, -.12 * stem_length,  # inner C
+                 -.5833 * tab_width, .2 * stem_length,  # outer B
+                 -tab_width / 2, .28 * stem_length)  # B
+    path.cubicTo(-.416667 * tab_width, .36 * stem_length,  # inner B
+                 -.416667 * tab_width, 0.5 * stem_length,  # outer A
+                 0, 0.5 * stem_length)  # A
+    path.cubicTo(.416667 * tab_width, 0.5 * stem_length,  # outer A
+                 .416667 * tab_width, .36 * stem_length,  # inner B
+                 tab_width / 2, .28 * stem_length)  # B
+    path.cubicTo(.5833 * tab_width, .2 * stem_length,  # outer B
+                 .56 * stem_width, -.12 * stem_length,  # inner C
+                 .5 * stem_width, -.2 * stem_length)  # C
+    path.cubicTo(.44 * stem_width, -.28 * stem_length,  # outer C
+                 .5 * stem_width, -.5 * stem_length,  # inner D
+                 .781 * stem_width, -.5 * stem_length)  # D
+    path.cubicTo(1.25 * stem_width, -.5 * stem_length,  # outer D
+                 curved_portion / 3, 0,  # inner E
+                 curved_portion / 2, 0)  # E
+    path.lineTo(square_size / 2, 0)
+
+
+def create_double_tab_path(path, square_size):
+    tab_width = 0.24 * square_size
+    stem_width = 0.16 * square_size
+    stem_length = 0.25 * square_size
+    path.cubicTo(-.5 * square_size, 0,  # inner F
+                 -.25 * tab_width - 1.5 * stem_width, .5 * stem_length,  # outer E
+                 -.25 * tab_width - 1.03 * stem_width, .5 * stem_length)  # E
+    path.cubicTo(-.25 * tab_width - .75 * stem_width, .5 * stem_length,  # inner E
+                 -.25 * tab_width - .69 * stem_width, .28 * stem_length,  # outer D
+                 -.25 * tab_width - .75 * stem_width, .2 * stem_length)  # D
+    path.cubicTo(-.25 * tab_width - .81 * stem_width, .12 * stem_length,  # inner D
+                 -.833 * tab_width - .25 * stem_width, -.2 * stem_length,  # outer C
+                 -.75 * tab_width - .25 * stem_width, -.28 * stem_length)  # C
+    path.cubicTo(-.667 * tab_width - .25 * stem_width, -.36 * stem_length,  # inner C
+                 -.667 * tab_width - .25 * stem_width, -0.5 * stem_length,  # outer B
+                 -.25 * (tab_width+stem_width), -0.5 * stem_length)  # B
+    path.cubicTo(.167 * tab_width - .25 * stem_width, -.5 * stem_length,  # inner B
+                 .167 * tab_width - .25 * stem_width, -.36 * stem_length,  # outer A
+                 .25 * (tab_width-stem_width), -.28 * stem_length)  # A
+    path.cubicTo(.25 * tab_width - .167 * stem_width, -.2 * stem_length,  # inner A
+                 -.333 * tab_width + .25*stem_width, .2 * stem_length,  # inner A
+                 -.25 * (tab_width-stem_width), .28 * stem_length)  # A
+    path.cubicTo(.25 * stem_width - .167 * tab_width, .36 * stem_length,  # outer A
+                 .25 * stem_width - .167 * tab_width, 0.5 * stem_length,  # inner B
+                 .25 * (stem_width+tab_width), 0.5 * stem_length)  # B
+    path.cubicTo(.667 * tab_width + .25 * stem_width, 0.5 * stem_length,  # outer B
+                 .667 * tab_width + .25 * stem_width, .36 * stem_length,  # inner C
+                 .75 * tab_width + .25 * stem_width, .28 * stem_length)  # C
+    path.cubicTo(.833 * tab_width + .25 * stem_width, .2 * stem_length,  # outer C
+                 .25 * tab_width + .81 * stem_width, -.12 * stem_length,  # inner D
+                 .25 * tab_width + .75 * stem_width, -.2 * stem_length)  # D
+    path.cubicTo(.25 * tab_width + .69 * stem_width, -.28 * stem_length,  # outer D
+                 .25 * tab_width + .75 * stem_width, -.5 * stem_length,  # inner E
+                 .25 * tab_width + 1.03 * stem_width, -.5 * stem_length)  # E
+    path.cubicTo(.25 * tab_width + 1.5 * stem_width, -.5 * stem_length,  # outer E
+                 .5*square_size, 0,  # inner F
+                 .5*square_size, 0)  # F
+
+
 class Block:
     UNUSED = 'unused'
     CUT_COLOUR = '#ed2224'  # Special colour for Game Crafter cutting
@@ -29,7 +101,7 @@ class Block:
         self.display_x: typing.Optional[int] = None
         self.display_y: typing.Optional[int] = None
         self.display_rotation: typing.Optional[int] = None
-        self.has_tabs = False
+        self.tab_count = 0
 
     def __repr__(self):
         squares = ', '.join(repr(square) for square in self.squares)
@@ -123,12 +195,12 @@ class Block:
             y = square.y
             painter.setPen(divider_pen)
             if (round(x), round(y-size)) in square_positions:
-                if is_packed or self.has_tabs:
+                if is_packed or self.tab_count:
                     painter.drawLine(x+size/4, y, x+size*3/4, y)
                 else:
                     painter.drawLine(x, y, x + size, y)
             if (round(x-size), round(y)) in square_positions:
-                if is_packed or self.has_tabs:
+                if is_packed or self.tab_count:
                     painter.drawLine(x, y+size/4, x, y+size*3/4)
                 else:
                     painter.drawLine(x, y, x, y+size)
@@ -177,7 +249,7 @@ class Block:
                          y1: int,
                          x2: int,
                          y2: int):
-        if nick_radius == 0 and not self.has_tabs:
+        if nick_radius == 0 and self.tab_count == 0:
             painter.drawLine(x1, y1, x2, y2)
             return
 
@@ -203,41 +275,14 @@ class Block:
             angle = -90
             step = -ystep
         path = QPainterPath(QPoint(-square_size/2, 0))
-        if not self.has_tabs:
+        if self.tab_count == 0:
             path.lineTo(-nick_radius, 0)
             path.moveTo(nick_radius, 0)
             path.lineTo(square_size/2, 0)
+        elif self.tab_count == 1:
+            create_tab_path(path, square_size)
         else:
-            curved_portion = 0.75*square_size
-            tab_width = 0.24*square_size
-            stem_width = 0.16*square_size
-            stem_length = 0.25*square_size
-            path.lineTo(-curved_portion/2, 0)  # E
-            path.cubicTo(-curved_portion/3, 0,  # inner E
-                         -1.25*stem_width, -.5*stem_length,  # outer D
-                         -.781*stem_width, -.5*stem_length)  # D
-            path.cubicTo(-.5*stem_width, -.5*stem_length,  # inner D
-                         -.44*stem_width, -.28*stem_length,  # outer C
-                         -.5*stem_width, -.2*stem_length)  # C
-            path.cubicTo(-.56*stem_width, -.12*stem_length,  # inner C
-                         -.5833*tab_width, .2*stem_length,  # outer B
-                         -tab_width/2, .28*stem_length)  # B
-            path.cubicTo(-.416667*tab_width, .36*stem_length,  # inner B
-                         -.416667*tab_width, 0.5*stem_length,  # outer A
-                         0, 0.5*stem_length)  # A
-            path.cubicTo(.416667*tab_width, 0.5*stem_length,  # outer A
-                         .416667*tab_width, .36*stem_length,  # inner B
-                         tab_width/2, .28*stem_length)  # B
-            path.cubicTo(.5833*tab_width, .2*stem_length,  # outer B
-                         .56*stem_width, -.12*stem_length,  # inner C
-                         .5*stem_width, -.2*stem_length)  # C
-            path.cubicTo(.44*stem_width, -.28*stem_length,  # outer C
-                         .5*stem_width, -.5*stem_length,  # inner D
-                         .781*stem_width, -.5*stem_length)  # D
-            path.cubicTo(1.25*stem_width, -.5*stem_length,  # outer D
-                         curved_portion/3, 0,  # inner E
-                         curved_portion/2, 0)  # E
-            path.lineTo(square_size/2, 0)
+            create_double_tab_path(path, square_size)
         path.translate(square_size/2, 0)
         painter.rotate(angle)
         path.translate(x0, y0)

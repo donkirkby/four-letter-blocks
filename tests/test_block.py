@@ -225,12 +225,13 @@ def test_draw(pixmap_differ: PixmapDiffer):
         block.draw(actual)
 
 
+# noinspection DuplicatedCode
 def test_draw_with_tabs(pixmap_differ: PixmapDiffer):
     actual: QPainter
     expected: QPainter
     with pixmap_differ.create_painters(400, 260) as (actual, expected):
         block = create_basic_block()
-        block.has_tabs = True
+        block.tab_count = 1
 
         for square in block.squares:
             square.draw(expected)
@@ -254,6 +255,64 @@ def test_draw_with_tabs(pixmap_differ: PixmapDiffer):
         path.cubicTo(7, -7, 8, -12.5, 12.5, -12.5)
         path.cubicTo(20, -12.5, 25, 0, 37.5, 0)
         path.lineTo(50, 0)
+        path.translate(50, 50)
+        expected.drawPath(path)
+        path.translate(0, 200)
+        expected.drawPath(path)
+        path.translate(100, -200)
+        expected.drawPath(path)
+        path.translate(0, 100)
+        expected.drawPath(path)
+        path.translate(100, -100)
+        expected.drawPath(path)
+        path.translate(0, 100)
+        expected.drawPath(path)
+        path.translate(0, -100)
+        expected.rotate(-90)
+        path.translate(-350, 250)
+        expected.drawPath(path)
+        path.translate(0, -300)
+        expected.drawPath(path)
+        path.translate(-100, 0)
+        expected.drawPath(path)
+        path.translate(0, 100)
+        expected.drawPath(path)
+        expected.rotate(90)
+
+        block.draw(actual)
+
+
+# noinspection DuplicatedCode
+def test_double_tabs(pixmap_differ: PixmapDiffer):
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(400, 260) as (actual, expected):
+        block = create_basic_block()
+        block.tab_count = 2
+
+        for square in block.squares:
+            square.draw(expected)
+
+        expected.drawLine(25, 150, 75, 150)
+        expected.drawLine(100, 75, 100, 125)
+        expected.drawLine(200, 75, 200, 125)
+
+        pen = QPen()
+        pen.setWidth(3)
+        pen.setCapStyle(Qt.RoundCap)
+        expected.setPen(pen)
+        path = QPainterPath(QPoint(-50, 0))
+        path.cubicTo(-50, 0, -30, 12.5, -22.5, 12.5)
+        path.cubicTo(-18, 12.5, -17, 7, -18, 5)
+        path.cubicTo(-19, 3, -24, -5, -22, -7)
+        path.cubicTo(-20, -9, -20, -12.5, -10, -12.5)
+        path.cubicTo(0, -12.5, 0, -9, 2, -7)
+        path.cubicTo(3.3, -5, -4, 5, -2, 7)
+        path.cubicTo(0, 9, 0, 12.5, 10, 12.5)
+        path.cubicTo(20, 12.5, 20, 9, 22, 7)
+        path.cubicTo(24, 5, 19, -3, 18, -5)
+        path.cubicTo(17, -7, 18, -12.5, 22.5, -12.5)
+        path.cubicTo(30, -12.5, 50, 0, 50, 0)
         path.translate(50, 50)
         expected.drawPath(path)
         path.translate(0, 200)
