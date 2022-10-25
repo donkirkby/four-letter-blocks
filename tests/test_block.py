@@ -288,10 +288,12 @@ def test_double_tabs(pixmap_differ: PixmapDiffer):
     expected: QPainter
     with pixmap_differ.create_painters(400, 260) as (actual, expected):
         block = create_basic_block()
+        block.squares[0].number = 23
+        block.squares[0].suit = 'H'
         block.tab_count = 2
 
         for square in block.squares:
-            square.draw(expected)
+            square.draw(expected, is_packed=True)
 
         expected.drawLine(25, 150, 75, 150)
         expected.drawLine(100, 75, 100, 125)
@@ -302,17 +304,12 @@ def test_double_tabs(pixmap_differ: PixmapDiffer):
         pen.setCapStyle(Qt.RoundCap)
         expected.setPen(pen)
         path = QPainterPath(QPoint(-50, 0))
-        path.cubicTo(-50, 0, -30, 12.5, -22.5, 12.5)
-        path.cubicTo(-18, 12.5, -17, 7, -18, 5)
-        path.cubicTo(-19, 3, -24, -5, -22, -7)
-        path.cubicTo(-20, -9, -20, -12.5, -10, -12.5)
-        path.cubicTo(0, -12.5, 0, -9, 2, -7)
-        path.cubicTo(3.3, -5, -4, 5, -2, 7)
-        path.cubicTo(0, 9, 0, 12.5, 10, 12.5)
-        path.cubicTo(20, 12.5, 20, 9, 22, 7)
-        path.cubicTo(24, 5, 19, -3, 18, -5)
-        path.cubicTo(17, -7, 18, -12.5, 22.5, -12.5)
-        path.cubicTo(30, -12.5, 50, 0, 50, 0)
+        path.lineTo(-15, 0)
+        path.arcTo(-15, -15, 30, 30, 180, -90)
+        path.arcTo(-7.5, -15, 15, 15, 90, -180)
+        path.arcTo(-7.5, 0, 15, 15, 90, 180)
+        path.arcTo(-15, -15, 30, 30, 270, 90)
+        path.lineTo(50, 0)
         path.translate(50, 50)
         expected.drawPath(path)
         path.translate(0, 200)
@@ -337,7 +334,8 @@ def test_double_tabs(pixmap_differ: PixmapDiffer):
         expected.drawPath(path)
         expected.rotate(90)
 
-        block.draw(actual)
+        block.draw(actual, is_packed=True)
+        block.draw_outline(actual)
 
 
 def test_draw_packed(pixmap_differ: PixmapDiffer):

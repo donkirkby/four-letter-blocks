@@ -47,42 +47,13 @@ def create_tab_path(path, square_size):
 
 
 def create_double_tab_path(path, square_size):
-    tab_width = 0.24 * square_size
-    stem_width = 0.16 * square_size
-    stem_length = 0.25 * square_size
-    path.cubicTo(-.5 * square_size, 0,  # inner F
-                 -.25 * tab_width - 1.5 * stem_width, .5 * stem_length,  # outer E
-                 -.25 * tab_width - 1.03 * stem_width, .5 * stem_length)  # E
-    path.cubicTo(-.25 * tab_width - .75 * stem_width, .5 * stem_length,  # inner E
-                 -.25 * tab_width - .69 * stem_width, .28 * stem_length,  # outer D
-                 -.25 * tab_width - .75 * stem_width, .2 * stem_length)  # D
-    path.cubicTo(-.25 * tab_width - .81 * stem_width, .12 * stem_length,  # inner D
-                 -.833 * tab_width - .25 * stem_width, -.2 * stem_length,  # outer C
-                 -.75 * tab_width - .25 * stem_width, -.28 * stem_length)  # C
-    path.cubicTo(-.667 * tab_width - .25 * stem_width, -.36 * stem_length,  # inner C
-                 -.667 * tab_width - .25 * stem_width, -0.5 * stem_length,  # outer B
-                 -.25 * (tab_width+stem_width), -0.5 * stem_length)  # B
-    path.cubicTo(.167 * tab_width - .25 * stem_width, -.5 * stem_length,  # inner B
-                 .167 * tab_width - .25 * stem_width, -.36 * stem_length,  # outer A
-                 .25 * (tab_width-stem_width), -.28 * stem_length)  # A
-    path.cubicTo(.25 * tab_width - .167 * stem_width, -.2 * stem_length,  # inner A
-                 -.333 * tab_width + .25*stem_width, .2 * stem_length,  # inner A
-                 -.25 * (tab_width-stem_width), .28 * stem_length)  # A
-    path.cubicTo(.25 * stem_width - .167 * tab_width, .36 * stem_length,  # outer A
-                 .25 * stem_width - .167 * tab_width, 0.5 * stem_length,  # inner B
-                 .25 * (stem_width+tab_width), 0.5 * stem_length)  # B
-    path.cubicTo(.667 * tab_width + .25 * stem_width, 0.5 * stem_length,  # outer B
-                 .667 * tab_width + .25 * stem_width, .36 * stem_length,  # inner C
-                 .75 * tab_width + .25 * stem_width, .28 * stem_length)  # C
-    path.cubicTo(.833 * tab_width + .25 * stem_width, .2 * stem_length,  # outer C
-                 .25 * tab_width + .81 * stem_width, -.12 * stem_length,  # inner D
-                 .25 * tab_width + .75 * stem_width, -.2 * stem_length)  # D
-    path.cubicTo(.25 * tab_width + .69 * stem_width, -.28 * stem_length,  # outer D
-                 .25 * tab_width + .75 * stem_width, -.5 * stem_length,  # inner E
-                 .25 * tab_width + 1.03 * stem_width, -.5 * stem_length)  # E
-    path.cubicTo(.25 * tab_width + 1.5 * stem_width, -.5 * stem_length,  # outer E
-                 .5*square_size, 0,  # inner F
-                 .5*square_size, 0)  # F
+    tab_radius = 0.15 * square_size
+    path.lineTo(-tab_radius, 0)
+    path.arcTo(-tab_radius, -tab_radius, 2*tab_radius, 2*tab_radius, 180, -90)
+    path.arcTo(-tab_radius/2, -tab_radius, tab_radius, tab_radius, 90, -180)
+    path.arcTo(-tab_radius/2, 0, tab_radius, tab_radius, 90, 180)
+    path.arcTo(-tab_radius, -tab_radius, 2*tab_radius, 2*tab_radius, 270, 90)
+    path.lineTo(square_size/2, 0)
 
 
 class Block:
