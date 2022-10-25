@@ -48,11 +48,27 @@ def create_tab_path(path, square_size):
 
 def create_double_tab_path(path, square_size):
     tab_radius = 0.15 * square_size
-    path.lineTo(-tab_radius, 0)
-    path.arcTo(-tab_radius, -tab_radius, 2*tab_radius, 2*tab_radius, 180, -90)
+    shoulder_radius = tab_radius * .6667
+    theta = math.asin(1/(1+tab_radius/shoulder_radius))
+    theta_deg = theta*180/math.pi
+    path.lineTo(-(tab_radius+shoulder_radius)*math.cos(theta), 0)
+    path.arcTo(-(tab_radius+shoulder_radius)*math.cos(theta)-shoulder_radius,
+               -2*shoulder_radius,
+               2*shoulder_radius,
+               2*shoulder_radius,
+               -90,
+               90-theta_deg)
+    path.arcTo(-tab_radius, -tab_radius,
+               2*tab_radius, 2*tab_radius,
+               180-theta_deg, -90+theta_deg)
     path.arcTo(-tab_radius/2, -tab_radius, tab_radius, tab_radius, 90, -180)
     path.arcTo(-tab_radius/2, 0, tab_radius, tab_radius, 90, 180)
-    path.arcTo(-tab_radius, -tab_radius, 2*tab_radius, 2*tab_radius, 270, 90)
+    path.arcTo(-tab_radius, -tab_radius,
+               2*tab_radius, 2*tab_radius,
+               270, 90-theta_deg)
+    path.arcTo((tab_radius+shoulder_radius)*math.cos(theta)-shoulder_radius, 0,
+               2*shoulder_radius, 2*shoulder_radius,
+               180-theta_deg, -90+theta_deg)
     path.lineTo(square_size/2, 0)
 
 
