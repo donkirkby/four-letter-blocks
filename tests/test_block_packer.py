@@ -243,6 +243,22 @@ def test_positions():
     assert packer.positions == expected_positions
 
 
+def test_rotated_positions():
+    packer = BlockPacker(start_text=dedent("""\
+        AA#CC
+        AAB.C
+        BBB.C
+        .....
+        ....."""))
+
+    # {shape: [(x, y)]}
+    expected_positions = {'O': [(0, 0)],
+                          'L1': [(0, 1)],
+                          'L2': [(3, 0)]}
+
+    assert packer.rotated_positions == expected_positions
+
+
 def test_create_blocks():
     packer = BlockPacker(start_text=dedent("""\
         AA#CC

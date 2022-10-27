@@ -148,8 +148,7 @@ class FillThread(QThread):
         packer = EvoPacker(start_text=start_text)
         packer.setup(shape_counts)
         while packer.current_epoch < 1000:
-            if packer.run_epoch():
-                break
+            is_found = packer.run_epoch()
             if self.isInterruptionRequested():
                 return
             if front_blocks is None:
@@ -169,6 +168,8 @@ class FillThread(QThread):
 
             # noinspection PyUnresolvedReferences
             self.status_update.emit(status, new_back, new_front)
+            if is_found:
+                break
         else:
             if not packer.find_usable_packing():
                 return

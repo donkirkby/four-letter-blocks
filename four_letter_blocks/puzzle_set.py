@@ -27,16 +27,22 @@ class PuzzleSet:
             str,
             typing.List[typing.Optional[Block]]] = defaultdict(list)
 
+        self.block_summary = ''
+        self.combos = {'J': 'JL', 'L': 'JL', 'S': 'SZ', 'Z': 'SZ'}
+        self.pairs = {}
+        for pair in self.combos.values():
+            first, last = pair
+            self.pairs[first] = last
+            self.pairs[last] = first
+        self.pack_puzzles()
+
+    def pack_puzzles(self):
+        combos = self.combos
+        pairs = self.pairs
         total_counts = Counter()
         max_counts = Counter()
         max_puzzles = {}  # {combo: index}
         source_puzzles = defaultdict(list)  # {combo: [index]}
-        combos = {'J': 'JL', 'L': 'JL', 'S': 'SZ', 'Z': 'SZ'}
-        self.pairs = {}
-        for pair in combos.values():
-            first, last = pair
-            self.pairs[first] = last
-            self.pairs[last] = first
         for i, puzzle in enumerate(self.puzzles):
             puzzle_counts = Counter()
             for label, count in puzzle.shape_counts.items():
@@ -57,15 +63,15 @@ class PuzzleSet:
         for combo in sorted(all_combos):
             total_count = total_counts[combo]
             max_count = max_counts[combo]
-            mirror = self.pairs.get(combo)
+            mirror = pairs.get(combo)
             if mirror is None:
-                extra = 2*max_count - total_count
+                extra = 2 * max_count - total_count
                 if extra > 0:
-                    extras.append(f'{combo}: {extra}({max_puzzles[combo]+1})')
+                    extras.append(f'{combo}: {extra}({max_puzzles[combo] + 1})')
                 elif total_count % 2 != 0:
                     extras.append(f'{combo}: 1')
                 if len(combo) == 1:
-                    self.shape_counts[combo] = max(math.ceil(total_count/2),
+                    self.shape_counts[combo] = max(math.ceil(total_count / 2),
                                                    max_count)
             else:
                 full_combo = combos[combo]
@@ -84,9 +90,9 @@ class PuzzleSet:
                 continue
             total_count = total_counts[combo]
             front_shape = combo
-            back_shape = self.pairs.get(front_shape, front_shape)
+            back_shape = pairs.get(front_shape, front_shape)
             if front_shape == back_shape:
-                front_count = math.ceil(total_count/2)
+                front_count = math.ceil(total_count / 2)
                 back_count = total_count - front_count
                 max_count = max_counts[front_shape]
             elif front_shape > back_shape:
@@ -94,7 +100,7 @@ class PuzzleSet:
             else:
                 front_count = total_count
                 back_count = total_counts[back_shape]
-                max_count = max_counts[front_shape+back_shape]
+                max_count = max_counts[front_shape + back_shape]
             block_count = max(front_count, back_count, max_count)
             front_shape_blocks = [None] * block_count
             back_shape_blocks = [None] * block_count
@@ -117,7 +123,7 @@ class PuzzleSet:
                 if is_top:
                     targets = range(block_count)
                 else:
-                    targets = range(block_count-1, -1, -1)
+                    targets = range(block_count - 1, -1, -1)
                 for target in targets:
                     front = front_shape_blocks[target]
                     back = back_shape_blocks[target]
@@ -156,13 +162,13 @@ class PuzzleSet:
                             15: (0, 60)}
         unknown_sizes = sizes.difference(standard_colours)
         if unknown_sizes or len(sizes) != len(self.puzzles):
-            angle = 360 / (len(self.puzzles)-1)
+            angle = 360 / (len(self.puzzles) - 1)
             for i, (width, puzzle_index) in enumerate(size_pairs):
                 puzzle = self.puzzles[puzzle_index]
                 if i == 0:
                     hue = saturation = 0
                 else:
-                    hue = 360 - i*angle
+                    hue = 360 - i * angle
                     saturation = 60
                 value = 255
                 colour = QColor.fromHsv(hue, saturation, value)
@@ -184,16 +190,37 @@ class PuzzleSet:
         for puzzle in self.puzzles:
             puzzle.square_size = square_size
 
+    @property
+    def tab_count(self) -> int:
+        return self.puzzles[0].blocks[0].tab_count
+
+    @tab_count.setter
+    def tab_count(self, tab_count: int):
+        for puzzle in self.puzzles:
+            for block in puzzle.blocks:
+                block.tab_count = tab_count
+
     def display_blocks(self,
                        block_packer: BlockPacker,
                        blocks: typing.Dict[str, typing.List[Block]],
                        x_offset: int = 0) -> Iterable[Block]:
         square_size = self.square_size
-        positions = block_packer.positions
+        can_rotate = all(len(shape) == 1 for shape in blocks)
+        if can_rotate:
+            positions = block_packer.positions
+        else:
+            positions = block_packer.rotated_positions
         for shape, shape_blocks in blocks.items():
             shape_positions = positions[shape][:]
             for block in shape_blocks:
-                x, y, rotation = shape_positions.pop()
+                if can_rotate:
+                    x, y, rotation = shape_positions.pop()
+                else:
+                    x, y = shape_positions.pop()
+                    if shape == 'O':
+                        rotation = 0
+                    else:
+                        rotation = int(shape[1])
                 x += x_offset
                 if block is None:
                     continue
@@ -202,8 +229,10 @@ class PuzzleSet:
 
     def draw_cuts(self, painter, nick_radius=0):
         square_size = self.square_size
+        tab_count = self.tab_count
         blocks = self.block_packer.create_blocks()
         for block in blocks:
+            block.tab_count = tab_count
             for square in block.squares:
                 square.size = square_size
                 square.x = (square.x + 0.5) * square_size

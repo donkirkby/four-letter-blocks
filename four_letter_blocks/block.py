@@ -46,12 +46,16 @@ def create_tab_path(path, square_size):
     path.lineTo(square_size / 2, 0)
 
 
-def create_double_tab_path(path, square_size):
+def create_double_tab_path(path, square_size, nick_radius=0):
     tab_radius = 0.15 * square_size
     shoulder_radius = tab_radius * .6667
     theta = math.asin(1/(1+tab_radius/shoulder_radius))
     theta_deg = theta*180/math.pi
-    path.lineTo(-(tab_radius+shoulder_radius)*math.cos(theta), 0)
+
+    shoulder_start = -(tab_radius + shoulder_radius) * math.cos(theta)
+    path.lineTo((-square_size-shoulder_start)/2 - nick_radius, 0)
+    path.moveTo((-square_size-shoulder_start)/2 + nick_radius, 0)
+    path.lineTo(shoulder_start, 0)
     path.arcTo(-(tab_radius+shoulder_radius)*math.cos(theta)-shoulder_radius,
                -2*shoulder_radius,
                2*shoulder_radius,
@@ -269,7 +273,7 @@ class Block:
         elif self.tab_count == 1:
             create_tab_path(path, square_size)
         else:
-            create_double_tab_path(path, square_size)
+            create_double_tab_path(path, square_size, nick_radius)
         path.translate(square_size/2, 0)
         painter.rotate(angle)
         path.translate(x0, y0)

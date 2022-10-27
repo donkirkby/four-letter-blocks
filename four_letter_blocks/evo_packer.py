@@ -292,13 +292,13 @@ class EvoPacker(BlockPacker):
                   mid_fitness,
                   repr(top_individual.value['state']),
                   ', '.join(summaries))
-        if top_fitness.empty_spaces == 0 and top_fitness.warning_count == 0:
-            self.state = top_individual.value['state']
-            return True
         self.top_fitness = top_fitness
         packer = BlockPacker(start_state=top_individual.value['state'])
         packer.sort_blocks()
         self.top_blocks = packer.display()
+        if top_fitness.empty_spaces == 0 and top_fitness.warning_count == 0:
+            self.state = top_individual.value['state']
+            return True
         evo.step()
         self.current_epoch += 1
         return False

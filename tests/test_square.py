@@ -41,6 +41,7 @@ def test_paint(pixmap_differ: PixmapDiffer):
         square.x = 20
         square.y = 20
         square.size = 80
+        square.face_colour = QColor('white')
 
         square.draw(actual)
 

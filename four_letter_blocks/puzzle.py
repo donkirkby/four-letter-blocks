@@ -462,7 +462,7 @@ h1 {{text-align: center}}
 hr.footer {{line-height:10px}}
 p.footer {{page-break-after: always}}
 td {{padding: {padding} }}
-td.num {{text-align: right; background: {self.face_colour.name()}}}
+td.num {{text-align: right}}
 a {{color: black}}
 """)
         across_table = build_clue_table(self.across_clues)

@@ -57,6 +57,18 @@ class BlockPacker:
                                        rotation))
         return result
 
+    @property
+    def rotated_positions(self):
+        rotated_positions = defaultdict(list)
+        for shape, shape_positions in self.positions.items():
+            for x, y, rotation in shape_positions:
+                if shape == 'O':
+                    rotated_shape = shape
+                else:
+                    rotated_shape = f'{shape}{rotation}'
+                rotated_positions[rotated_shape].append((x, y))
+        return rotated_positions
+
     def display(self, state: np.ndarray = None) -> str:
         if state is None:
             state = self.state

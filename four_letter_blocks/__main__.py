@@ -5,7 +5,7 @@ import traceback
 import typing
 from functools import partial
 from pathlib import Path
-from zipfile import ZipFile, ZIP_DEFLATED
+from zipfile import ZipFile, ZIP_DEFLATED, Path as ZipPath
 
 from PySide6.QtCore import QSettings, QSize, QSizeF, QObject, QRectF, QRect, QPoint, QBuffer
 from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, \
@@ -22,6 +22,7 @@ from four_letter_blocks.fill_thread import FillThread
 from four_letter_blocks.line_deduper import LineDeduper
 from four_letter_blocks.main_window import Ui_MainWindow
 from four_letter_blocks.puzzle import Puzzle
+from four_letter_blocks.puzzle_pair import PuzzlePair
 from four_letter_blocks.puzzle_set import PuzzleSet
 
 from four_letter_blocks import four_letter_blocks_rc
@@ -31,6 +32,15 @@ assert four_letter_blocks_rc  # Need to import this module to load resources.
 DIAGRAM_TEXT_FORMAT = QTextFormat.UserObject + 1
 DIAGRAM_DATA = 1
 OBJECT_REPLACEMENT = chr(0xfffc)
+
+
+def create_svg_generator(svg_buffer):
+    generator = QSvgGenerator()
+    generator.setOutputDevice(svg_buffer)
+    generator.setSize(QSize(8250, 10500))
+    generator.setResolution(1000)  # dots per inch
+    generator.setViewBox(QRect(0, 0, 8250, 10500))
+    return generator
 
 
 class FourLetterBlocksWindow(QMainWindow):
@@ -48,6 +58,7 @@ class FourLetterBlocksWindow(QMainWindow):
         ui.save_as_action.triggered.connect(self.save_as)
         ui.export_action.triggered.connect(self.export)
         ui.export_set_action.triggered.connect(self.export_laser)
+        ui.export_pair_action.triggered.connect(self.export_pair)
 
         ui.shuffle_action.triggered.connect(self.shuffle)
         ui.options_action.triggered.connect(self.choose_font)
@@ -269,6 +280,7 @@ class FourLetterBlocksWindow(QMainWindow):
         front_puzzle: Puzzle
         back_puzzle: Puzzle
         front_puzzle, back_puzzle = self.pair_puzzles
+        is_export_enabled = False
         if not any(self.pair_puzzles):
             status = 'Open a pair of puzzles.'
         elif back_puzzle is None:
@@ -280,6 +292,7 @@ class FourLetterBlocksWindow(QMainWindow):
             back_count = back_puzzle.grid.letter_count
             status = f'Front has {front_count} letters, back has {back_count}.'
         else:
+            is_export_enabled = True
             needed_counts = self.calculate_needed_counts()
             needed_shapes = ', '.join(
                 f'{shape}: {count}'
@@ -291,6 +304,7 @@ class FourLetterBlocksWindow(QMainWindow):
             status = front_puzzle.display_block_summary()
 
         self.ui.needed_shapes_label.setText(info)
+        self.ui.export_pair_action.setEnabled(is_export_enabled)
         self.statusBar().showMessage(status)
 
     def calculate_needed_counts(self):
@@ -586,11 +600,7 @@ class FourLetterBlocksWindow(QMainWindow):
         puzzle_set = PuzzleSet(*puzzles, block_packer=packer)
 
         svg_buffer = QBuffer()
-        generator = QSvgGenerator()
-        generator.setOutputDevice(svg_buffer)
-        generator.setSize(QSize(8250, 10500))
-        generator.setResolution(1000)  # dots per inch
-        generator.setViewBox(QRect(0, 0, 8250, 10500))
+        generator = create_svg_generator(svg_buffer)
 
         painter = LineDeduper(QPainter(generator))
         puzzle_set.square_size = generator.width() / 16
@@ -646,6 +656,80 @@ class FourLetterBlocksWindow(QMainWindow):
             zip_file.writestr('back.png', back_buffer.data())
             for page_number, page_buffer in enumerate(page_buffers, 1):
                 zip_file.writestr(f'page{page_number}.png', page_buffer.data())
+
+        self.statusBar().showMessage(f'Exported to {file_name}.')
+
+    def export_pair(self):
+        front_puzzle: Puzzle
+        back_puzzle: Puzzle
+        front_puzzle, back_puzzle = self.pair_puzzles
+        assert front_puzzle is not None
+        assert back_puzzle is not None
+
+        save_dir = self.get_save_dir()
+        kwargs = get_file_dialog_options()
+        file_name, _ = QFileDialog.getSaveFileName(
+            self,
+            'Export puzzle pair',
+            dir=save_dir,
+            filter=';;'.join(('Zip files (*.zip)',
+                              'All files (*.*)')),
+            **kwargs)
+        if not file_name:
+            return
+        self.settings.setValue('save_path', file_name)
+
+        try:
+            with ZipFile(file_name) as zip_file:
+                packing = ZipPath(zip_file, 'packing.txt').read_text()
+        except IOError:
+            packing = None
+        grid_size = front_puzzle.grid.width
+        packer = BlockPacker(grid_size,
+                             grid_size,
+                             start_text=packing,
+                             tries=10_000_000,
+                             min_tries=1_000)
+        puzzle_pair = PuzzlePair(front_puzzle, back_puzzle, packer)
+
+        svg_buffer = QBuffer()
+        generator = create_svg_generator(svg_buffer)
+
+        painter = LineDeduper(QPainter(generator))
+        puzzle_pair.square_size = generator.width() / (grid_size + 1)
+        nick_radius = 5  # DPI is 1000
+        puzzle_pair.tab_count = 2
+        puzzle_pair.draw_cuts(painter, nick_radius)
+        painter.end()
+
+        wood_tile = QPixmap(':/light-wood-texture.jpg')
+        front_buffer = QBuffer()
+        front_image = QImage(2475, 3150, QImage.Format_RGB32)
+        painter = QPainter(front_image)
+        puzzle_pair.square_size = front_image.width() / (grid_size + 1)
+        puzzle_pair.draw_background(painter, wood_tile)
+        puzzle_pair.draw_front(painter)
+        puzzle_pair.draw_cuts(painter)
+        painter.end()
+        success = front_image.save(front_buffer, 'PNG')
+        assert success
+
+        back_buffer = QBuffer()
+        back_image = QImage(2475, 3150, QImage.Format_RGB32)
+        painter = QPainter(back_image)
+        painter.fillRect(0, 0,
+                         painter.window().width(), painter.window().height(),
+                         'cornsilk')
+        puzzle_pair.draw_back(painter)
+        painter.end()
+        success = back_image.save(back_buffer, 'PNG')
+        assert success
+
+        with ZipFile(file_name, 'w', compression=ZIP_DEFLATED) as zip_file:
+            zip_file.writestr('cuts.svg', svg_buffer.data())
+            zip_file.writestr('front.png', front_buffer.data())
+            zip_file.writestr('back.png', back_buffer.data())
+            zip_file.writestr('packing.txt', packer.display())
 
         self.statusBar().showMessage(f'Exported to {file_name}.')
 

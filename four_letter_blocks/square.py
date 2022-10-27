@@ -20,7 +20,7 @@ class Square:
         self.x = self.y = 0
         self.size = 1
         self.across_word = self.down_word = None
-        self.face_colour = QColor('white')
+        self.face_colour = QColor('transparent')
 
     def __repr__(self):
         if self.number is None:
