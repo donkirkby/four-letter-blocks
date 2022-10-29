@@ -131,6 +131,9 @@ def test_draw_clues(pixmap_differ: PixmapDiffer):
         expected.fillRect(grid_rect, 'grey')
         actual.fillRect(grid_rect, 'grey')
 
+        font = expected.font()
+        font.setPixelSize(15)
+        expected.setFont(font)
         expected.drawText(9, 23, 'Across')
         expected.drawText(QRect(9, 26, 21, 300),
                           int(Qt.AlignRight),
