@@ -184,6 +184,8 @@ def test_draw_background(pixmap_differ: PixmapDiffer):
 
 
 def test_draw_packed(pixmap_differ: PixmapDiffer):
+    actual: QPainter
+    expected: QPainter
     with pixmap_differ.create_painters(
             360,
             180,
@@ -212,7 +214,8 @@ def test_draw_packed(pixmap_differ: PixmapDiffer):
         puzzle_set2.square_size = 20
         puzzle_set2.draw_front(actual)
 
-        puzzle_set2.draw_back(actual, x_offset=8)
+        actual.setViewport(160, 0, 360, 180)
+        puzzle_set2.draw_back(actual)
 
 
 def test_draw_cuts(pixmap_differ: PixmapDiffer):

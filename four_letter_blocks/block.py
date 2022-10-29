@@ -47,7 +47,7 @@ def create_tab_path(path, square_size):
 
 
 def create_double_tab_path(path, square_size, nick_radius=0):
-    tab_radius = 0.15 * square_size
+    tab_radius = 0.1 * square_size
     shoulder_radius = tab_radius * .6667
     theta = math.asin(1/(1+tab_radius/shoulder_radius))
     theta_deg = theta*180/math.pi

@@ -88,6 +88,7 @@ class PixmapDiffer(LiveImageDiffer):
                      actual: LiveImage = None,
                      expected: LiveImage = None,
                      file_prefix: str = None):
+        __tracebackhide__ = True
         if file_prefix is None:
             file_prefix = self.name
         if actual is None:

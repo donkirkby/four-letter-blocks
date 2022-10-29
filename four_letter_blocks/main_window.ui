@@ -416,6 +416,9 @@
    <property name="text">
     <string>Export &amp;Pair...</string>
    </property>
+   <property name="shortcut">
+    <string>Alt+X</string>
+   </property>
   </action>
  </widget>
  <customwidgets>

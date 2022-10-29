@@ -200,10 +200,10 @@ class PuzzleSet:
             for block in puzzle.blocks:
                 block.tab_count = tab_count
 
-    def display_blocks(self,
-                       block_packer: BlockPacker,
-                       blocks: typing.Dict[str, typing.List[Block]],
-                       x_offset: int = 0) -> Iterable[Block]:
+    def display_blocks(
+            self,
+            block_packer: BlockPacker,
+            blocks: typing.Dict[str, typing.List[Block]]) -> Iterable[Block]:
         square_size = self.square_size
         can_rotate = all(len(shape) == 1 for shape in blocks)
         if can_rotate:
@@ -221,10 +221,11 @@ class PuzzleSet:
                         rotation = 0
                     else:
                         rotation = int(shape[1])
-                x += x_offset
                 if block is None:
                     continue
-                block.set_display((x+0.5)*square_size, (y+0.5)*square_size, rotation)
+                block.set_display((x+0.5)*square_size,
+                                  (y+0.5)*square_size,
+                                  rotation)
                 yield block
 
     def draw_cuts(self, painter, nick_radius=0):
@@ -240,21 +241,14 @@ class PuzzleSet:
             block.border_colour = Block.CUT_COLOUR
             block.draw_outline(painter, nick_radius)
 
-    def draw_front(self,
-                   painter: typing.Union[QPainter, LineDeduper],
-                   x_offset: int = 0):
+    def draw_front(self, painter: typing.Union[QPainter, LineDeduper]):
         for block in self.display_blocks(self.block_packer,
-                                         self.front_blocks,
-                                         x_offset):
+                                         self.front_blocks):
             block.draw(painter, is_packed=True)
 
-    def draw_back(self,
-                  painter: typing.Union[QPainter, LineDeduper],
-                  x_offset: int = 0):
+    def draw_back(self, painter: typing.Union[QPainter, LineDeduper]):
         block_packer = self.block_packer.flip()
-        for block in self.display_blocks(block_packer,
-                                         self.back_blocks,
-                                         x_offset):
+        for block in self.display_blocks(block_packer, self.back_blocks):
             block.draw(painter, is_packed=True)
 
     @staticmethod

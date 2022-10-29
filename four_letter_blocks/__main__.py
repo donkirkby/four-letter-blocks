@@ -43,6 +43,18 @@ def create_svg_generator(svg_buffer):
     return generator
 
 
+def rotate_painter(painter: QPainter | LineDeduper, angle: int = 90):
+    painter.rotate(angle)
+    window = painter.window()
+    if angle == 90:
+        painter.translate(0, -window.width())
+    else:
+        assert angle == -90
+        painter.translate(-window.height(), 0)
+    painter.setWindow(0, 0, window.height(), window.width())
+    painter.setViewport(painter.window())
+
+
 class FourLetterBlocksWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -696,7 +708,8 @@ class FourLetterBlocksWindow(QMainWindow):
         generator = create_svg_generator(svg_buffer)
 
         painter = LineDeduper(QPainter(generator))
-        puzzle_pair.square_size = generator.width() / (grid_size + 1)
+        rotate_painter(painter)
+        puzzle_pair.square_size = generator.width() / (grid_size + 4)
         nick_radius = 5  # DPI is 1000
         puzzle_pair.tab_count = 2
         puzzle_pair.draw_cuts(painter, nick_radius)
@@ -706,9 +719,13 @@ class FourLetterBlocksWindow(QMainWindow):
         front_buffer = QBuffer()
         front_image = QImage(2475, 3150, QImage.Format_RGB32)
         painter = QPainter(front_image)
-        puzzle_pair.square_size = front_image.width() / (grid_size + 1)
+        rotate_painter(painter)
+        puzzle_pair.square_size = front_image.width() / (grid_size + 4)
         puzzle_pair.draw_background(painter, wood_tile)
-        puzzle_pair.draw_front(painter)
+        font_size = front_image.width() // 30
+        transform = painter.transform()
+        puzzle_pair.draw_front(painter, font_size)
+        painter.setTransform(transform)
         puzzle_pair.draw_cuts(painter)
         painter.end()
         success = front_image.save(front_buffer, 'PNG')
@@ -717,10 +734,9 @@ class FourLetterBlocksWindow(QMainWindow):
         back_buffer = QBuffer()
         back_image = QImage(2475, 3150, QImage.Format_RGB32)
         painter = QPainter(back_image)
-        painter.fillRect(0, 0,
-                         painter.window().width(), painter.window().height(),
-                         'cornsilk')
-        puzzle_pair.draw_back(painter)
+        rotate_painter(painter, -90)
+        painter.fillRect(painter.window(), 'burlywood')
+        puzzle_pair.draw_back(painter, font_size)
         painter.end()
         success = back_image.save(back_buffer, 'PNG')
         assert success

@@ -9,7 +9,8 @@ from four_letter_blocks.square import Square, draw_gradient_rect
 
 
 class CluePainter:
-    def __init__(self, *puzzles: Puzzle,
+    def __init__(self,
+                 *puzzles: Puzzle,
                  font_size: float = None,
                  margin: int = 0,
                  intro_text: str = '',
@@ -42,23 +43,14 @@ class CluePainter:
         title_font = QFont(font)
         title_font.setPixelSize(font_size*2)
         title_start = margin
+        window_width = painter.window().width()
+        window_height = painter.window().height()
+        across_rect = QRect(margin, 0,
+                            window_width // 2 - margin, window_height - margin)
 
         while not self.is_finished:
             puzzle = self.puzzles[self.puzzle_index]
-
-            window_width = painter.window().width()
-            window_height = painter.window().height()
             painter.setFont(font)
-            max_clue = max(clue.number for clue in puzzle.all_clues.values())
-            first_clue = puzzle.across_clues[0]
-            if first_clue.suit is None:
-                suit_display = ''
-            else:
-                suit_display = Square.SUIT_DISPLAYS['H'].filled
-            number_width = self.find_text_width(
-                f'{max_clue}{suit_display}. ',
-                painter)
-            clue_width = window_width//2 - margin - number_width
 
             bottom = window_height - margin
             if self.across_index == 0 and self.down_index == 0:
@@ -85,7 +77,7 @@ class CluePainter:
                                               font,
                                               margin,
                                               title_start,
-                                              clue_width,
+                                              across_rect.width(),
                                               painter)
                 if clue_start <= title_start:
                     return
@@ -93,27 +85,18 @@ class CluePainter:
                 clue_start = margin
                 painter.setFont(font)
 
-            left_number_rect = QRect(
-                margin, clue_start,
-                number_width, bottom - clue_start)
-            left_clue_rect = QRect(
-                margin + number_width, clue_start,
-                window_width//2 - margin - number_width, left_number_rect.height())
-            right_number_rect = QRect(window_width//2, clue_start,
-                                      number_width, left_number_rect.height())
-            right_clue_rect = QRect(window_width//2 + number_width, clue_start,
-                                    left_clue_rect.width(), left_number_rect.height())
+            across_rect.setTop(clue_start)
+            across_rect.setBottom(bottom)
+            down_rect = across_rect.translated(across_rect.width(), 0)
             # Do right column first, in case of slight overlap.
-            right_clue_count, right_bottom = self.draw_clues(
+            right_clue_count = self.draw_clues(
                 painter,
                 puzzle.down_clues[self.down_index:],
-                right_number_rect,
-                right_clue_rect)
-            left_clue_count, left_bottom = self.draw_clues(
+                down_rect)
+            left_clue_count = self.draw_clues(
                 painter,
                 puzzle.across_clues[self.across_index:],
-                left_number_rect,
-                left_clue_rect)
+                across_rect)
             self.across_index += left_clue_count
             self.down_index += right_clue_count
 
@@ -157,16 +140,16 @@ class CluePainter:
         right_header_rect = QRect(window_width // 2, header_start,
                                   window_width // 2 - margin, window_height)
         clue_start = header_start + line_height
-        across_height = self.find_text_height(
-            puzzle.across_clues[0].format_text(),
-            painter,
-            clue_width)
-        down_height = self.find_text_height(
-            puzzle.down_clues[0].format_text(),
-            painter,
-            clue_width)
-        clue_bottom = clue_start + max(across_height, down_height)
-        if clue_bottom > window_height - margin:
+        clue_rect = QRect(0, 0, clue_width, window_height - margin - clue_start)
+        across_count = self.draw_clues(painter,
+                                       puzzle.across_clues,
+                                       clue_rect,
+                                       is_dry_run=True)
+        down_count = self.draw_clues(painter,
+                                     puzzle.down_clues,
+                                     clue_rect,
+                                     is_dry_run=True)
+        if min(across_count, down_count) == 0:
             return title_start
 
         painter.setFont(title_font)
@@ -198,14 +181,35 @@ class CluePainter:
     def draw_clues(self,
                    painter: QPainter,
                    clues: typing.List[Clue],
-                   next_number_rect: QRect,
-                   next_clue_rect: QRect) -> typing.Tuple[int, int]:
+                   bounds: QRect = None,
+                   is_dry_run: bool = False) -> int:
+        if not clues:
+            return 0
+        max_clue = max(clue.number for clue in clues)
+        first_clue = clues[0]
+        if first_clue.suit is None:
+            suit_display = ''
+        else:
+            suit_display = Square.SUIT_DISPLAYS['H'].filled
+
         puzzle = self.puzzles[self.puzzle_index]
         face_color = puzzle.face_colour
         metrics = painter.fontMetrics()
         space_width = metrics.horizontalAdvance(' ')
         align_right = int(Qt.AlignRight)
         word_wrap = int(Qt.TextWordWrap)
+        line_height = metrics.lineSpacing()
+        line_gap = metrics.boundingRect(bounds,
+                                        word_wrap,
+                                        'A\nB').height() - 2*line_height
+        line_gap = max(line_gap, 0)
+        number_width = self.find_text_width(
+            f'{max_clue}{suit_display}.',
+            painter)
+        next_clue_rect = bounds.adjusted(number_width + space_width, 0, 0, 0)
+        next_number_rect = bounds.adjusted(
+            0, 0,
+            number_width - bounds.width(), 0)
         page_bottom = next_clue_rect.bottom()
         clue_count = 0
         number_entries = []  # [(rect, text)]
@@ -218,10 +222,12 @@ class CluePainter:
             rect.setLeft(next_number_rect.left())
             rect.setRight(next_number_rect.right())
 
-            number_entries.append((rect, f'{clue.format_number()}. '))
-            painter.drawText(next_clue_rect, word_wrap, clue.format_text())
+            if not is_dry_run:
+                number_entries.append((rect, f'{clue.format_number()}.'))
+                painter.drawText(next_clue_rect, word_wrap, clue.format_text())
             next_number_rect = next_number_rect.translated(0, rect.height())
-            next_clue_rect = next_clue_rect.translated(0, rect.height())
+            next_clue_rect = next_clue_rect.translated(0,
+                                                       rect.height() + line_gap)
             clue_count += 1
         if number_entries:
             rect = QRect(number_entries[0][0])
@@ -229,8 +235,8 @@ class CluePainter:
             draw_gradient_rect(painter,
                                face_color,
                                rect.x()-space_width, rect.y(),
-                               rect.width()+space_width, rect.height(),
+                               rect.width()+2*space_width, rect.height(),
                                space_width*2)
             for rect, text in number_entries:
                 painter.drawText(rect, align_right, text)
-        return clue_count, next_clue_rect.top()
+        return clue_count
