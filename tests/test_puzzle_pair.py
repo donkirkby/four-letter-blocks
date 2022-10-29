@@ -5,6 +5,7 @@ from PySide6.QtCore import QRect
 from PySide6.QtGui import QPainter, QColor, Qt
 
 from four_letter_blocks.block_packer import BlockPacker
+from four_letter_blocks.clue_painter import CluePainter
 from four_letter_blocks.puzzle import Puzzle
 from four_letter_blocks.puzzle_pair import PuzzlePair
 from four_letter_blocks.square import draw_gradient_rect
@@ -22,12 +23,12 @@ def parse_puzzle_pair(block_packer: BlockPacker = None):
         #TOT#
 
         BESOT - Make drunk
-        BUS - Bus clue that's too long to fit on the page
-        ES - es clue peas clue must be true
+        BUS - Bus clue erroneously beyond page
+        ES - es clue pleasantly truthful
         IOTAS - iotas clue
-        LE - le cleu tres longue
+        LE - le cleu longuelle
         PEI - pei clue
-        PEPPY - Peppy clue for two and you too
+        PEPPY - Peppy clue foreign entangling
         SPLAT - splat clue
         TO - to clue
         TOT - tot dot
@@ -125,41 +126,45 @@ def test_draw_clues(pixmap_differ: PixmapDiffer):
     actual: QPainter
     expected: QPainter
     with pixmap_differ.create_painters(500, 260) as (actual, expected):
-        expected.fillRect(0, 0, 500, 300, 'cornsilk')
-        actual.fillRect(0, 0, 500, 300, 'cornsilk')
+        expected.fillRect(expected.window(), 'cornsilk')
+        actual.fillRect(actual.window(), 'cornsilk')
         grid_rect = QRect(150, 45, 200, 200)
         expected.fillRect(grid_rect, 'grey')
         actual.fillRect(grid_rect, 'grey')
 
+        pair = parse_puzzle_pair()
+        pair.square_size = 40
+        front_puzzle, back_puzzle = pair.puzzles
+
         font = expected.font()
         font.setPixelSize(15)
         expected.setFont(font)
+
+        number_width = CluePainter.find_text_width('10.', expected)
+        padded_width = number_width + CluePainter.find_text_width(' ', expected)
         expected.drawText(9, 23, 'Across')
-        expected.drawText(QRect(9, 26, 21, 300),
+        expected.drawText(QRect(9, 26, number_width, 300),
                           int(Qt.AlignRight),
                           '1.\n\n\n2.\n\n\n5.\n\n6.\n\n\n9.')
-        expected.drawText(QRect(33, 26, 100, 300),
+        expected.drawText(QRect(9 + padded_width, 26, 100, 300),
                           dedent("""\
-                            Peppy clue for
-                            two and you
-                            too
-                            es clue peas
-                            clue must be
-                            true
-                            le cleu tres
-                            longue
-                            Bus clue that's
-                            too long to fit
-                            on the page
+                            Peppy clue foreign entangling
+                            es clue pleasantly truthful
+                            le cleu longuelle
+                            Bus clue erroneously beyond page
                             iotas clue"""))
-        expected.drawText(QRect(150, 9, 21, 300), int(Qt.AlignRight), '10.')
-        expected.drawText(QRect(174, 9, 100, 300), 0, 'tot dot')
+        expected.drawText(QRect(150, 9, number_width, 300),
+                          int(Qt.AlignRight),
+                          '10.')
+        expected.drawText(QRect(150+padded_width, 9, 100, 300), 0, 'tot dot')
 
+        number_width = CluePainter.find_text_width('8.', expected)
+        padded_width = number_width + CluePainter.find_text_width(' ', expected)
         expected.drawText(QRect(250, 9, 100, 300), 0, 'Down')
-        expected.drawText(QRect(349, 9, 21, 300),
+        expected.drawText(QRect(358, 9, number_width, 300),
                           int(Qt.AlignRight),
                           '1.\n3.\n4.\n6.\n7.\n8.')
-        expected.drawText(QRect(373, 9, 100, 300),
+        expected.drawText(QRect(358+padded_width, 9, 100, 300),
                           dedent("""\
                             pei clue
                             to clue
@@ -167,10 +172,6 @@ def test_draw_clues(pixmap_differ: PixmapDiffer):
                             Make drunk
                             up clue
                             splat clue"""))
-
-        pair = parse_puzzle_pair()
-        pair.square_size = 40
-        front_puzzle, back_puzzle = pair.puzzles
 
         pair.draw_clues(actual, grid_rect, front_puzzle, font_size=15)
 
