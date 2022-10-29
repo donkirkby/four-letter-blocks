@@ -142,11 +142,12 @@ def test_draw_clues(pixmap_differ: PixmapDiffer):
 
         number_width = CluePainter.find_text_width('10.', expected)
         padded_width = number_width + CluePainter.find_text_width(' ', expected)
+        line_height = CluePainter.find_text_height('Across', expected)
         expected.drawText(9, 23, 'Across')
-        expected.drawText(QRect(9, 26, number_width, 300),
+        expected.drawText(QRect(9, 9 + line_height, number_width, 300),
                           int(Qt.AlignRight),
                           '1.\n\n\n2.\n\n\n5.\n\n6.\n\n\n9.')
-        expected.drawText(QRect(9 + padded_width, 26, 100, 300),
+        expected.drawText(QRect(9 + padded_width, 9 + line_height, 100, 300),
                           dedent("""\
                             Peppy clue foreign entangling
                             es clue pleasantly truthful
