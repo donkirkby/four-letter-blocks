@@ -1,8 +1,8 @@
 import typing
 from collections import Counter
 
-from PySide6.QtCore import QRect
-from PySide6.QtGui import QPainter, QColor
+from PySide6.QtCore import QRect, QPoint
+from PySide6.QtGui import QPainter, QColor, QPainterPath, QBrush, QRadialGradient, QConicalGradient, QImage, QPixmap
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
@@ -197,3 +197,99 @@ class PuzzlePair(PuzzleSet):
             painter,
             puzzle.down_clues[clue_count:],
             down_rect)
+
+    @staticmethod
+    def draw_back_tile(painter: QPainter, step_count: int = 100):
+        background: QColor = painter.background().color()
+        value_diff = (255 - background.value()) * 0.5
+        light = QColor.fromHsv(background.hsvHue(),
+                               background.hsvSaturation(),
+                               background.value() + value_diff)
+        dark = QColor.fromHsv(background.hsvHue(),
+                              background.hsvSaturation(),
+                              background.value() - value_diff)
+        window = painter.window()
+        size = window.width()
+        target = window.adjusted(0, 0, -size/2, -size/2)
+        target.translate(size/2, size/2)
+        x0 = window.left() + window.width()/2
+        y0 = window.top() + window.height()/2
+        path = QPainterPath(QPoint(x0, y0))
+        path.arcTo(x0-size/4, y0-size/2, size/2, size/2, -90, 180)
+        PuzzlePair.draw_back_tail(painter, light, background, step_count)
+
+        painter.rotate(180)
+        painter.translate(-window.width(), -window.height())
+        PuzzlePair.draw_back_tail(painter, dark, background, step_count)
+        gradient = QRadialGradient(x0, y0-size/4, size/4)
+        gradient.setStops(((0, dark), (1, background)))
+        painter.fillPath(path, QBrush(gradient))
+
+        painter.rotate(180)
+        painter.translate(-window.width(), -window.height())
+        gradient.setStops(((0, light), (1, background)))
+        painter.fillPath(path, QBrush(gradient))
+
+    @staticmethod
+    def draw_back_tail(painter: QPainter,
+                       ridge: QColor,
+                       edge: QColor,
+                       step_count: int):
+        window = painter.window()
+        edge_value = edge.value()
+        ridge_value = ridge.value()
+        for step in range(-step_count, step_count):
+            progress = step/step_count
+            size = painter.window().width()
+            x0 = window.left() + window.width()/2
+            gap = size/4*(1 + progress)
+            y0 = window.top() + window.height()/2 + gap
+            path = QPainterPath(QPoint(x0, gap))
+            path.arcTo(gap/2, gap, size-gap, size-gap, 90, 180)
+            gradient = QConicalGradient(x0, y0, 90)
+            step_value = ridge_value + (edge_value - ridge_value) * abs(progress)
+            step_colour = QColor.fromHsv(edge.hsvHue(),
+                                         edge.hsvSaturation(),
+                                         step_value)
+            gradient.setStops(((0, step_colour), (1, edge)))
+            painter.fillPath(path, QBrush(gradient))
+
+    @staticmethod
+    def draw_back_pattern(painter: QPainter, size: int, step_count: int = 100):
+        window = painter.window()
+        viewport = painter.viewport()
+        painter.eraseRect(window)
+        for j, x in enumerate(range(0, window.width(), size)):
+            for i, y in enumerate(range(0, window.height(), size)):
+                painter.setWindow(0, 0, size, size)
+                painter.setViewport(x, y, size, size)
+                if i >= 2 or j >= 2:
+                    x0 = (j % 2) * size
+                    y0 = (i % 2) * size
+                    source = painter.device().copy(x0, y0, size, size)
+                    if isinstance(source, QImage):
+                        source = QPixmap.fromImage(source)
+                    painter.drawPixmap(0, 0, source)
+                    continue
+                if i % 2 == 0:
+                    angle = j % 2 * 90
+                else:
+                    angle = (3 - j % 2) * 90
+                painter.rotate(angle)
+                if angle == 0:
+                    PuzzlePair.draw_back_tile(painter, step_count)
+                elif angle == 90:
+                    painter.translate(0, -size)
+                    PuzzlePair.draw_back_tile(painter, step_count)
+                    painter.translate(0, size)
+                elif angle == 180:
+                    painter.translate(-size, -size)
+                    PuzzlePair.draw_back_tile(painter, step_count)
+                    painter.translate(size, size)
+                else:
+                    painter.translate(-size, 0)
+                    PuzzlePair.draw_back_tile(painter, step_count)
+                    painter.translate(size, 0)
+                painter.rotate(-angle)
+        painter.setWindow(window)
+        painter.setViewport(viewport)

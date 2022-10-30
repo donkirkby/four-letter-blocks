@@ -357,11 +357,6 @@ def test_draw_packed(pixmap_differ: PixmapDiffer):
         expected.drawLine(100, 75, 100, 125)
         expected.drawLine(200, 75, 200, 125)
 
-        pen = QPen('blue')
-        pen.setWidth(3)
-        pen.setCapStyle(Qt.RoundCap)
-        expected.setPen(pen)
-
         block.draw(actual, is_packed=True)
 
 

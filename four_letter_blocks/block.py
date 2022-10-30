@@ -53,9 +53,8 @@ def create_double_tab_path(path, square_size, nick_radius=0):
     theta_deg = theta*180/math.pi
 
     shoulder_start = -(tab_radius + shoulder_radius) * math.cos(theta)
-    path.lineTo((-square_size-shoulder_start)/2 - nick_radius, 0)
-    path.moveTo((-square_size-shoulder_start)/2 + nick_radius, 0)
-    path.lineTo(shoulder_start, 0)
+    path.lineTo(shoulder_start - 2*nick_radius, 0)
+    path.moveTo(shoulder_start, 0)
     path.arcTo(-(tab_radius+shoulder_radius)*math.cos(theta)-shoulder_radius,
                -2*shoulder_radius,
                2*shoulder_radius,
@@ -179,7 +178,7 @@ class Block:
         size = self.squares[0].size
         old_pen = painter.pen()
         divider_pen = QPen(self.divider_colour)
-        divider_pen.setWidth(old_pen.width())
+        divider_pen.setWidth(size // 100)
         for square in self.squares:
             square.draw(painter, is_packed=is_packed)
             x = square.x

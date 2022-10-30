@@ -1,8 +1,9 @@
 from io import StringIO
+from pathlib import Path
 from textwrap import dedent
 
 from PySide6.QtCore import QRect
-from PySide6.QtGui import QPainter, QColor, Qt
+from PySide6.QtGui import QPainter, QColor, Qt, QImage
 
 from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.clue_painter import CluePainter
@@ -264,3 +265,30 @@ def test_prepacking_useless(pixmap_differ: PixmapDiffer):
     packing = puzzle_pair.block_packer.display()
 
     assert packing == expected_packing
+
+
+def test_back_tile(pixmap_differ: PixmapDiffer):
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(500, 260) as (actual, expected):
+        expected_image = QImage(Path(__file__).parent / 'back_tile.png')
+        expected.drawImage(0, 0, expected_image)
+
+        actual.setBackground(QColor('burlywood'))
+        actual.eraseRect(actual.window())
+
+        actual.setWindow(0, 0, 260, 260)
+        actual.setViewport(actual.window().translated(120, 0))
+        PuzzlePair.draw_back_tile(actual)
+
+
+def test_back_pattern(pixmap_differ: PixmapDiffer):
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(520, 260) as (actual, expected):
+        expected_image = QImage(Path(__file__).parent / 'back_pattern.png')
+        expected.drawImage(0, 0, expected_image)
+
+        actual.setBackground(QColor('burlywood'))
+
+        PuzzlePair.draw_back_pattern(actual, size=260//6, step_count=20)

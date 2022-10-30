@@ -709,24 +709,26 @@ class FourLetterBlocksWindow(QMainWindow):
 
         painter = LineDeduper(QPainter(generator))
         rotate_painter(painter)
-        puzzle_pair.square_size = generator.width() / (grid_size + 4)
+        puzzle_pair.square_size = generator.width() // (grid_size + 4)
         nick_radius = 5  # DPI is 1000
         puzzle_pair.tab_count = 2
         puzzle_pair.draw_cuts(painter, nick_radius)
         painter.end()
 
-        wood_tile = QPixmap(':/light-wood-texture.jpg')
+        wood_tile = QPixmap(':/small-wood-tile.jpg')
         front_buffer = QBuffer()
         front_image = QImage(2475, 3150, QImage.Format_RGB32)
         painter = QPainter(front_image)
         rotate_painter(painter)
-        puzzle_pair.square_size = front_image.width() / (grid_size + 4)
+        puzzle_pair.square_size = front_image.width() // (grid_size + 4)
+        wood_tile = wood_tile.scaled(puzzle_pair.square_size,
+                                     puzzle_pair.square_size)
         puzzle_pair.draw_background(painter, wood_tile)
         font_size = front_image.width() // 30
         transform = painter.transform()
         puzzle_pair.draw_front(painter, font_size)
         painter.setTransform(transform)
-        puzzle_pair.draw_cuts(painter)
+        # puzzle_pair.draw_cuts(painter)
         painter.end()
         success = front_image.save(front_buffer, 'PNG')
         assert success
@@ -734,8 +736,9 @@ class FourLetterBlocksWindow(QMainWindow):
         back_buffer = QBuffer()
         back_image = QImage(2475, 3150, QImage.Format_RGB32)
         painter = QPainter(back_image)
+        painter.setBackground(QColor('burlywood'))
+        puzzle_pair.draw_back_pattern(painter, puzzle_pair.square_size // 6)
         rotate_painter(painter, -90)
-        painter.fillRect(painter.window(), 'burlywood')
         puzzle_pair.draw_back(painter, font_size)
         painter.end()
         success = back_image.save(back_buffer, 'PNG')
