@@ -1,8 +1,10 @@
+import math
 import typing
 from collections import Counter
 
 from PySide6.QtCore import QRect, QPoint
-from PySide6.QtGui import QPainter, QColor, QPainterPath, QBrush, QRadialGradient, QConicalGradient, QImage, QPixmap
+from PySide6.QtGui import QPainter, QColor, QPainterPath, QBrush, \
+    QRadialGradient, QConicalGradient, QPixmap, QTransform
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
@@ -199,9 +201,9 @@ class PuzzlePair(PuzzleSet):
             down_rect)
 
     @staticmethod
-    def draw_back_tile(painter: QPainter, step_count: int = 100):
+    def draw_back_tile(painter: QPainter):
         background: QColor = painter.background().color()
-        value_diff = (255 - background.value()) * 0.5
+        value_diff = (255 - background.value()) * 0.25
         light = QColor.fromHsv(background.hsvHue(),
                                background.hsvSaturation(),
                                background.value() + value_diff)
@@ -216,11 +218,11 @@ class PuzzlePair(PuzzleSet):
         y0 = window.top() + window.height()/2
         path = QPainterPath(QPoint(x0, y0))
         path.arcTo(x0-size/4, y0-size/2, size/2, size/2, -90, 180)
-        PuzzlePair.draw_back_tail(painter, light, background, step_count)
+        PuzzlePair.draw_back_tail(painter, light, background)
 
         painter.rotate(180)
         painter.translate(-window.width(), -window.height())
-        PuzzlePair.draw_back_tail(painter, dark, background, step_count)
+        PuzzlePair.draw_back_tail(painter, dark, background)
         gradient = QRadialGradient(x0, y0-size/4, size/4)
         gradient.setStops(((0, dark), (1, background)))
         painter.fillPath(path, QBrush(gradient))
@@ -231,13 +233,11 @@ class PuzzlePair(PuzzleSet):
         painter.fillPath(path, QBrush(gradient))
 
     @staticmethod
-    def draw_back_tail(painter: QPainter,
-                       ridge: QColor,
-                       edge: QColor,
-                       step_count: int):
+    def draw_back_tail(painter: QPainter, ridge: QColor, edge: QColor):
         window = painter.window()
         edge_value = edge.value()
         ridge_value = ridge.value()
+        step_count = 100
         for step in range(-step_count, step_count):
             progress = step/step_count
             size = painter.window().width()
@@ -255,41 +255,40 @@ class PuzzlePair(PuzzleSet):
             painter.fillPath(path, QBrush(gradient))
 
     @staticmethod
-    def draw_back_pattern(painter: QPainter, size: int, step_count: int = 100):
+    def draw_back_pattern(painter: QPainter,
+                          size: float,
+                          x_offset: int = 0,
+                          y_offset: int = 0):
         window = painter.window()
         viewport = painter.viewport()
         painter.eraseRect(window)
-        for j, x in enumerate(range(0, window.width(), size)):
-            for i, y in enumerate(range(0, window.height(), size)):
-                painter.setWindow(0, 0, size, size)
-                painter.setViewport(x, y, size, size)
-                if i >= 2 or j >= 2:
-                    x0 = (j % 2) * size
-                    y0 = (i % 2) * size
-                    source = painter.device().copy(x0, y0, size, size)
-                    if isinstance(source, QImage):
-                        source = QPixmap.fromImage(source)
-                    painter.drawPixmap(0, 0, source)
-                    continue
+        tile_size = round(size)
+        tile = QPixmap(tile_size, tile_size)
+        tile_painter = QPainter(tile)
+        tile_painter.setBackground(painter.background())
+        tile_painter.eraseRect(tile_painter.window())
+        try:
+            PuzzlePair.draw_back_tile(tile_painter)
+        finally:
+            tile_painter.end()
+        tiles = []
+        for direction in range(4):
+            rotated_tile = tile.transformed(QTransform().rotate(90*direction))
+            tiles.append(rotated_tile)
+
+        x_start = x_offset - math.ceil(x_offset/size)*size
+        y_start = y_offset - math.ceil(y_offset/size)*size
+        x_steps = math.ceil((window.width() - x_start) / size)
+        y_steps = math.ceil((window.height() - y_start) / size)
+        for j in range(x_steps):
+            x = x_start + j*size
+            for i in range(y_steps):
+                y = y_start + i*size
                 if i % 2 == 0:
-                    angle = j % 2 * 90
+                    direction = j % 2
                 else:
-                    angle = (3 - j % 2) * 90
-                painter.rotate(angle)
-                if angle == 0:
-                    PuzzlePair.draw_back_tile(painter, step_count)
-                elif angle == 90:
-                    painter.translate(0, -size)
-                    PuzzlePair.draw_back_tile(painter, step_count)
-                    painter.translate(0, size)
-                elif angle == 180:
-                    painter.translate(-size, -size)
-                    PuzzlePair.draw_back_tile(painter, step_count)
-                    painter.translate(size, size)
-                else:
-                    painter.translate(-size, 0)
-                    PuzzlePair.draw_back_tile(painter, step_count)
-                    painter.translate(size, 0)
-                painter.rotate(-angle)
+                    direction = (3 - j % 2)
+                source = tiles[direction]
+                painter.drawPixmap(round(x), round(y), source)
         painter.setWindow(window)
         painter.setViewport(viewport)

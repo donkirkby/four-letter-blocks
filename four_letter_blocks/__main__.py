@@ -737,7 +737,13 @@ class FourLetterBlocksWindow(QMainWindow):
         back_image = QImage(2475, 3150, QImage.Format_RGB32)
         painter = QPainter(back_image)
         painter.setBackground(QColor('burlywood'))
-        puzzle_pair.draw_back_pattern(painter, puzzle_pair.square_size // 6)
+        rotate_painter(painter, -90)
+        grid_rect = puzzle_pair.build_grid_rect(painter)
+        rotate_painter(painter, 90)
+        puzzle_pair.draw_back_pattern(painter,
+                                      puzzle_pair.square_size / 6,
+                                      x_offset=grid_rect.top(),
+                                      y_offset=grid_rect.left())
         rotate_painter(painter, -90)
         puzzle_pair.draw_back(painter, font_size)
         painter.end()
