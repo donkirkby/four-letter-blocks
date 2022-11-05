@@ -711,18 +711,7 @@ class FourLetterBlocksWindow(QMainWindow):
                              tries=10_000_000,
                              min_tries=1_000)
         puzzle_pair = PuzzlePair(front_puzzle, back_puzzle, packer)
-
-        svg_buffer = QBuffer()
-        generator = create_svg_generator(svg_buffer)
-
-        painter = LineDeduper(QPainter(generator))
-        rotate_painter(painter)
-        puzzle_pair.square_size = generator.width() // (grid_size + 4)
-        nick_radius = 5  # DPI is 1000
-        font_size = int(generator.width() / 36.5)
         puzzle_pair.tab_count = 2
-        puzzle_pair.draw_cuts(painter, nick_radius, font_size)
-        painter.end()
 
         wood_tile = QPixmap(':/small-wood-tile.jpg')
         front_buffer = QBuffer()
@@ -734,8 +723,9 @@ class FourLetterBlocksWindow(QMainWindow):
                                      puzzle_pair.square_size)
         puzzle_pair.draw_background(painter, wood_tile)
         font_size = int(front_image.width() / 36.5)
-        puzzle_pair.draw_front(painter, font_size)
-        # puzzle_pair.draw_cuts(painter, font_size=font_size)
+        grid_rect = puzzle_pair.draw_front(painter, font_size)
+        header_fraction = grid_rect.top() / front_image.width()
+        # puzzle_pair.draw_cuts(painter, header_fraction=header_fraction)
         painter.end()
         success = front_image.save(front_buffer, 'PNG')
         assert success
@@ -744,9 +734,6 @@ class FourLetterBlocksWindow(QMainWindow):
         back_image = QImage(2475, 3150, QImage.Format_RGB32)
         painter = QPainter(back_image)
         painter.setBackground(QColor('burlywood'))
-        rotate_painter(painter, -90)
-        grid_rect = puzzle_pair.build_grid_rect(painter)
-        rotate_painter(painter, 90)
         puzzle_pair.draw_back_pattern(painter,
                                       puzzle_pair.square_size / 6,
                                       x_offset=grid_rect.top(),
@@ -756,6 +743,15 @@ class FourLetterBlocksWindow(QMainWindow):
         painter.end()
         success = back_image.save(back_buffer, 'PNG')
         assert success
+
+        svg_buffer = QBuffer()
+        generator = create_svg_generator(svg_buffer)
+        painter = LineDeduper(QPainter(generator))
+        rotate_painter(painter)
+        puzzle_pair.square_size = generator.width() // (grid_size + 4)
+        nick_radius = 5  # DPI is 1000
+        puzzle_pair.draw_cuts(painter, nick_radius, header_fraction)
+        painter.end()
 
         with ZipFile(file_name, 'w', compression=ZIP_DEFLATED) as zip_file:
             zip_file.writestr('cuts.svg', svg_buffer.data())

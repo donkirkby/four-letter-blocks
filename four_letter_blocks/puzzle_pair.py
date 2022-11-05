@@ -81,7 +81,7 @@ class PuzzlePair(PuzzleSet):
     # noinspection DuplicatedCode
     def draw_front(self,
                    painter: typing.Union[QPainter, LineDeduper],
-                   font_size: float | None = None):
+                   font_size: float | None = None) -> QRectF:
         front_puzzle, back_puzzle = self.puzzles
         grid_rect = self.draw_header(painter, front_puzzle, font_size)
         self.draw_clues(painter, grid_rect, front_puzzle, font_size)
@@ -91,6 +91,7 @@ class PuzzlePair(PuzzleSet):
         self.draw_front_blocks(painter)
         painter.translate(offset - grid_rect.left(),
                           offset - grid_rect.top())
+        return grid_rect
 
     def set_grid_viewport(self, painter):
         grid_rect = self.build_grid_rect(painter)
@@ -145,11 +146,15 @@ class PuzzlePair(PuzzleSet):
     def draw_cuts(self,
                   painter: QPainter | LineDeduper,
                   nick_radius: int = 0,
-                  font_size: int = None):
-        grid_rect = self.draw_header(painter,
-                                     self.puzzles[0],
-                                     font_size,
-                                     is_dry_run=True)
+                  header_fraction: float = 0.1):
+        front_puzzle, back_puzzle = self.puzzles
+        grid_size = front_puzzle.grid.width
+        grid_length = grid_size * self.square_size
+        window = painter.window()
+        grid_rect = QRectF((window.width() - grid_length) / 2,
+                           window.height()*header_fraction,
+                           grid_length,
+                           grid_length)
         shift = self.square_size / 2
         painter.translate(grid_rect.left() - shift, grid_rect.top() - shift)
         super().draw_cuts(painter, nick_radius)
