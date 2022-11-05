@@ -3,6 +3,7 @@ import re
 import sys
 import traceback
 import typing
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from functools import partial
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED, Path as ZipPath
@@ -264,7 +265,6 @@ class FourLetterBlocksWindow(QMainWindow):
 
     def open_pair(self, puzzle_index: int):
         side = ('front', 'back')[puzzle_index]
-        edit_field = (self.ui.front_name, self.ui.back_name)[puzzle_index]
         save_dir = self.get_save_dir()
         kwargs = get_file_dialog_options()
         file_name, _ = QFileDialog.getOpenFileName(
@@ -277,9 +277,12 @@ class FourLetterBlocksWindow(QMainWindow):
             return
 
         self.settings.setValue('save_path', file_name)
+        self.open_pair_file(file_name, puzzle_index)
+
+    def open_pair_file(self, file_name, puzzle_index):
         with open(file_name) as source_file:
             puzzle = Puzzle.parse(source_file)
-
+        edit_field = (self.ui.front_name, self.ui.back_name)[puzzle_index]
         edit_field.setText(puzzle.title)
         blocks_field = (self.ui.front_blocks_text,
                         self.ui.back_blocks_text)[puzzle_index]
@@ -690,7 +693,12 @@ class FourLetterBlocksWindow(QMainWindow):
         if not file_name:
             return
         self.settings.setValue('save_path', file_name)
+        self.export_pair_file(file_name)
 
+    def export_pair_file(self, file_name):
+        front_puzzle: Puzzle
+        back_puzzle: Puzzle
+        front_puzzle, back_puzzle = self.pair_puzzles
         try:
             with ZipFile(file_name) as zip_file:
                 packing = ZipPath(zip_file, 'packing.txt').read_text()
@@ -711,8 +719,9 @@ class FourLetterBlocksWindow(QMainWindow):
         rotate_painter(painter)
         puzzle_pair.square_size = generator.width() // (grid_size + 4)
         nick_radius = 5  # DPI is 1000
+        font_size = int(generator.width() / 36.5)
         puzzle_pair.tab_count = 2
-        puzzle_pair.draw_cuts(painter, nick_radius)
+        puzzle_pair.draw_cuts(painter, nick_radius, font_size)
         painter.end()
 
         wood_tile = QPixmap(':/small-wood-tile.jpg')
@@ -724,11 +733,9 @@ class FourLetterBlocksWindow(QMainWindow):
         wood_tile = wood_tile.scaled(puzzle_pair.square_size,
                                      puzzle_pair.square_size)
         puzzle_pair.draw_background(painter, wood_tile)
-        font_size = front_image.width() // 30
-        transform = painter.transform()
+        font_size = int(front_image.width() / 36.5)
         puzzle_pair.draw_front(painter, font_size)
-        painter.setTransform(transform)
-        # puzzle_pair.draw_cuts(painter)
+        # puzzle_pair.draw_cuts(painter, font_size=font_size)
         painter.end()
         success = front_image.save(front_buffer, 'PNG')
         assert success
@@ -963,11 +970,32 @@ def get_file_dialog_options():
     return kwargs
 
 
+def parse_args():
+    parser = ArgumentParser(description='Edit and export puzzles.',
+                            formatter_class=ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--pair',
+                        nargs=2,
+                        help='Back and front puzzle files to export as a pair.')
+    parser.add_argument('-o', '--output',
+                        help='Output file to export to.')
+    args = parser.parse_args()
+    if args.pair is not None and args.output is None:
+        parser.error('Output is required when pair is given.')
+    return args
+
+
 def main():
+    args = parse_args()
     app = QApplication()
     window = FourLetterBlocksWindow()
-    window.show()
-    exit(app.exec())
+    if args.pair is not None:
+        back_file, front_file = args.pair
+        window.open_pair_file(back_file, 1)
+        window.open_pair_file(front_file, 0)
+        window.export_pair_file(args.output)
+    else:
+        window.show()
+        exit(app.exec())
 
 
 if __name__ == '__main__':

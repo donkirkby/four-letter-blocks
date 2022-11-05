@@ -1,7 +1,8 @@
+import math
 import typing
 
-from PySide6.QtCore import QRect
-from PySide6.QtGui import QPainter, QFont, Qt
+from PySide6.QtCore import QRectF
+from PySide6.QtGui import QPainter, QFont, Qt, QFontMetricsF
 
 from four_letter_blocks.clue import Clue
 from four_letter_blocks.puzzle import Puzzle
@@ -38,56 +39,45 @@ class CluePainter:
             font_size = self.font_size
         else:
             font_size = painter.window().height() // 60
-        font = painter.font()
+        font = QFont('NotoSansCJK')
         font.setPixelSize(font_size)
         title_font = QFont(font)
         title_font.setPixelSize(font_size*2)
-        title_start = margin
         window_width = painter.window().width()
         window_height = painter.window().height()
-        across_rect = QRect(margin, 0,
-                            window_width // 2 - margin, window_height - margin)
+        header_rect = QRectF(margin, margin,
+                             window_width - 2*margin,
+                             window_height - 2*margin)
 
         while not self.is_finished:
             puzzle = self.puzzles[self.puzzle_index]
             painter.setFont(font)
 
-            bottom = window_height - margin
             if self.across_index == 0 and self.down_index == 0:
                 if self.intro_text and self.puzzle_index == 0:
-                    rect = QRect(margin, title_start,
-                                 window_width - 2*margin, window_height)
-                    title_start += self.find_text_height(self.intro_text,
-                                                         painter,
-                                                         rect.width())
-                    painter.drawText(rect, int(Qt.TextWordWrap), self.intro_text)
+                    self.draw_text(header_rect, self.intro_text, painter)
                 if self.footer_text and self.puzzle_index == 0:
-                    rect = QRect(margin, 0,
-                                 window_width - 2*margin, window_height)
+                    rect = QRectF(header_rect)
                     footer_height = self.find_text_height(self.footer_text,
                                                           painter,
                                                           rect.width())
-                    bottom -= footer_height
-                    rect.moveTop(bottom)
-                    painter.drawText(rect,
-                                     int(Qt.TextWordWrap | Qt.AlignHCenter),
-                                     self.footer_text)
+                    rect.setTop(rect.bottom() - footer_height)
+                    header_rect.setBottom(rect.top() - margin/3)
+                    self.draw_text(rect,
+                                   self.footer_text,
+                                   painter,
+                                   is_centred=True)
 
-                clue_start = self.draw_header(title_font,
-                                              font,
-                                              margin,
-                                              title_start,
-                                              across_rect.width(),
-                                              painter)
-                if clue_start <= title_start:
-                    return
+                self.draw_header(title_font, font, header_rect, painter)
             else:
-                clue_start = margin
                 painter.setFont(font)
 
-            across_rect.setTop(clue_start)
-            across_rect.setBottom(bottom)
+            across_rect = QRectF(header_rect)
+            across_rect.setWidth(across_rect.width()/2)
             down_rect = across_rect.translated(across_rect.width(), 0)
+            if self.across_index == 0 and self.down_index == 0:
+                self.draw_text(across_rect, 'Across', painter)
+                self.draw_text(down_rect, 'Down', painter)
             # Do right column first, in case of slight overlap.
             right_clue_count = self.draw_clues(
                 painter,
@@ -111,69 +101,31 @@ class CluePainter:
     def draw_header(self,
                     title_font,
                     font,
-                    margin,
-                    title_start,
-                    clue_width,
+                    header_rect,
                     painter):
         painter.setFont(title_font)
         puzzle = self.puzzles[self.puzzle_index]
-        window_width = painter.window().width()
-        window_height = painter.window().height()
-        centred = int(Qt.AlignHCenter | Qt.TextWordWrap)
-        word_wrap = int(Qt.TextWordWrap)
-        title_rect = QRect(margin, title_start,
-                           window_width - 2 * margin, window_height)
-        hint_start = title_start + self.find_text_height(puzzle.title,
-                                                         painter,
-                                                         title_rect.width())
         painter.setFont(font)
-        hints = puzzle.build_hints()
-        hints_rect = QRect(margin, hint_start,
-                           window_width - 2 * margin, window_height)
-        divider_start = hint_start + self.find_text_height(hints,
-                                                           painter,
-                                                           hints_rect.width())
         line_height = self.find_text_height('X', painter)
-        header_start = divider_start + line_height
-        left_header_rect = QRect(margin, header_start,
-                                 window_width // 2 - margin, window_height)
-        right_header_rect = QRect(window_width // 2, header_start,
-                                  window_width // 2 - margin, window_height)
-        clue_start = header_start + line_height
-        clue_rect = QRect(0, 0, clue_width, window_height - margin - clue_start)
-        across_count = self.draw_clues(painter,
-                                       puzzle.across_clues,
-                                       clue_rect,
-                                       is_dry_run=True)
-        down_count = self.draw_clues(painter,
-                                     puzzle.down_clues,
-                                     clue_rect,
-                                     is_dry_run=True)
-        if min(across_count, down_count) == 0:
-            return title_start
-
         painter.setFont(title_font)
-        painter.drawText(title_rect, centred, puzzle.title)
+        self.draw_text(header_rect, puzzle.title, painter, is_centred=True)
         painter.setFont(font)
-        painter.drawText(hints_rect, word_wrap, hints)
-        painter.drawLine(margin, divider_start + line_height // 2,
-                         window_width - margin, divider_start + line_height // 2)
-        painter.drawText(left_header_rect, 0, 'Across')
-        painter.drawText(right_header_rect, 0, 'Down')
-        return clue_start
+        self.draw_text(header_rect, puzzle.build_hints(), painter)
+        y = round(header_rect.top() + line_height / 2)
+        painter.drawLine(header_rect.left(), y, header_rect.right(), y)
+        header_rect.adjust(0, line_height, 0, 0)
 
     @staticmethod
-    def find_text_width(text: str, painter: QPainter) -> int:
-        metrics = painter.fontMetrics()
+    def find_text_width(text: str, painter: QPainter) -> float:
+        metrics = QFontMetricsF(painter.font())
         return metrics.horizontalAdvance(text)
 
     @staticmethod
-    def find_text_height(text: str, painter: QPainter, width=0) -> int:
-        metrics = painter.fontMetrics()
+    def find_text_height(text: str, painter: QPainter, width=0) -> float:
+        metrics = QFontMetricsF(painter.font())
         if not width:
             width = painter.window().width()
-        rect = metrics.boundingRect(0, 0,
-                                    width, 0,
+        rect = metrics.boundingRect(QRectF(0, 0, width, 0),
                                     int(Qt.TextWordWrap),
                                     text)
         return rect.height()
@@ -181,10 +133,17 @@ class CluePainter:
     def draw_clues(self,
                    painter: QPainter,
                    clues: typing.List[Clue],
-                   bounds: QRect = None,
+                   bounds: QRectF = None,
                    is_dry_run: bool = False) -> int:
+        """ Draw clues within a rectangle.
+
+        Returns the number of clues displayed, and sets the top of bounds to
+        be the next available space.
+        """
         if not clues:
             return 0
+        if bounds is None:
+            bounds = painter.window()
         max_clue = max(clue.number for clue in clues)
         first_clue = clues[0]
         if first_clue.suit is None:
@@ -194,49 +153,60 @@ class CluePainter:
 
         puzzle = self.puzzles[self.puzzle_index]
         face_color = puzzle.face_colour
-        metrics = painter.fontMetrics()
+        metrics = QFontMetricsF(painter.font())
         space_width = metrics.horizontalAdvance(' ')
         align_right = int(Qt.AlignRight)
-        word_wrap = int(Qt.TextWordWrap)
-        line_height = metrics.lineSpacing()
-        line_gap = metrics.boundingRect(bounds,
-                                        word_wrap,
-                                        'A\nB').height() - 2*line_height
-        line_gap = max(line_gap, 0)
         number_width = self.find_text_width(
             f'{max_clue}{suit_display}.',
             painter)
-        next_clue_rect = bounds.adjusted(number_width + space_width, 0, 0, 0)
-        next_number_rect = bounds.adjusted(
+        clue_rect = bounds.adjusted(number_width + space_width, 0, 0, 0)
+        number_rect = bounds.adjusted(
             0, 0,
             number_width - bounds.width(), 0)
-        page_bottom = next_clue_rect.bottom()
         clue_count = 0
         number_entries = []  # [(rect, text)]
         for clue in clues:
-            rect = metrics.boundingRect(next_clue_rect,
-                                        word_wrap,
-                                        clue.format_text())
-            if rect.bottom() > page_bottom:
+            temp_clue_rect = QRectF(clue_rect)
+            self.draw_text(clue_rect,
+                           clue.format_text(),
+                           painter,
+                           is_dry_run=True)
+            if clue_rect.top() > clue_rect.bottom():
                 break
-            rect.setLeft(next_number_rect.left())
-            rect.setRight(next_number_rect.right())
+            rect = QRectF(number_rect)
+            rect.setTop(temp_clue_rect.top())
 
             if not is_dry_run:
                 number_entries.append((rect, f'{clue.format_number()}.'))
-                painter.drawText(next_clue_rect, word_wrap, clue.format_text())
-            next_number_rect = next_number_rect.translated(0, rect.height())
-            next_clue_rect = next_clue_rect.translated(0,
-                                                       rect.height() + line_gap)
+                self.draw_text(temp_clue_rect, clue.format_text(), painter)
+            bounds.setTop(clue_rect.top())
             clue_count += 1
         if number_entries:
-            rect = QRect(number_entries[0][0])
-            rect.setBottom(number_entries[-1][0].bottom())
+            rect = QRectF(number_entries[0][0])
+            rect.setBottom(bounds.top())
             draw_gradient_rect(painter,
                                face_color,
-                               rect.x()-space_width, rect.y(),
+                               rect.left()-space_width, rect.top(),
                                rect.width()+2*space_width, rect.height(),
                                space_width*2)
             for rect, text in number_entries:
                 painter.drawText(rect, align_right, text)
         return clue_count
+
+    @staticmethod
+    def draw_text(rect: QRectF,
+                  text: str,
+                  painter: QPainter,
+                  is_centred: bool = False,
+                  is_dry_run: bool = False,
+                  is_aligned_right: bool = False):
+        metrics = QFontMetricsF(painter.font())
+        flags = int(Qt.TextWordWrap)
+        if is_centred:
+            flags = flags | Qt.AlignHCenter
+        if is_aligned_right:
+            flags = flags | Qt.AlignRight
+        height = metrics.boundingRect(rect, flags, text).height()
+        if not is_dry_run:
+            painter.drawText(rect, flags, text)
+        rect.adjust(0, math.ceil(height + metrics.leading()), 0, 0)

@@ -2,7 +2,7 @@ import math
 import typing
 from collections import Counter
 
-from PySide6.QtCore import QRect, QPoint
+from PySide6.QtCore import QPoint, QRectF
 from PySide6.QtGui import QPainter, QColor, QPainterPath, QBrush, \
     QRadialGradient, QConicalGradient, QPixmap, QTransform
 
@@ -78,29 +78,33 @@ class PuzzlePair(PuzzleSet):
             assert count == 0, (shape, count)
         front_puzzle.rotations_display = RotationsDisplay.OFF
 
+    # noinspection DuplicatedCode
     def draw_front(self,
                    painter: typing.Union[QPainter, LineDeduper],
                    font_size: float | None = None):
         front_puzzle, back_puzzle = self.puzzles
-        grid_rect = self.build_grid_rect(painter)
+        grid_rect = self.draw_header(painter, front_puzzle, font_size)
         self.draw_clues(painter, grid_rect, front_puzzle, font_size)
-        self.set_grid_viewport(painter)
+        offset = self.square_size / 2
+        painter.translate(grid_rect.left() - offset,
+                          grid_rect.top() - offset)
         self.draw_front_blocks(painter)
+        painter.translate(offset - grid_rect.left(),
+                          offset - grid_rect.top())
 
     def set_grid_viewport(self, painter):
         grid_rect = self.build_grid_rect(painter)
         painter.translate(grid_rect.left() - self.square_size / 2,
                           grid_rect.top() - self.square_size / 2)
 
-    def build_grid_rect(self, painter):
+    def build_grid_rect(self, painter) -> QRectF:
+        window = painter.window()
         grid_size = self.puzzles[0].grid.width
-        grid_rect = QRect(0,
-                          0,
-                          self.square_size * grid_size,
-                          self.square_size * grid_size)
-        margin = painter.window().width() / 55
-        grid_rect.moveBottom(painter.window().height() - 1.7 * margin)
-        grid_rect.moveLeft((painter.window().width() - grid_rect.width()) / 2)
+        grid_rect = QRectF(0,
+                           0,
+                           self.square_size * grid_size,
+                           self.square_size * grid_size)
+        grid_rect.moveLeft((window.width() - grid_rect.width()) / 2)
         return grid_rect
 
     def draw_front_blocks(self, painter: typing.Union[QPainter, LineDeduper]):
@@ -114,13 +118,16 @@ class PuzzlePair(PuzzleSet):
             block.y = self.square_size * (y + 0.5)
             block.draw(painter, is_packed=True)
 
+    # noinspection DuplicatedCode
     def draw_back(self,
                   painter: typing.Union[QPainter, LineDeduper],
                   font_size: float | None = None):
         front_puzzle, back_puzzle = self.puzzles
-        grid_rect = self.build_grid_rect(painter)
+        grid_rect = self.draw_header(painter, back_puzzle, font_size)
         self.draw_clues(painter, grid_rect, back_puzzle, font_size)
-        self.set_grid_viewport(painter)
+        offset = self.square_size / 2
+        painter.translate(grid_rect.left() - offset,
+                          grid_rect.top() - offset)
         self.draw_back_blocks(painter)
 
     def draw_back_blocks(self, painter: typing.Union[QPainter, LineDeduper]):
@@ -135,8 +142,16 @@ class PuzzlePair(PuzzleSet):
             block.y = self.square_size * (y + 0.5)
             block.draw(painter, is_packed=True)
 
-    def draw_cuts(self, painter, nick_radius=0):
-        self.set_grid_viewport(painter)
+    def draw_cuts(self,
+                  painter: QPainter | LineDeduper,
+                  nick_radius: int = 0,
+                  font_size: int = None):
+        grid_rect = self.draw_header(painter,
+                                     self.puzzles[0],
+                                     font_size,
+                                     is_dry_run=True)
+        shift = self.square_size / 2
+        painter.translate(grid_rect.left() - shift, grid_rect.top() - shift)
         super().draw_cuts(painter, nick_radius)
         block = Block(Square(' '))
         block.squares[0].size = self.square_size
@@ -147,58 +162,111 @@ class PuzzlePair(PuzzleSet):
             block.x = self.square_size * (x + 0.5)
             block.y = self.square_size * (y + 0.5)
             block.draw_outline(painter, nick_radius)
+    
+    def draw_header(self,
+                    painter: QPainter,
+                    puzzle: Puzzle,
+                    font_size: float | None = None,
+                    is_dry_run: bool = False) -> QRectF:
+        """ Draw the title and hints, return the grid rect below them. """
+        window = painter.window()
+        if font_size is None:
+            font_size = window.height() / 16
+        margin = window.width() / 55
+        grid_rect = QRectF(self.build_grid_rect(painter))
+        grid_rect.moveTop(margin)
+
+        font = painter.font()
+        font.setPixelSize(font_size * 1.5)
+        painter.setFont(font)
+        CluePainter.draw_text(grid_rect,
+                              puzzle.title,
+                              painter,
+                              is_centred=True,
+                              is_dry_run=is_dry_run)
+
+        font.setPixelSize(font_size)
+        painter.setFont(font)
+        hints = puzzle.build_hints()
+        CluePainter.draw_text(grid_rect,
+                              hints,
+                              painter,
+                              is_dry_run=is_dry_run)
+
+        font.setPixelSize(font_size/2)
+        painter.setFont(font)
+        link = 'https://donkirkby.github.io/four-letter-blocks'
+        CluePainter.draw_text(grid_rect,
+                              link,
+                              painter,
+                              is_centred=True,
+                              is_dry_run=is_dry_run)
+        grid_rect.translate(0, margin)
+        grid_rect.setHeight(grid_rect.width())
+        return grid_rect
 
     @staticmethod
     def draw_clues(painter: QPainter,
-                   grid_rect: QRect,
+                   grid_rect: QRectF,
                    puzzle: Puzzle,
                    font_size: float | None = None):
+        window = painter.window()
         if font_size is None:
-            font_size = painter.window().height()/16
-        margin = painter.window().width()/55
+            font_size = window.height() / 16
+        margin = window.width() / 55
         clue_painter = CluePainter(puzzle,
                                    font_size=font_size,
                                    margin=margin)
         font = painter.font()
         font.setPixelSize(font_size)
         painter.setFont(font)
-        line_height = clue_painter.find_text_height('X', painter)
-        across_rect = QRect(margin,
-                            margin,
-                            grid_rect.left() - 2*margin,
-                            painter.window().height() - 2*margin)
-        painter.drawText(across_rect, 'Across')
-        across_rect.adjust(0, line_height, 0, 0)
-        clue_count = clue_painter.draw_clues(painter,
-                                             puzzle.across_clues,
-                                             across_rect)
+        clue_rects = [QRectF(margin,
+                             margin,
+                             grid_rect.left() - 2 * margin,
+                             window.height() - 2 * margin),
+                      QRectF(grid_rect.left(),
+                             grid_rect.bottom() + margin,
+                             (grid_rect.width() - margin) // 2,
+                             window.height() - grid_rect.bottom() - 2 * margin),
+                      QRectF(grid_rect.left() + (grid_rect.width() + margin)//2,
+                             grid_rect.bottom() + margin,
+                             (grid_rect.width() - margin) // 2,
+                             window.height() - grid_rect.bottom() - 2 * margin),
+                      QRectF(grid_rect.right() + margin,
+                             margin,
+                             window.width() - grid_rect.right() - 2 * margin,
+                             window.height() - 2 * margin)]
+        clue_groups = [('Across', puzzle.across_clues),
+                       ('Down', puzzle.down_clues)]
+        for group_name, clues in clue_groups:
+            clue_count = 0
+            while clue_rects:
+                clue_rect = clue_rects[0]
+                name_rect = QRectF(clue_rect)
+                clue_painter.draw_text(clue_rect,
+                                       group_name,
+                                       painter,
+                                       is_dry_run=True)
+                clue_count = clue_painter.draw_clues(painter,
+                                                     clues,
+                                                     clue_rect)
+                if clue_count != 0:
+                    font.setBold(True)
+                    painter.setFont(font)
+                    clue_painter.draw_text(name_rect,
+                                           group_name,
+                                           painter)
+                    font.setBold(False)
+                    painter.setFont(font)
+                    break
 
-        across_rect = QRect(grid_rect.left(),
-                            margin,
-                            grid_rect.width()//2 - margin,
-                            grid_rect.top() - 2*margin)
-        clue_count += clue_painter.draw_clues(
-            painter,
-            puzzle.across_clues[clue_count:],
-            across_rect)
-
-        down_rect = QRect(grid_rect.left() + grid_rect.width()//2,
-                          margin,
-                          grid_rect.width()//2 - margin,
-                          grid_rect.top() - 2*margin)
-        painter.drawText(down_rect, 'Down')
-        down_rect.adjust(0, line_height, 0, 0)
-        clue_count = clue_painter.draw_clues(painter,
-                                             puzzle.down_clues,
-                                             down_rect)
-        down_rect = QRect(grid_rect.right()+margin,
-                          margin,
-                          painter.window().width()-grid_rect.right() - 2*margin,
-                          painter.window().height() - 2*margin)
-        clue_count += clue_painter.draw_clues(
-            painter,
-            puzzle.down_clues[clue_count:],
-            down_rect)
+                clue_rects.pop(0)
+            while clue_count < len(clues) and len(clue_rects) > 1:
+                clue_rects.pop(0)
+                clue_rect = clue_rects[0]
+                clue_count += clue_painter.draw_clues(painter,
+                                                      clues[clue_count:],
+                                                      clue_rect)
 
     @staticmethod
     def draw_back_tile(painter: QPainter):

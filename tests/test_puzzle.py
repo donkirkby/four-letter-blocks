@@ -702,24 +702,21 @@ def test_draw_blocks(pixmap_differ: PixmapDiffer):
 
 
 def test_draw_blocks_one_row(pixmap_differ: PixmapDiffer):
-    actual, expected = pixmap_differ.start(
-        150, 180,
-        'test_puzzle_draw_blocks_one_row')
+    with pixmap_differ.create_painters(150, 180):
+        actual = pixmap_differ.actual.painter
+        expected = pixmap_differ.expected.painter
+        puzzle1 = parse_basic_puzzle()
+        puzzle1.square_size = 20
+        block1, block2, block3 = puzzle1.blocks
+        block1.x = 20
+        block1.y = 10
+        block1.draw(expected)
+        block2.x = 70
+        block2.y = 10
+        block2.draw(expected)
 
-    puzzle1 = parse_basic_puzzle()
-    puzzle1.square_size = 20
-    block1, block2, block3 = puzzle1.blocks
-    block1.x = 20
-    block1.y = 10
-    block1.draw(expected)
-    block2.x = 70
-    block2.y = 10
-    block2.draw(expected)
-
-    puzzle2 = parse_basic_puzzle()
-    puzzle2.draw_blocks(actual, square_size=20, row_index=1)
-
-    pixmap_differ.assert_equal()
+        puzzle2 = parse_basic_puzzle()
+        puzzle2.draw_blocks(actual, square_size=20, row_index=1)
 
 
 def test_draw_clues(pixmap_differ: PixmapDiffer):

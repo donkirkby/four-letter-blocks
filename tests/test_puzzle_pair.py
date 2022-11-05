@@ -2,8 +2,8 @@ from io import StringIO
 from pathlib import Path
 from textwrap import dedent
 
-from PySide6.QtCore import QRect
-from PySide6.QtGui import QPainter, QColor, Qt, QImage
+from PySide6.QtCore import QRectF
+from PySide6.QtGui import QPainter, QColor, QImage, QFont
 
 from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.clue_painter import CluePainter
@@ -15,7 +15,7 @@ from tests.pixmap_differ import PixmapDiffer
 
 def parse_puzzle_pair(block_packer: BlockPacker = None):
     puzzle1 = Puzzle.parse(StringIO(dedent("""\
-        Front
+        Front (5x5)
 
         #BUS#
         PEPPY
@@ -24,17 +24,17 @@ def parse_puzzle_pair(block_packer: BlockPacker = None):
         #TOT#
 
         BESOT - Make drunk
-        BUS - Bus clue erroneously beyond page
-        ES - es clue pleasantly truthful
-        IOTAS - iotas clue
-        LE - le cleu longuelle
-        PEI - pei clue
-        PEPPY - Peppy clue foreign entangling
-        SPLAT - splat clue
-        TO - to clue
-        TOT - tot dot
+        BUS - Bus clue erroneously beyond everyday page's voluminous boundary
+        ES - es clue pleasantly truthful surrounding verdant foliage abundantly
+        IOTAS - iotas clue with marginally transferrable containers wanderlust
+        LE - francophone's direct article without extension or divergent structured landing
+        PEI - pei clue leaves fragrant residue throughout residential thoroughfares
+        PEPPY - Peppy clue makes foreign entangling continue
+        SPLAT - splat clue extends through ridiculous depths
+        TO - pointing out your destination within a wide range
+        TOT - tot dot screams among flowering shrubbery lacks any fraught experience
         UP - up clue
-        YES - yes clue
+        YES - supremely positive
 
         #DDD#
         AADCC
@@ -43,7 +43,7 @@ def parse_puzzle_pair(block_packer: BlockPacker = None):
         #EEB#
     """)))
     puzzle2 = Puzzle.parse(StringIO(dedent("""\
-        Back
+        Back (5x5)
 
         #BAA#
         RINGO
@@ -123,59 +123,161 @@ def test_draw_blocks(pixmap_differ: PixmapDiffer):
         puzzle_set2.draw_back_blocks(actual)
 
 
-def test_draw_clues(pixmap_differ: PixmapDiffer):
-    actual: QPainter
-    expected: QPainter
-    with pixmap_differ.create_painters(500, 260) as (actual, expected):
-        expected.fillRect(expected.window(), 'cornsilk')
-        actual.fillRect(actual.window(), 'cornsilk')
-        grid_rect = QRect(150, 45, 200, 200)
-        expected.fillRect(grid_rect, 'grey')
-        actual.fillRect(grid_rect, 'grey')
+def test_draw_header(pixmap_differ: PixmapDiffer):
+    with pixmap_differ.create_painters(500, 260):
+        actual = pixmap_differ.actual.painter
+        expected = pixmap_differ.expected.painter
+        grid_rect = QRectF(170, 9.09, 160, 160)
 
         pair = parse_puzzle_pair()
-        pair.square_size = 40
+        pair.square_size = 32
         front_puzzle, back_puzzle = pair.puzzles
 
         font = expected.font()
-        font.setPixelSize(15)
+        font.setPixelSize(12)
+        expected.setFont(font)
+        CluePainter.draw_text(grid_rect,
+                              front_puzzle.title,
+                              expected,
+                              is_centred=True)
+
+        font.setPixelSize(8)
+        expected.setFont(font)
+        CluePainter.draw_text(grid_rect, front_puzzle.build_hints(), expected)
+        font.setPixelSize(4)
+        expected.setFont(font)
+        CluePainter.draw_text(grid_rect,
+                              'https://donkirkby.github.io/four-letter-blocks',
+                              expected,
+                              is_centred=True)
+        grid_rect.translate(0, 9.09)
+        grid_rect.setHeight(160)
+
+        expected.fillRect(grid_rect, 'grey')
+
+        actual_grid_rect = pair.draw_header(actual, front_puzzle, font_size=8)
+        actual.fillRect(actual_grid_rect, 'grey')
+
+
+def test_draw_clues(pixmap_differ: PixmapDiffer):
+    with pixmap_differ.create_painters(500, 260):
+        pixmap_differ.radius = 2
+        pixmap_differ.tolerance = 25
+        actual = pixmap_differ.actual.painter
+        expected = pixmap_differ.expected.painter
+
+        pair1 = parse_puzzle_pair()
+        pair1.square_size = 32
+        front_puzzle, back_puzzle = pair1.puzzles
+        font = QFont('NotoSansCJK')
         expected.setFont(font)
 
+        grid_rect = pair1.draw_header(expected, front_puzzle, font_size=8)
+
+        font.setPixelSize(8)
+        expected.setFont(font)
+
+        expected.fillRect(grid_rect, 'grey')
+
         number_width = CluePainter.find_text_width('10.', expected)
-        padded_width = number_width + CluePainter.find_text_width(' ', expected)
-        line_height = CluePainter.find_text_height('Across', expected)
-        expected.drawText(9, 23, 'Across')
-        expected.drawText(QRect(9, 9 + line_height, number_width, 300),
-                          int(Qt.AlignRight),
-                          '1.\n\n\n2.\n\n\n5.\n\n6.\n\n\n9.')
-        expected.drawText(QRect(9 + padded_width, 9 + line_height, 100, 300),
-                          dedent("""\
-                            Peppy clue foreign entangling
-                            es clue pleasantly truthful
-                            le cleu longuelle
-                            Bus clue erroneously beyond page
-                            iotas clue"""))
-        expected.drawText(QRect(150, 9, number_width, 300),
-                          int(Qt.AlignRight),
-                          '10.')
-        expected.drawText(QRect(150+padded_width, 9, 100, 300), 0, 'tot dot')
+        padded_width = CluePainter.find_text_width('10. ', expected)
+        font.setBold(True)
+        expected.setFont(font)
+        margin = 9.09
+        clues_rect = QRectF(margin, margin, 150, 260)
+        CluePainter.draw_text(clues_rect, 'Across', expected)
+        font.setBold(False)
+        expected.setFont(font)
+        num_rect = QRectF(clues_rect)
+        num_rect.setWidth(number_width)
+        clues_rect.adjust(padded_width, 0, 0, 0)
+        CluePainter.draw_text(num_rect,
+                              '1.\n\n2.\n\n\n5.\n\n\n6.\n\n\n9.\n\n\n10.',
+                              expected,
+                              is_aligned_right=True)
+        across_text = dedent("""\
+            Peppy clue makes foreign entangling continue
+            es clue pleasantly truthful surrounding verdant foliage abundantly
+            francophone's direct article without extension or divergent structured landing
+            Bus clue erroneously beyond everyday page's voluminous boundary
+            iotas clue with marginally transferrable containers wanderlust
+            tot dot screams among flowering shrubbery lacks any fraught experience""")
+        CluePainter.draw_text(clues_rect, across_text, expected)
 
         number_width = CluePainter.find_text_width('8.', expected)
         padded_width = number_width + CluePainter.find_text_width(' ', expected)
-        expected.drawText(QRect(250, 9, 100, 300), 0, 'Down')
-        expected.drawText(QRect(358, 9, number_width, 300),
-                          int(Qt.AlignRight),
-                          '1.\n3.\n4.\n6.\n7.\n8.')
-        expected.drawText(QRect(358+padded_width, 9, 100, 300),
-                          dedent("""\
-                            pei clue
-                            to clue
-                            yes clue
-                            Make drunk
-                            up clue
-                            splat clue"""))
+        font.setBold(True)
+        expected.setFont(font)
+        clues_rect.setLeft(num_rect.left())
+        CluePainter.draw_text(clues_rect, 'Down', expected)
+        font.setBold(False)
+        expected.setFont(font)
+        num_rect = QRectF(clues_rect)
+        num_rect.setWidth(number_width)
+        clues_rect.adjust(padded_width, 0, 0, 0)
+        CluePainter.draw_text(num_rect,
+                              '1.\n\n\n3.',
+                              expected,
+                              is_aligned_right=True)
+        across_text = dedent("""\
+            pei clue leaves fragrant residue
+            throughout residential
+            thoroughfares
+            pointing out your destination within a wide range""")
+        CluePainter.draw_text(clues_rect, across_text, expected)
 
-        pair.draw_clues(actual, grid_rect, front_puzzle, font_size=15)
+        clues_rect = QRectF(grid_rect)
+        clues_rect.moveTop(clues_rect.bottom() + margin)
+        clues_rect.setRight((clues_rect.left() + clues_rect.right())/2)
+        num_rect = QRectF(clues_rect)
+        num_rect.setWidth(number_width)
+        clues_rect.adjust(padded_width, 0, 0, 0)
+        CluePainter.draw_text(num_rect,
+                              '4.',
+                              expected,
+                              is_aligned_right=True)
+        CluePainter.draw_text(clues_rect,
+                              'supremely positive',
+                              expected)
+
+        clues_rect = QRectF(grid_rect.left() + (grid_rect.width() + margin)//2,
+                            grid_rect.bottom() + margin,
+                            (grid_rect.width() - margin) // 2,
+                            1000)
+
+        num_rect = QRectF(clues_rect)
+        num_rect.setWidth(number_width)
+        clues_rect.adjust(padded_width, 0, 0, 0)
+        CluePainter.draw_text(num_rect,
+                              '6.\n7.',
+                              expected,
+                              is_aligned_right=True)
+        CluePainter.draw_text(clues_rect,
+                              'Make drunk\nup clue',
+                              expected)
+
+        clues_rect = QRectF(grid_rect.right() + margin, margin,
+                            1000, 1000)
+
+        num_rect = QRectF(clues_rect)
+        num_rect.setWidth(number_width)
+        clues_rect.adjust(padded_width, 0, 0, 0)
+        CluePainter.draw_text(num_rect,
+                              '8.',
+                              expected,
+                              is_aligned_right=True)
+        CluePainter.draw_text(clues_rect,
+                              'splat clue extends through\nridiculous depths',
+                              expected)
+
+        actual.setFont(QFont('NotoSansCJK'))
+        pair2 = parse_puzzle_pair()
+        front_puzzle, back_puzzle = pair2.puzzles
+        front_puzzle.square_size = 32
+        actual_grid_rect = pair2.draw_header(actual, front_puzzle, font_size=8)
+        actual.fillRect(actual_grid_rect, 'grey')
+
+        pair2.draw_clues(actual, grid_rect, front_puzzle, font_size=8)
 
 
 def test_draw_front(pixmap_differ: PixmapDiffer):
@@ -184,17 +286,36 @@ def test_draw_front(pixmap_differ: PixmapDiffer):
     with pixmap_differ.create_painters(500, 260) as (actual, expected):
         expected.fillRect(0, 0, 500, 300, 'cornsilk')
         actual.fillRect(0, 0, 500, 300, 'cornsilk')
-        grid_rect = QRect(150, 45, 200, 200)
         pair1 = parse_puzzle_pair()
+        pair1.square_size = 30
         front_puzzle, back_puzzle = pair1.puzzles
-        pair1.square_size = 40
-        pair1.draw_clues(expected, grid_rect, front_puzzle)
-        expected.translate(130, 25)
+        grid_rect = pair1.draw_header(expected, front_puzzle, font_size=9)
+        pair1.draw_clues(expected, grid_rect, front_puzzle, font_size=9)
+        expected.translate(grid_rect.left() - pair1.square_size/2,
+                           grid_rect.top() - pair1.square_size/2)
         pair1.draw_front_blocks(expected)
 
         pair2 = parse_puzzle_pair()
-        pair2.square_size = 40
-        pair2.draw_front(actual)
+        pair2.square_size = 30
+        pair2.draw_front(actual, font_size=9)
+
+
+def test_draw_back(pixmap_differ: PixmapDiffer):
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(500, 260) as (actual, expected):
+        pair1 = parse_puzzle_pair()
+        pair1.square_size = 30
+        front_puzzle, back_puzzle = pair1.puzzles
+        grid_rect = pair1.draw_header(expected, back_puzzle, font_size=10)
+        pair1.draw_clues(expected, grid_rect, back_puzzle, font_size=10)
+        expected.translate(grid_rect.left() - pair1.square_size/2,
+                           grid_rect.top() - pair1.square_size/2)
+        pair1.draw_back_blocks(expected)
+
+        pair2 = parse_puzzle_pair()
+        pair2.square_size = 30
+        pair2.draw_back(actual, font_size=10)
 
 
 def test_packing(pixmap_differ: PixmapDiffer):
