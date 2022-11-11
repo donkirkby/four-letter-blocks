@@ -208,6 +208,22 @@ class PackingFitnessCalculator:
             warning_count = sum(1
                                 for warning in puzzle.check_word_length()
                                 if warning.startswith('complete word'))
+            # Required features to balance the puzzle set.
+            shape_counts = puzzle.shape_counts
+            if shape_counts['O'] % 2 != 1:
+                warning_count += 10
+            if shape_counts['L'] - shape_counts['J'] != 1:
+                warning_count += 10
+            if shape_counts['S'] - shape_counts['Z'] != 1:
+                warning_count += 10
+            elif shape_counts['S'] + shape_counts['Z'] < 3:
+                warning_count += 10
+            if shape_counts['T'] % 2 != 0:
+                warning_count += 10
+            elif shape_counts['T'] < 2:
+                warning_count += 10
+            if shape_counts['I'] % 2 != 0 or 4 < shape_counts['I'] or shape_counts['I'] < 2:
+                warning_count += 10
         else:
             warning_count = 0
             min_row = min(empty[0])
@@ -290,8 +306,8 @@ class EvoPacker(BlockPacker):
             print(self.current_epoch,
                   top_fitness,
                   mid_fitness,
-                  repr(top_individual.value['state']),
                   ', '.join(summaries))
+            print(self.top_blocks)
         self.top_fitness = top_fitness
         packer = BlockPacker(start_state=top_individual.value['state'])
         packer.sort_blocks()
