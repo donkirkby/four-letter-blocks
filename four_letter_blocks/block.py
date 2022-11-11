@@ -178,7 +178,7 @@ class Block:
         size = self.squares[0].size
         old_pen = painter.pen()
         divider_pen = QPen(self.divider_colour)
-        divider_pen.setWidth(size // 100)
+        divider_pen.setWidth(size // 33)
         for square in self.squares:
             square.draw(painter, is_packed=is_packed)
             x = square.x

@@ -1,10 +1,9 @@
-import math
 import typing
 from collections import Counter
 
 from PySide6.QtCore import QPoint, QRectF
 from PySide6.QtGui import QPainter, QColor, QPainterPath, QBrush, \
-    QRadialGradient, QConicalGradient, QPixmap, QTransform
+    QRadialGradient, QConicalGradient
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
@@ -273,16 +272,9 @@ class PuzzlePair(PuzzleSet):
                                                       clues[clue_count:],
                                                       clue_rect)
 
-    @staticmethod
-    def draw_back_tile(painter: QPainter):
+    def draw_background_tile(self, painter: QPainter):
         background: QColor = painter.background().color()
-        value_diff = (255 - background.value()) * 0.25
-        light = QColor.fromHsv(background.hsvHue(),
-                               background.hsvSaturation(),
-                               background.value() + value_diff)
-        dark = QColor.fromHsv(background.hsvHue(),
-                              background.hsvSaturation(),
-                              background.value() - value_diff)
+        dark, light = self.get_target_colours(background, shift=0.25)
         window = painter.window()
         size = window.width()
         target = window.adjusted(0, 0, -size/2, -size/2)
@@ -291,11 +283,11 @@ class PuzzlePair(PuzzleSet):
         y0 = window.top() + window.height()/2
         path = QPainterPath(QPoint(x0, y0))
         path.arcTo(x0-size/4, y0-size/2, size/2, size/2, -90, 180)
-        PuzzlePair.draw_back_tail(painter, light, background)
+        PuzzlePair.draw_background_tail(painter, light, background)
 
         painter.rotate(180)
         painter.translate(-window.width(), -window.height())
-        PuzzlePair.draw_back_tail(painter, dark, background)
+        PuzzlePair.draw_background_tail(painter, dark, background)
         gradient = QRadialGradient(x0, y0-size/4, size/4)
         gradient.setStops(((0, dark), (1, background)))
         painter.fillPath(path, QBrush(gradient))
@@ -306,7 +298,7 @@ class PuzzlePair(PuzzleSet):
         painter.fillPath(path, QBrush(gradient))
 
     @staticmethod
-    def draw_back_tail(painter: QPainter, ridge: QColor, edge: QColor):
+    def draw_background_tail(painter: QPainter, ridge: QColor, edge: QColor):
         window = painter.window()
         edge_value = edge.value()
         ridge_value = ridge.value()
@@ -326,42 +318,3 @@ class PuzzlePair(PuzzleSet):
                                          step_value)
             gradient.setStops(((0, step_colour), (1, edge)))
             painter.fillPath(path, QBrush(gradient))
-
-    @staticmethod
-    def draw_back_pattern(painter: QPainter,
-                          size: float,
-                          x_offset: int = 0,
-                          y_offset: int = 0):
-        window = painter.window()
-        viewport = painter.viewport()
-        painter.eraseRect(window)
-        tile_size = round(size)
-        tile = QPixmap(tile_size, tile_size)
-        tile_painter = QPainter(tile)
-        tile_painter.setBackground(painter.background())
-        tile_painter.eraseRect(tile_painter.window())
-        try:
-            PuzzlePair.draw_back_tile(tile_painter)
-        finally:
-            tile_painter.end()
-        tiles = []
-        for direction in range(4):
-            rotated_tile = tile.transformed(QTransform().rotate(90*direction))
-            tiles.append(rotated_tile)
-
-        x_start = x_offset - math.ceil(x_offset/size)*size
-        y_start = y_offset - math.ceil(y_offset/size)*size
-        x_steps = math.ceil((window.width() - x_start) / size)
-        y_steps = math.ceil((window.height() - y_start) / size)
-        for j in range(x_steps):
-            x = x_start + j*size
-            for i in range(y_steps):
-                y = y_start + i*size
-                if i % 2 == 0:
-                    direction = j % 2
-                else:
-                    direction = (3 - j % 2)
-                source = tiles[direction]
-                painter.drawPixmap(round(x), round(y), source)
-        painter.setWindow(window)
-        painter.setViewport(viewport)

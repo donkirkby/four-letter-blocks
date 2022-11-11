@@ -388,11 +388,12 @@ def test_prepacking_useless(pixmap_differ: PixmapDiffer):
     assert packing == expected_packing
 
 
-def test_back_tile(pixmap_differ: PixmapDiffer):
+# noinspection DuplicatedCode
+def test_background_tile(pixmap_differ: PixmapDiffer):
     actual: QPainter
     expected: QPainter
     with pixmap_differ.create_painters(500, 260) as (actual, expected):
-        expected_image = QImage(Path(__file__).parent / 'back_tile.png')
+        expected_image = QImage(Path(__file__).parent / 'pair_tile.png')
         expected.drawImage(0, 0, expected_image)
 
         actual.setBackground(QColor('burlywood'))
@@ -400,33 +401,36 @@ def test_back_tile(pixmap_differ: PixmapDiffer):
 
         actual.setWindow(0, 0, 260, 260)
         actual.setViewport(actual.window().translated(120, 0))
-        PuzzlePair.draw_back_tile(actual)
+        puzzle_pair = parse_puzzle_pair()
+        puzzle_pair.draw_background_tile(actual)
 
 
-def test_back_pattern(pixmap_differ: PixmapDiffer):
+def test_background_pattern(pixmap_differ: PixmapDiffer):
     actual: QPainter
     expected: QPainter
     with pixmap_differ.create_painters(520, 260) as (actual, expected):
-        expected_image = QImage(Path(__file__).parent / 'back_pattern.png')
+        expected_image = QImage(Path(__file__).parent / 'pair_pattern.png')
         expected.drawImage(0, 0, expected_image)
 
         actual.setBackground(QColor('burlywood'))
 
-        PuzzlePair.draw_back_pattern(actual, size=260//6)
+        puzzle_pair = parse_puzzle_pair()
+        puzzle_pair.draw_background_pattern(actual, size=260 // 6)
 
 
-def test_back_pattern_offset(pixmap_differ: PixmapDiffer):
+def test_background_pattern_offset(pixmap_differ: PixmapDiffer):
     actual: QPainter
     expected: QPainter
     with pixmap_differ.create_painters(520, 260) as (actual, expected):
         expected_image = QImage(Path(__file__).parent /
-                                'back_pattern_offset.png')
+                                'pair_pattern_offset.png')
         expected.drawImage(0, 0, expected_image)
 
         actual.setBackground(QColor('burlywood'))
 
         size = 260 / 6
-        PuzzlePair.draw_back_pattern(actual,
-                                     size,
-                                     x_offset=int(size*1.5),
-                                     y_offset=int(size*1.333))
+        puzzle_pair = parse_puzzle_pair()
+        puzzle_pair.draw_background_pattern(actual,
+                                            size,
+                                            x_offset=int(size*1.5),
+                                            y_offset=int(size*1.333))

@@ -101,9 +101,6 @@
           </property>
          </widget>
         </item>
-        <item row="12" column="0" colspan="7">
-         <widget class="QPlainTextEdit" name="front_blocks_text"/>
-        </item>
         <item row="9" column="2">
          <widget class="QPushButton" name="front_open_button">
           <property name="text">
@@ -123,16 +120,6 @@
            </size>
           </property>
          </spacer>
-        </item>
-        <item row="3" column="0" colspan="7">
-         <widget class="QLineEdit" name="back_name">
-          <property name="focusPolicy">
-           <enum>Qt::ClickFocus</enum>
-          </property>
-          <property name="readOnly">
-           <bool>true</bool>
-          </property>
-         </widget>
         </item>
         <item row="5" column="0">
          <widget class="QLabel" name="back_blocks_label">
@@ -193,16 +180,6 @@
           </property>
          </widget>
         </item>
-        <item row="8" column="0" colspan="7">
-         <widget class="QLineEdit" name="front_name">
-          <property name="focusPolicy">
-           <enum>Qt::ClickFocus</enum>
-          </property>
-          <property name="readOnly">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
         <item row="9" column="5">
          <widget class="QPushButton" name="front_save_button">
           <property name="text">
@@ -231,6 +208,46 @@
           </property>
          </widget>
         </item>
+        <item row="11" column="0">
+         <widget class="QLabel" name="front_hue_label">
+          <property name="text">
+           <string>Front Hue</string>
+          </property>
+         </widget>
+        </item>
+        <item row="10" column="0" colspan="7">
+         <widget class="QPlainTextEdit" name="front_blocks_text"/>
+        </item>
+        <item row="2" column="1" colspan="6">
+         <widget class="QLineEdit" name="back_name">
+          <property name="focusPolicy">
+           <enum>Qt::ClickFocus</enum>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="1" colspan="6">
+         <widget class="QLineEdit" name="front_name">
+          <property name="focusPolicy">
+           <enum>Qt::ClickFocus</enum>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="11" column="1" colspan="6">
+         <widget class="QSpinBox" name="front_hue">
+          <property name="suffix">
+           <string>°</string>
+          </property>
+          <property name="maximum">
+           <number>360</number>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
       <widget class="QWidget" name="set_tab">
@@ -238,7 +255,21 @@
         <string>Se&amp;t</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout">
-        <item row="2" column="0">
+        <item row="2" column="3">
+         <widget class="QPushButton" name="remove_button">
+          <property name="text">
+           <string>Remove</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="2">
+         <widget class="QPushButton" name="add_button">
+          <property name="text">
+           <string>Add...</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
          <spacer name="crossword_spacer">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -251,27 +282,30 @@
           </property>
          </spacer>
         </item>
-        <item row="1" column="0" colspan="3">
+        <item row="3" column="0">
+         <widget class="QLabel" name="background_hue_label">
+          <property name="text">
+           <string>Background hue</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0" colspan="4">
          <widget class="QListWidget" name="crossword_files"/>
         </item>
-        <item row="2" column="2">
-         <widget class="QPushButton" name="remove_button">
-          <property name="text">
-           <string>Remove</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="1">
-         <widget class="QPushButton" name="add_button">
-          <property name="text">
-           <string>Add...</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="0" colspan="3">
+        <item row="0" column="0" colspan="4">
          <widget class="QLabel" name="crossword_label">
           <property name="text">
            <string>Crossword Files</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1" colspan="3">
+         <widget class="QSpinBox" name="background_hue">
+          <property name="suffix">
+           <string>°</string>
+          </property>
+          <property name="maximum">
+           <number>360</number>
           </property>
          </widget>
         </item>
@@ -439,7 +473,6 @@
   <tabstop>front_fill_button</tabstop>
   <tabstop>front_save_button</tabstop>
   <tabstop>front_refill_button</tabstop>
-  <tabstop>front_blocks_text</tabstop>
   <tabstop>title_text</tabstop>
   <tabstop>grid_text</tabstop>
   <tabstop>clues_text</tabstop>
@@ -447,6 +480,9 @@
   <tabstop>crossword_files</tabstop>
   <tabstop>add_button</tabstop>
   <tabstop>remove_button</tabstop>
+  <tabstop>background_hue</tabstop>
+  <tabstop>front_blocks_text</tabstop>
+  <tabstop>front_hue</tabstop>
   <tabstop>main_tabs</tabstop>
  </tabstops>
  <resources/>

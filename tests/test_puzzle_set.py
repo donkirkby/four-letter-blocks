@@ -1,8 +1,9 @@
 from io import StringIO
+from pathlib import Path
 from textwrap import dedent
 
 import pytest
-from PySide6.QtGui import QPainter, QPixmap
+from PySide6.QtGui import QPainter, QPixmap, QImage, QColor
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
@@ -191,9 +192,15 @@ def test_shape_counts_z_only():
 def test_draw_background(pixmap_differ: PixmapDiffer):
     actual: QPainter
     expected: QPainter
-    with pixmap_differ.create_painters(360, 180) as (actual, expected):
-        full_tile = QPixmap(':/light-wood-texture.jpg')
-        tile = full_tile.copy(0, 0, 100, 100)
+    with pixmap_differ.create_painters(350, 180) as (actual, expected):
+        tile = QPixmap(100, 100)
+        painter = QPainter(tile)
+        try:
+            painter.setBackground(QColor('burlywood'))
+            painter.eraseRect(painter.window())
+            painter.fillRect(25, 25, 50, 50, 'tan')
+        finally:
+            painter.end()
         expected.drawPixmap(0, 0, tile)
         expected.drawPixmap(100, 0, tile)
         expected.drawPixmap(200, 0, tile)
@@ -270,19 +277,36 @@ def test_draw_cuts(pixmap_differ: PixmapDiffer):
         puzzle_set.draw_cuts(actual)
 
 
+# noinspection DuplicatedCode
+def test_background_tile(pixmap_differ: PixmapDiffer):
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(500, 260) as (actual, expected):
+        expected_image = QImage(Path(__file__).parent / 'set_tile.png')
+        expected.drawImage(0, 0, expected_image)
+
+        actual.setBackground(QColor('burlywood'))
+        actual.eraseRect(actual.window())
+
+        actual.setWindow(0, 0, 260, 260)
+        actual.setViewport(actual.window().translated(120, 0))
+        puzzle_set = parse_puzzle_set()
+        puzzle_set.draw_background_tile(actual)
+
+
 @pytest.mark.parametrize(
-    'sizes, expected',
-    # Standard sizes in order
-    (((7, 9, 11, 13, 15), ((120, 60), (0, 0), (60, 60), (30, 60), (0, 60))),
-     # Standard sizes out of order
-     ((9, 7, 11, 13, 15), ((0, 0), (120, 60), (60, 60), (30, 60), (0, 60))),
-     # Some standard sizes
-     ((9, 11, 13, 15), ((0, 0), (60, 60), (30, 60), (0, 60))),
-     # Nonstandard sizes
-     ((9, 10, 11, 12), ((0, 0), (240, 60), (120, 60), (0, 60))),
+    'sizes, start_hue, expected',
+    # Sizes in order, expected is ((hue, saturation))
+    (((7, 9, 11, 13, 15), 0, ((0, 0), (0, 60), (90, 60), (180, 60), (270, 60))),
+     # Sizes out of order
+     ((9, 7, 11, 13, 15), 0, ((0, 60), (0, 0), (90, 60), (180, 60), (270, 60))),
+     # Fewer sizes
+     ((9, 10, 11, 12), 0, ((0, 0), (0, 60), (120, 60), (240, 60))),
+     # Nonzero start
+     ((9, 10, 11, 12), 120, ((0, 0), (120, 60), (240, 60), (0, 60))),
      # Repeated sizes
-     ((9, 9), ((0, 0), (0, 60)))))
-def test_colours(sizes, expected):
+     ((9, 9, 11), 0, ((0, 0), (0, 60), (180, 60)))))
+def test_colours(sizes, start_hue, expected):
     puzzles = []
     for size in sizes:
         grid_text = '\n'.join(['X'*size]*size)
@@ -292,7 +316,9 @@ def test_colours(sizes, expected):
                                        '')
         puzzles.append(puzzle)
 
-    PuzzleSet(*puzzles, block_packer=BlockPacker(20, 20, tries=1000))
+    PuzzleSet(*puzzles,
+              block_packer=BlockPacker(20, 20, tries=1000),
+              start_hue=start_hue)
 
     colours = (puzzle.face_colour for puzzle in puzzles)
     colour_params = tuple((colour.hue(), colour.saturation())

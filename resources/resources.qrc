@@ -1,7 +1,5 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
-<file>./light-wood-texture.jpg</file>
-<file>./small-wood-tile.jpg</file>
 <file>./paper.jpg</file>
 </qresource>
 </RCC>

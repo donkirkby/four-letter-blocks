@@ -19,8 +19,8 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
 from PySide6.QtWidgets import (QApplication, QGridLayout, QLabel, QLineEdit,
     QListWidget, QListWidgetItem, QMainWindow, QMenu,
     QMenuBar, QPlainTextEdit, QPushButton, QSizePolicy,
-    QSpacerItem, QStatusBar, QTabWidget, QVBoxLayout,
-    QWidget)
+    QSpacerItem, QSpinBox, QStatusBar, QTabWidget,
+    QVBoxLayout, QWidget)
 
 from four_letter_blocks.focused_plain_text_edit import FocusedPlainTextEdit
 
@@ -119,11 +119,6 @@ class Ui_MainWindow(object):
 
         self.gridLayout_2.addWidget(self.front_clear_button, 9, 3, 1, 1)
 
-        self.front_blocks_text = QPlainTextEdit(self.pair_tab)
-        self.front_blocks_text.setObjectName(u"front_blocks_text")
-
-        self.gridLayout_2.addWidget(self.front_blocks_text, 12, 0, 1, 7)
-
         self.front_open_button = QPushButton(self.pair_tab)
         self.front_open_button.setObjectName(u"front_open_button")
 
@@ -132,13 +127,6 @@ class Ui_MainWindow(object):
         self.horizontal_spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
         self.gridLayout_2.addItem(self.horizontal_spacer, 5, 1, 1, 1)
-
-        self.back_name = QLineEdit(self.pair_tab)
-        self.back_name.setObjectName(u"back_name")
-        self.back_name.setFocusPolicy(Qt.ClickFocus)
-        self.back_name.setReadOnly(True)
-
-        self.gridLayout_2.addWidget(self.back_name, 3, 0, 1, 7)
 
         self.back_blocks_label = QLabel(self.pair_tab)
         self.back_blocks_label.setObjectName(u"back_blocks_label")
@@ -185,13 +173,6 @@ class Ui_MainWindow(object):
 
         self.gridLayout_2.addWidget(self.back_label, 2, 0, 1, 1)
 
-        self.front_name = QLineEdit(self.pair_tab)
-        self.front_name.setObjectName(u"front_name")
-        self.front_name.setFocusPolicy(Qt.ClickFocus)
-        self.front_name.setReadOnly(True)
-
-        self.gridLayout_2.addWidget(self.front_name, 8, 0, 1, 7)
-
         self.front_save_button = QPushButton(self.pair_tab)
         self.front_save_button.setObjectName(u"front_save_button")
 
@@ -212,34 +193,75 @@ class Ui_MainWindow(object):
 
         self.gridLayout_2.addWidget(self.back_save_button, 5, 5, 1, 1)
 
+        self.front_hue_label = QLabel(self.pair_tab)
+        self.front_hue_label.setObjectName(u"front_hue_label")
+
+        self.gridLayout_2.addWidget(self.front_hue_label, 11, 0, 1, 1)
+
+        self.front_blocks_text = QPlainTextEdit(self.pair_tab)
+        self.front_blocks_text.setObjectName(u"front_blocks_text")
+
+        self.gridLayout_2.addWidget(self.front_blocks_text, 10, 0, 1, 7)
+
+        self.back_name = QLineEdit(self.pair_tab)
+        self.back_name.setObjectName(u"back_name")
+        self.back_name.setFocusPolicy(Qt.ClickFocus)
+        self.back_name.setReadOnly(True)
+
+        self.gridLayout_2.addWidget(self.back_name, 2, 1, 1, 6)
+
+        self.front_name = QLineEdit(self.pair_tab)
+        self.front_name.setObjectName(u"front_name")
+        self.front_name.setFocusPolicy(Qt.ClickFocus)
+        self.front_name.setReadOnly(True)
+
+        self.gridLayout_2.addWidget(self.front_name, 7, 1, 1, 6)
+
+        self.front_hue = QSpinBox(self.pair_tab)
+        self.front_hue.setObjectName(u"front_hue")
+        self.front_hue.setMaximum(360)
+
+        self.gridLayout_2.addWidget(self.front_hue, 11, 1, 1, 6)
+
         self.main_tabs.addTab(self.pair_tab, "")
         self.set_tab = QWidget()
         self.set_tab.setObjectName(u"set_tab")
         self.gridLayout = QGridLayout(self.set_tab)
         self.gridLayout.setObjectName(u"gridLayout")
-        self.crossword_spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
-
-        self.gridLayout.addItem(self.crossword_spacer, 2, 0, 1, 1)
-
-        self.crossword_files = QListWidget(self.set_tab)
-        self.crossword_files.setObjectName(u"crossword_files")
-
-        self.gridLayout.addWidget(self.crossword_files, 1, 0, 1, 3)
-
         self.remove_button = QPushButton(self.set_tab)
         self.remove_button.setObjectName(u"remove_button")
 
-        self.gridLayout.addWidget(self.remove_button, 2, 2, 1, 1)
+        self.gridLayout.addWidget(self.remove_button, 2, 3, 1, 1)
 
         self.add_button = QPushButton(self.set_tab)
         self.add_button.setObjectName(u"add_button")
 
-        self.gridLayout.addWidget(self.add_button, 2, 1, 1, 1)
+        self.gridLayout.addWidget(self.add_button, 2, 2, 1, 1)
+
+        self.crossword_spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.gridLayout.addItem(self.crossword_spacer, 2, 1, 1, 1)
+
+        self.background_hue_label = QLabel(self.set_tab)
+        self.background_hue_label.setObjectName(u"background_hue_label")
+
+        self.gridLayout.addWidget(self.background_hue_label, 3, 0, 1, 1)
+
+        self.crossword_files = QListWidget(self.set_tab)
+        self.crossword_files.setObjectName(u"crossword_files")
+
+        self.gridLayout.addWidget(self.crossword_files, 1, 0, 1, 4)
 
         self.crossword_label = QLabel(self.set_tab)
         self.crossword_label.setObjectName(u"crossword_label")
 
-        self.gridLayout.addWidget(self.crossword_label, 0, 0, 1, 3)
+        self.gridLayout.addWidget(self.crossword_label, 0, 0, 1, 4)
+
+        self.background_hue = QSpinBox(self.set_tab)
+        self.background_hue.setObjectName(u"background_hue")
+        self.background_hue.setMaximum(360)
+
+        self.gridLayout.addWidget(self.background_hue, 3, 1, 1, 3)
 
         self.main_tabs.addTab(self.set_tab, "")
 
@@ -270,15 +292,17 @@ class Ui_MainWindow(object):
         QWidget.setTabOrder(self.front_clear_button, self.front_fill_button)
         QWidget.setTabOrder(self.front_fill_button, self.front_save_button)
         QWidget.setTabOrder(self.front_save_button, self.front_refill_button)
-        QWidget.setTabOrder(self.front_refill_button, self.front_blocks_text)
-        QWidget.setTabOrder(self.front_blocks_text, self.title_text)
+        QWidget.setTabOrder(self.front_refill_button, self.title_text)
         QWidget.setTabOrder(self.title_text, self.grid_text)
         QWidget.setTabOrder(self.grid_text, self.clues_text)
         QWidget.setTabOrder(self.clues_text, self.blocks_text)
         QWidget.setTabOrder(self.blocks_text, self.crossword_files)
         QWidget.setTabOrder(self.crossword_files, self.add_button)
         QWidget.setTabOrder(self.add_button, self.remove_button)
-        QWidget.setTabOrder(self.remove_button, self.main_tabs)
+        QWidget.setTabOrder(self.remove_button, self.background_hue)
+        QWidget.setTabOrder(self.background_hue, self.front_blocks_text)
+        QWidget.setTabOrder(self.front_blocks_text, self.front_hue)
+        QWidget.setTabOrder(self.front_hue, self.main_tabs)
 
         self.menubar.addAction(self.file_menu.menuAction())
         self.menubar.addAction(self.edit_menu.menuAction())
@@ -376,10 +400,14 @@ class Ui_MainWindow(object):
         self.front_refill_button.setText(QCoreApplication.translate("MainWindow", u"Refill...", None))
         self.back_fill_button.setText(QCoreApplication.translate("MainWindow", u"Fill", None))
         self.back_save_button.setText(QCoreApplication.translate("MainWindow", u"S&ave", None))
+        self.front_hue_label.setText(QCoreApplication.translate("MainWindow", u"Front Hue", None))
+        self.front_hue.setSuffix(QCoreApplication.translate("MainWindow", u"\u00b0", None))
         self.main_tabs.setTabText(self.main_tabs.indexOf(self.pair_tab), QCoreApplication.translate("MainWindow", u"&Pair", None))
         self.remove_button.setText(QCoreApplication.translate("MainWindow", u"Remove", None))
         self.add_button.setText(QCoreApplication.translate("MainWindow", u"Add...", None))
+        self.background_hue_label.setText(QCoreApplication.translate("MainWindow", u"Background hue", None))
         self.crossword_label.setText(QCoreApplication.translate("MainWindow", u"Crossword Files", None))
+        self.background_hue.setSuffix(QCoreApplication.translate("MainWindow", u"\u00b0", None))
         self.main_tabs.setTabText(self.main_tabs.indexOf(self.set_tab), QCoreApplication.translate("MainWindow", u"Se&t", None))
         self.file_menu.setTitle(QCoreApplication.translate("MainWindow", u"&File", None))
         self.help_menu.setTitle(QCoreApplication.translate("MainWindow", u"&Help", None))
