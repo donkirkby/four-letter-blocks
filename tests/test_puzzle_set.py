@@ -63,7 +63,7 @@ def test_summary():
     assert summary2 == 'Block sizes: 5x4, Shapes: I: 1, L: 2, S: 1, Z: 1'
 
     set_summary = puzzle_set.block_summary
-    assert set_summary == 'Extras: I: 1(2), JL: 2(1), L: 2, O: 1(1), SZ: 2(2)'
+    assert set_summary == '10 blocks with extras: I: 1(2), JL: 2(1), L: 2, O: 1(1), SZ: 2(2)'
 
 
 def test_summary_of_three():
@@ -113,7 +113,31 @@ def test_summary_of_three():
     assert summary3 == 'Block sizes: 5x4, Shapes: I: 2, J: 1, L: 1, O: 1'
 
     set_summary = puzzle_set.block_summary
-    assert set_summary == 'Extras: I: 2(3), JL: 2(3), O: 1'
+    assert set_summary == '13 blocks with extras: I: 2(3), JL: 2(3), O: 1'
+
+
+def test_summary_no_extras():
+    squares_text = dedent("""\
+        Title
+
+        ABCD
+        EFGH
+        IJKL
+        MNOP
+
+        -
+
+        AABB
+        AABB
+        CCDD
+        CCDD
+    """)
+    puzzle1 = Puzzle.parse(StringIO(squares_text))
+    puzzle2 = Puzzle.parse(StringIO(squares_text))
+    puzzle_set = PuzzleSet(puzzle1, puzzle2)
+
+    set_summary = puzzle_set.block_summary
+    assert set_summary == '8 blocks'
 
 
 def test_shape_counts():

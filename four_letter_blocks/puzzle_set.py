@@ -40,12 +40,14 @@ class PuzzleSet:
         combos = self.combos
         pairs = self.pairs
         total_counts = Counter()
+        total_block_count = 0
         max_counts = Counter()
         max_puzzles = {}  # {combo: index}
         source_puzzles = defaultdict(list)  # {combo: [index]}
         for i, puzzle in enumerate(self.puzzles):
             puzzle_counts = Counter()
             for label, count in puzzle.shape_counts.items():
+                total_block_count += count
                 combo = combos.get(label, label)
                 puzzle_counts[combo] += count
                 if combo != label:
@@ -144,10 +146,9 @@ class PuzzleSet:
                 if front_source or back_source:
                     raise RuntimeError("Blocks wouldn't fit.")
 
+        self.block_summary = f'{total_block_count} blocks'
         if extras:
-            self.block_summary = 'Extras: ' + ', '.join(extras)
-        else:
-            self.block_summary = ''
+            self.block_summary += ' with extras: ' + ', '.join(extras)
         is_filled = self.block_packer.fill(self.shape_counts)
         if not is_filled:
             raise RuntimeError("Blocks wouldn't fit.")
