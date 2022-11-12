@@ -665,7 +665,7 @@ class FourLetterBlocksWindow(QMainWindow):
         paper = QPixmap(':/paper.jpg')
         clue_painter = CluePainter(
             *puzzles,
-            font_size=60,
+            font_size=56,
             margin=75,
             intro_text='Solve each crossword puzzle with the pieces that match '
                        'the colour of the clue numbers. Good luck!\n',

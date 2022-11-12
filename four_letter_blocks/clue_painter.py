@@ -58,23 +58,31 @@ class CluePainter:
             if self.across_index == 0 and self.down_index == 0:
                 self.draw_header(title_font, font, header_rect, painter)
 
-            across_rect = QRectF(header_rect)
-            across_rect.setWidth(across_rect.width()/2)
-            down_rect = across_rect.translated(across_rect.width(), 0)
-            if self.across_index == 0 and self.down_index == 0:
-                self.draw_text(across_rect, 'Across', painter)
-                self.draw_text(down_rect, 'Down', painter)
-            # Do right column first, in case of slight overlap.
-            right_clue_count = self.draw_clues(
-                painter,
-                puzzle.down_clues[self.down_index:],
-                down_rect)
-            left_clue_count = self.draw_clues(
-                painter,
-                puzzle.across_clues[self.across_index:],
-                across_rect)
-            self.across_index += left_clue_count
-            self.down_index += right_clue_count
+            left_rect = QRectF(header_rect)
+            left_rect.setWidth(left_rect.width() / 2)
+            right_rect = left_rect.translated(left_rect.width(), 0)
+            for section_rect in (left_rect, right_rect):
+                if self.across_index == 0:
+                    self.draw_text(left_rect, 'Across', painter)
+                clue_count = self.draw_clues(
+                    painter,
+                    puzzle.across_clues[self.across_index:],
+                    section_rect)
+                self.across_index += clue_count
+                if self.across_index == len(puzzle.across_clues):
+                    backup_rect = QRectF(section_rect)
+                    if self.down_index == 0:
+                        self.draw_text(section_rect,
+                                       'Down',
+                                       painter,
+                                       is_dry_run=True)
+                    clue_count = self.draw_clues(
+                        painter,
+                        puzzle.down_clues[self.down_index:],
+                        section_rect)
+                    if clue_count and self.down_index == 0:
+                        self.draw_text(backup_rect, 'Down', painter)
+                    self.down_index += clue_count
 
             if self.across_index < len(puzzle.across_clues):
                 return
