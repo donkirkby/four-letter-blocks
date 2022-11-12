@@ -178,6 +178,20 @@ as they cancel each other out. Try to construct the smaller puzzles before the
 larger puzzles in a set, because it's easier to adjust the shape counts in the
 larger puzzles.
 
+The background hue sets the background colour for all the blocks. It's the hue
+angle from HSV colours, between 0 and 360. The smallest puzzle will highlight
+its letters in white, the second smallest will use the hue you enter, and the
+remaining puzzles will be evenly spaced around the colour wheel.
+
+### Puzzle Pairs
+More complex than a set of puzzles, is a pair of puzzles. The two puzzles have
+to use the same shapes, but they should have different grids. Design the grids
+to have the same number of letters, then edit their blocks on the pairs tab.
+If you can't make the shapes match by hand, then you can use the fill buttons.
+You can partially fill in the blocks and then use the fill buttons to finish.
+The front hue sets the background colour for the front side. The back side uses
+a hue 180° away.
+
 [New York Times]: https://www.nytimes.com/2018/09/14/crosswords/how-to-make-a-crossword-puzzle-the-series.html
 [Qxw builder]: https://www.quinapalus.com/qxw.html
 [manual]: https://www.quinapalus.com/qxw-guide-20200708.pdf

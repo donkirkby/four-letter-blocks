@@ -635,7 +635,8 @@ class FourLetterBlocksWindow(QMainWindow):
         front_image = QImage(2475, 3150, QImage.Format_RGB32)
         painter = QPainter(front_image)
         puzzle_set.square_size = front_image.width() / 16
-        painter.setBackground(QColor.fromHsv(start_hue, 85, 170))
+        background_colour = QColor.fromHsv(start_hue, 85, 170)
+        painter.setBackground(background_colour)
         puzzle_set.draw_background_pattern(painter,
                                            puzzle_set.square_size / 6,
                                            x_offset=puzzle_set.square_size // 2,
@@ -648,7 +649,7 @@ class FourLetterBlocksWindow(QMainWindow):
         back_buffer = QBuffer()
         back_image = QImage(2475, 3150, QImage.Format_RGB32)
         painter = QPainter(back_image)
-        painter.setBackground(QColor.fromHsv(start_hue, 85, 170))
+        painter.setBackground(background_colour)
         puzzle_set.draw_background_pattern(painter,
                                            puzzle_set.square_size / 6,
                                            x_offset=puzzle_set.square_size // 2,
@@ -668,7 +669,8 @@ class FourLetterBlocksWindow(QMainWindow):
             margin=75,
             intro_text='Solve each crossword puzzle with the pieces that match '
                        'the colour of the clue numbers. Good luck!\n',
-            footer_text='https://donkirkby.github.io/four-letter-blocks')
+            footer_text='https://donkirkby.github.io/four-letter-blocks',
+            background=background_colour)
         page_image = QImage(1575, 2475, QImage.Format_RGB32)
         while not clue_painter.is_finished:
             painter = QPainter(page_image)
