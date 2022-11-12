@@ -63,7 +63,7 @@ class CluePainter:
             right_rect = left_rect.translated(left_rect.width(), 0)
             for section_rect in (left_rect, right_rect):
                 if self.across_index == 0:
-                    self.draw_text(left_rect, 'Across', painter)
+                    self.draw_text(left_rect, 'Across', painter, is_bold=True)
                 clue_count = self.draw_clues(
                     painter,
                     puzzle.across_clues[self.across_index:],
@@ -75,13 +75,17 @@ class CluePainter:
                         self.draw_text(section_rect,
                                        'Down',
                                        painter,
-                                       is_dry_run=True)
+                                       is_dry_run=True,
+                                       is_bold=True)
                     clue_count = self.draw_clues(
                         painter,
                         puzzle.down_clues[self.down_index:],
                         section_rect)
                     if clue_count and self.down_index == 0:
-                        self.draw_text(backup_rect, 'Down', painter)
+                        self.draw_text(backup_rect,
+                                       'Down',
+                                       painter,
+                                       is_bold=True)
                     self.down_index += clue_count
 
             if self.across_index < len(puzzle.across_clues):
@@ -227,8 +231,13 @@ class CluePainter:
                   is_centred: bool = False,
                   is_dry_run: bool = False,
                   is_aligned_right: bool = False,
+                  is_bold: bool = False,
                   background: QColor = None):
         font = painter.font()
+        if is_bold:
+            bold_font = QFont(font)
+            bold_font.setBold(is_bold)
+            painter.setFont(bold_font)
         old_pen = painter.pen()
         pen = QPen(old_pen)
         pen.setWidth(font.pixelSize() // 20)
@@ -257,3 +266,4 @@ class CluePainter:
             painter.drawText(target_rect, flags, text)
         rect.adjust(0, math.ceil(height + metrics.leading() + 2*padding), 0, 0)
         painter.setPen(old_pen)
+        painter.setFont(font)

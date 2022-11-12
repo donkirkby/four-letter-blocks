@@ -33,6 +33,35 @@ def test_draw_text(pixmap_differ: PixmapDiffer):
 
 
 # noinspection DuplicatedCode
+def test_draw_text_bold(pixmap_differ: PixmapDiffer):
+    with pixmap_differ.create_painters(740, 190):
+        actual = pixmap_differ.actual.painter
+        expected = pixmap_differ.expected.painter
+        pixmap_differ.radius = 6
+        pixmap_differ.tolerance = 26
+
+        font = expected.font()
+        font.setPixelSize(30)
+        bold_font = QFont(font)
+        bold_font.setBold(True)
+        expected.setFont(bold_font)
+
+        expected.setRenderHint(expected.TextAntialiasing, False)
+        expected.setRenderHint(expected.Antialiasing, False)
+        expected.drawText(QRectF(10, 10, 300, 100),
+                          0,
+                          'Lorem ipsum\ndolores sit amet.')
+
+        actual.setFont(font)
+
+        rect = QRectF(10, 10, 300, 100)
+        CluePainter.draw_text(rect,
+                              'Lorem ipsum\ndolores sit amet.',
+                              actual,
+                              is_bold=True)
+
+
+# noinspection DuplicatedCode
 def test_draw_text_background(pixmap_differ: PixmapDiffer):
     with pixmap_differ.create_painters(740, 190):
         actual = pixmap_differ.actual.painter
@@ -189,8 +218,8 @@ def test_draw_page(pixmap_differ: PixmapDiffer):
         right_rect = QRectF(header_rect)
         left_rect.setRight(width / 2 - margin)
         right_rect.setLeft(width / 2)
-        CluePainter.draw_text(left_rect, 'Across', expected)
-        CluePainter.draw_text(right_rect, 'Down', expected)
+        CluePainter.draw_text(left_rect, 'Across', expected, is_bold=True)
+        CluePainter.draw_text(right_rect, 'Down', expected, is_bold=True)
 
         number_width = CluePainter.find_text_width('1.', expected)
         padded_width = CluePainter.find_text_width('1. ', expected)
@@ -255,7 +284,7 @@ def test_draw_page_with_background(pixmap_differ: PixmapDiffer):
         right_rect = QRectF(header_rect)
         left_rect.setRight(width / 2 - margin)
         right_rect.setLeft(width / 2)
-        CluePainter.draw_text(left_rect, 'Across', expected)
+        CluePainter.draw_text(left_rect, 'Across', expected, is_bold=True)
 
         number_width = CluePainter.find_text_width('1.', expected)
         padded_width = CluePainter.find_text_width('1. ', expected)
@@ -306,7 +335,7 @@ def test_draw_clues_wrapped(pixmap_differ: PixmapDiffer):
         across_rect = QRectF(header_rect)
         across_rect.setWidth(across_rect.width()/2)
         down_rect = across_rect.translated(across_rect.width(), 0)
-        CluePainter.draw_text(across_rect, 'Across', expected)
+        CluePainter.draw_text(across_rect, 'Across', expected, is_bold=True)
         number_width = CluePainter.find_text_width('1.', expected)
         padded_width = CluePainter.find_text_width('1. ', expected)
         num_rect = QRectF(across_rect)
@@ -328,7 +357,7 @@ def test_draw_clues_wrapped(pixmap_differ: PixmapDiffer):
                               'One at a time',
                               expected)
         down_rect.setLeft(num_rect.left())
-        CluePainter.draw_text(down_rect, 'Down', expected)
+        CluePainter.draw_text(down_rect, 'Down', expected, is_bold=True)
         down_rect.adjust(padded_width, 0, 0, 0)
         num_rect.setTop(down_rect.top())
         CluePainter.draw_text(num_rect,
@@ -420,8 +449,8 @@ def test_draw_clues_with_suits(pixmap_differ: PixmapDiffer):
         right_rect = QRectF(header_rect)
         left_rect.setRight(width / 2 - margin)
         right_rect.setLeft(width / 2)
-        CluePainter.draw_text(left_rect, 'Across', expected)
-        CluePainter.draw_text(right_rect, 'Down', expected)
+        CluePainter.draw_text(left_rect, 'Across', expected, is_bold=True)
+        CluePainter.draw_text(right_rect, 'Down', expected, is_bold=True)
 
         number_width = CluePainter.find_text_width('1♡.', expected)
         padded_width = CluePainter.find_text_width('1♡. ', expected)
@@ -468,8 +497,8 @@ def test_draw_clues_face_colour(pixmap_differ: PixmapDiffer):
         across_rect = QRectF(header_rect)
         across_rect.setWidth(across_rect.width()/2)
         down_rect = across_rect.translated(across_rect.width(), 0)
-        CluePainter.draw_text(across_rect, 'Across', expected)
-        CluePainter.draw_text(down_rect, 'Down', expected)
+        CluePainter.draw_text(across_rect, 'Across', expected, is_bold=True)
+        CluePainter.draw_text(down_rect, 'Down', expected, is_bold=True)
         number_width = CluePainter.find_text_width('1.', expected)
         space_width = CluePainter.find_text_width(' ', expected)
         padded_width = number_width + space_width
@@ -546,8 +575,8 @@ def test_draw_clues_long_title(pixmap_differ: PixmapDiffer):
         right_rect = QRectF(header_rect)
         left_rect.setRight(width / 2 - margin)
         right_rect.setLeft(width / 2)
-        CluePainter.draw_text(left_rect, 'Across', expected)
-        CluePainter.draw_text(right_rect, 'Down', expected)
+        CluePainter.draw_text(left_rect, 'Across', expected, is_bold=True)
+        CluePainter.draw_text(right_rect, 'Down', expected, is_bold=True)
 
         number_width = CluePainter.find_text_width('1.', expected)
         padded_width = CluePainter.find_text_width('1. ', expected)
@@ -594,7 +623,7 @@ def test_draw_clues_intro(pixmap_differ: PixmapDiffer):
         across_rect = QRectF(header_rect)
         across_rect.setWidth(across_rect.width()/2)
         down_rect = across_rect.translated(across_rect.width(), 0)
-        CluePainter.draw_text(across_rect, 'Across', expected)
+        CluePainter.draw_text(across_rect, 'Across', expected, is_bold=True)
         number_width = CluePainter.find_text_width('1.', expected)
         padded_width = CluePainter.find_text_width('1. ', expected)
         num_rect = QRectF(across_rect)
@@ -641,7 +670,7 @@ def test_draw_clues_footer(pixmap_differ: PixmapDiffer):
         across_rect = QRectF(header_rect)
         across_rect.setWidth(across_rect.width()/2)
         down_rect = across_rect.translated(across_rect.width(), 0)
-        CluePainter.draw_text(across_rect, 'Across', expected)
+        CluePainter.draw_text(across_rect, 'Across', expected, is_bold=True)
         number_width = CluePainter.find_text_width('1.', expected)
         padded_width = CluePainter.find_text_width('1. ', expected)
         num_rect = QRectF(across_rect)
