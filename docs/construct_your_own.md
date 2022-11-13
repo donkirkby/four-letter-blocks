@@ -32,6 +32,16 @@ sizes. In Qxw builder, choose Show Statistics from the Edit menu, and leave it
 open. It will show you if you have any two-letter words. It also tells you the
 total number of grid cells, so you can check that it's a multiple of four.
 
+There are web pages with the [basic rules] of grid layout, as well as the
+[submission guidelines] for the New York Times. You can use these to guide your
+grid construction, although the rule against unchecked squares is less important
+for this puzzle. Because each letter is attached to three others, an unchecked
+letter should be possible to work out even without solving the single word that
+uses it. However, unchecked letters do make it harder to split up the blocks.
+
+[basic rules]: https://www.cruciverb.com/index.php?action=ezportal;sa=page;p=21
+[submission guidelines]: https://www.nytimes.com/article/submit-crossword-puzzles-the-new-york-times.html
+
 The grid size should be between 7x7 and 15x15. Anything bigger than 11x11 gets
 the card suits to help solvers work on one corner at a time, and anything
 bigger than 15x15 becomes too frustrating to solve. It takes too long to find
@@ -41,7 +51,8 @@ I recommend you use the statistics window to check the following things when you
 finish laying out the black squares, or blocks:
 * total cells is a multiple of four
 * no two-letter words
-* no underchecked cells
+* no underchecked words
+* few, if any, unchecked grid cells
 * not too many overchecked cells (a few are fine to build solid areas of words,
 but too many will make the grid hard to fill)
 
