@@ -733,46 +733,52 @@ class FourLetterBlocksWindow(QMainWindow):
         front_buffer = QBuffer()
         front_image = QImage(2475, 3150, QImage.Format_RGB32)
         painter = QPainter(front_image)
-        rotate_painter(painter)
-        puzzle_pair.square_size = front_image.width() // (grid_size + 4)
-        front_hue = self.ui.front_hue.value()
-        painter.setBackground(QColor.fromHsv(front_hue, 85, 170))
-        font_size = int(front_image.width() / 36.5)
-        grid_rect = puzzle_pair.draw_front(painter, font_size)
-        header_fraction = grid_rect.top() / front_image.width()
-        puzzle_pair.draw_background_pattern(painter,
-                                            puzzle_pair.square_size / 6,
-                                            x_offset=grid_rect.top(),
-                                            y_offset=grid_rect.left())
-        puzzle_pair.draw_front(painter, font_size)
-        # puzzle_pair.draw_cuts(painter, header_fraction=header_fraction)
-        painter.end()
+        try:
+            rotate_painter(painter)
+            puzzle_pair.square_size = front_image.width() // (grid_size + 3)
+            front_hue = self.ui.front_hue.value()
+            painter.setBackground(QColor.fromHsv(front_hue, 85, 170))
+            font_size = int(front_image.width() / 39)
+            grid_rect = puzzle_pair.draw_front(painter, font_size)
+            header_fraction = grid_rect.top() / front_image.width()
+            puzzle_pair.draw_background_pattern(painter,
+                                                puzzle_pair.square_size / 6,
+                                                x_offset=grid_rect.top(),
+                                                y_offset=grid_rect.left())
+            puzzle_pair.draw_front(painter, font_size)
+            # puzzle_pair.draw_cuts(painter, header_fraction=header_fraction)
+        finally:
+            painter.end()
         success = front_image.save(front_buffer, 'PNG')
         assert success
 
         back_buffer = QBuffer()
         back_image = QImage(2475, 3150, QImage.Format_RGB32)
         painter = QPainter(back_image)
-        back_hue = (front_hue + 180) % 360
-        painter.setBackground(QColor.fromHsv(back_hue, 85, 170))
-        puzzle_pair.draw_background_pattern(painter,
-                                            puzzle_pair.square_size / 6,
-                                            x_offset=grid_rect.top(),
-                                            y_offset=grid_rect.left())
-        rotate_painter(painter, -90)
-        puzzle_pair.draw_back(painter, font_size)
-        painter.end()
+        try:
+            back_hue = (front_hue + 180) % 360
+            painter.setBackground(QColor.fromHsv(back_hue, 85, 170))
+            puzzle_pair.draw_background_pattern(painter,
+                                                puzzle_pair.square_size / 6,
+                                                x_offset=grid_rect.top(),
+                                                y_offset=grid_rect.left())
+            rotate_painter(painter, -90)
+            puzzle_pair.draw_back(painter, font_size)
+        finally:
+            painter.end()
         success = back_image.save(back_buffer, 'PNG')
         assert success
 
         svg_buffer = QBuffer()
         generator = create_svg_generator(svg_buffer)
         painter = LineDeduper(QPainter(generator))
-        rotate_painter(painter)
-        puzzle_pair.square_size = generator.width() // (grid_size + 4)
-        nick_radius = 5  # DPI is 1000
-        puzzle_pair.draw_cuts(painter, nick_radius, header_fraction)
-        painter.end()
+        try:
+            rotate_painter(painter)
+            puzzle_pair.square_size = generator.width() // (grid_size + 3)
+            nick_radius = 5  # DPI is 1000
+            puzzle_pair.draw_cuts(painter, nick_radius, header_fraction)
+        finally:
+            painter.end()
 
         with ZipFile(file_name, 'w', compression=ZIP_DEFLATED) as zip_file:
             zip_file.writestr('cuts.svg', svg_buffer.data())

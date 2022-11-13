@@ -250,18 +250,16 @@ class PuzzlePair(PuzzleSet):
                 clue_painter.draw_text(clue_rect,
                                        group_name,
                                        painter,
+                                       is_bold=True,
                                        is_dry_run=True)
                 clue_count = clue_painter.draw_clues(painter,
                                                      clues,
                                                      clue_rect)
                 if clue_count != 0:
-                    font.setBold(True)
-                    painter.setFont(font)
                     clue_painter.draw_text(name_rect,
                                            group_name,
-                                           painter)
-                    font.setBold(False)
-                    painter.setFont(font)
+                                           painter,
+                                           is_bold=True)
                     break
 
                 clue_rects.pop(0)
