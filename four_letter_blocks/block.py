@@ -111,23 +111,39 @@ class Block:
             square.face_colour = colour
 
     @staticmethod
-    def parse(text: str, grid: Grid) -> typing.List['Block']:
+    def parse(text: str,
+              grid: Grid,
+              old_blocks: typing.List[typing.List[str]] = None
+              ) -> typing.List['Block']:
+        if old_blocks is None:
+            old_blocks = []
         unused_squares = {square
                           for row in grid.squares
                           for square in row
                           if square is not None}
         square_lists = defaultdict(list)
         lines = text.splitlines()
+        while len(old_blocks) < len(lines):
+            old_blocks.append([])
         for y, line in enumerate(lines):
+            old_row = old_blocks[y]
+            while len(old_row) < len(line):
+                old_row.append(Block.UNUSED)
             for x, marker in enumerate(line):
-                if marker in '#?':
+                if marker == '?':
+                    old_row[x] = marker
                     continue
+                if marker == '#':
+                    marker = old_row[x]
+                    if marker is Block.UNUSED:
+                        continue
                 try:
                     old_square = grid[x, y]
                 except IndexError:
                     continue
                 if old_square is None:
                     continue
+                old_row[x] = marker
                 unused_squares.remove(old_square)
                 square = copy(old_square)
                 square.x = x

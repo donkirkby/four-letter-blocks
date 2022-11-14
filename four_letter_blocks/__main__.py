@@ -89,6 +89,7 @@ class FourLetterBlocksWindow(QMainWindow):
         self.file_path: typing.Optional[Path] = None
         self.settings = get_settings()
         self.old_clues = {}
+        self.old_blocks: typing.List[typing.List[str]] = []
         self.base_title = self.windowTitle()
 
         ui.title_text.textChanged.connect(self.title_changed)
@@ -189,6 +190,7 @@ class FourLetterBlocksWindow(QMainWindow):
         for field in (self.ui.grid_text,
                       self.ui.clues_text,
                       self.ui.blocks_text,
+                      self.ui.back_blocks_text,
                       self.ui.front_blocks_text):
             field.setOverwriteMode(overwrite_mode)
 
@@ -210,6 +212,8 @@ class FourLetterBlocksWindow(QMainWindow):
         self.ui.clues_text.clear()
         self.ui.blocks_text.clear()
         self.record_clean_state()
+        self.old_clues.clear()
+        self.old_blocks.clear()
 
     def add_crosswords(self):
         save_dir = self.get_save_dir()
@@ -497,6 +501,8 @@ class FourLetterBlocksWindow(QMainWindow):
         self.ui.grid_text.setPlainText(puzzle.format_grid())
         self.ui.clues_text.setPlainText(puzzle.format_clues())
         self.ui.blocks_text.setPlainText(puzzle.format_blocks())
+        self.old_clues.clear()
+        self.old_blocks.clear()
         self.record_clean_state()
 
     def remove_crossword(self):
@@ -853,7 +859,8 @@ class FourLetterBlocksWindow(QMainWindow):
                                        self.ui.grid_text.toPlainText(),
                                        self.ui.clues_text.toPlainText(),
                                        self.ui.blocks_text.toPlainText(),
-                                       self.old_clues)
+                                       self.old_clues,
+                                       self.old_blocks)
         return puzzle
 
     def shuffle(self):
