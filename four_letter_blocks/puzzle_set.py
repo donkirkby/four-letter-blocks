@@ -3,7 +3,9 @@ import typing
 from collections import Counter, defaultdict
 from collections.abc import Iterable
 
-from PySide6.QtGui import QPainter, QColor, QPixmap
+from PySide6.QtCore import QPoint
+from PySide6.QtGui import QPainter, QColor, QPixmap, QTransform, QPainterPath, \
+    QBrush, QLinearGradient
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
@@ -12,7 +14,10 @@ from four_letter_blocks.puzzle import Puzzle
 
 
 class PuzzleSet:
-    def __init__(self, *puzzles: Puzzle, block_packer: BlockPacker = None):
+    def __init__(self,
+                 *puzzles: Puzzle,
+                 block_packer: BlockPacker = None,
+                 start_hue: int = 0):
         self.puzzles = puzzles
         self.shape_counts: typing.Counter[str] = Counter()
         if block_packer:
@@ -34,18 +39,21 @@ class PuzzleSet:
             first, last = pair
             self.pairs[first] = last
             self.pairs[last] = first
+        self.start_hue = start_hue
         self.pack_puzzles()
 
     def pack_puzzles(self):
         combos = self.combos
         pairs = self.pairs
         total_counts = Counter()
+        total_block_count = 0
         max_counts = Counter()
         max_puzzles = {}  # {combo: index}
         source_puzzles = defaultdict(list)  # {combo: [index]}
         for i, puzzle in enumerate(self.puzzles):
             puzzle_counts = Counter()
             for label, count in puzzle.shape_counts.items():
+                total_block_count += count
                 combo = combos.get(label, label)
                 puzzle_counts[combo] += count
                 if combo != label:
@@ -144,42 +152,26 @@ class PuzzleSet:
                 if front_source or back_source:
                     raise RuntimeError("Blocks wouldn't fit.")
 
+        self.block_summary = f'{total_block_count} blocks'
         if extras:
-            self.block_summary = 'Extras: ' + ', '.join(extras)
-        else:
-            self.block_summary = ''
+            self.block_summary += ' with extras: ' + ', '.join(extras)
         is_filled = self.block_packer.fill(self.shape_counts)
         if not is_filled:
             raise RuntimeError("Blocks wouldn't fit.")
         size_pairs = [(puzzle.grid.width, i)
                       for i, puzzle in enumerate(self.puzzles)]
         size_pairs.sort()
-        sizes = {size for size, i in size_pairs}
-        standard_colours = {7: (120, 60),
-                            9: (0, 0),
-                            11: (60, 60),
-                            13: (30, 60),
-                            15: (0, 60)}
-        unknown_sizes = sizes.difference(standard_colours)
-        if unknown_sizes or len(sizes) != len(self.puzzles):
-            angle = 360 / (len(self.puzzles) - 1)
-            for i, (width, puzzle_index) in enumerate(size_pairs):
-                puzzle = self.puzzles[puzzle_index]
-                if i == 0:
-                    hue = saturation = 0
-                else:
-                    hue = 360 - i * angle
-                    saturation = 60
-                value = 255
-                colour = QColor.fromHsv(hue, saturation, value)
-                puzzle.face_colour = colour
-        else:
-            for (width, puzzle_index) in size_pairs:
-                puzzle = self.puzzles[puzzle_index]
-                hue, saturation = standard_colours[puzzle.grid.width]
-                value = 255
-                colour = QColor.fromHsv(hue, saturation, value)
-                puzzle.face_colour = colour
+        angle = 360 / (len(self.puzzles) - 1)
+        for i, (width, puzzle_index) in enumerate(size_pairs):
+            puzzle = self.puzzles[puzzle_index]
+            if i == 0:
+                hue = saturation = 0
+            else:
+                hue = (self.start_hue + (i - 1) * angle) % 360
+                saturation = 60
+            value = 255
+            colour = QColor.fromHsv(hue, saturation, value)
+            puzzle.face_colour = colour
 
     @property
     def square_size(self) -> int:
@@ -256,3 +248,85 @@ class PuzzleSet:
         for y in range(0, painter.window().height(), tile.height()):
             for x in range(0, painter.window().width(), tile.width()):
                 painter.drawPixmap(x, y, tile)
+
+    def draw_background_tile(self, painter):
+        background: QColor = painter.background().color()
+        dark, light = self.get_target_colours(background, shift=0.5)
+        window = painter.window()
+        size = window.width()
+        for i in range(2):
+            for j in range(2):
+                if i % 2 == j % 2:
+                    target_colour = light
+                else:
+                    target_colour = dark
+                painter.translate(j*size/2, i*size/2)
+                gradient = QLinearGradient(0, 0, 0, size/4)
+                gradient.setStops(((0, background), (1, target_colour)))
+                gradient.setSpread(gradient.Spread.ReflectSpread)
+                for y in (0, size/2):
+                    path = QPainterPath(QPoint(0, y))
+                    path.lineTo(size/4, size/4)
+                    path.lineTo(size/2, y)
+                    path.lineTo(0, y)
+                    painter.fillPath(path, QBrush(gradient))
+                gradient = QLinearGradient(0, 0, size/4, 0)
+                gradient.setStops(((0, background), (1, target_colour)))
+                gradient.setSpread(gradient.Spread.ReflectSpread)
+                for x in (0, size/2):
+                    path = QPainterPath(QPoint(x, 0))
+                    path.lineTo(size/4, size/4)
+                    path.lineTo(x, size/2)
+                    path.lineTo(x, 0)
+                    painter.fillPath(path, QBrush(gradient))
+                painter.translate(-j*size/2, -i*size/2)
+
+    @staticmethod
+    def get_target_colours(start, shift):
+        value_diff = (255 - start.value()) * shift
+        light = QColor.fromHsv(start.hsvHue(),
+                               start.hsvSaturation(),
+                               start.value() + value_diff)
+        dark = QColor.fromHsv(start.hsvHue(),
+                              start.hsvSaturation(),
+                              start.value() - value_diff)
+        return dark, light
+
+    def draw_background_pattern(self,
+                                painter: QPainter,
+                                size: float,
+                                x_offset: int = 0,
+                                y_offset: int = 0):
+        window = painter.window()
+        viewport = painter.viewport()
+        painter.eraseRect(window)
+        tile_size = round(size)
+        tile = QPixmap(tile_size, tile_size)
+        tile_painter = QPainter(tile)
+        tile_painter.setBackground(painter.background())
+        tile_painter.eraseRect(tile_painter.window())
+        try:
+            self.draw_background_tile(tile_painter)
+        finally:
+            tile_painter.end()
+        tiles = []
+        for direction in range(4):
+            rotated_tile = tile.transformed(QTransform().rotate(90*direction))
+            tiles.append(rotated_tile)
+
+        x_start = x_offset - math.ceil(x_offset/size)*size
+        y_start = y_offset - math.ceil(y_offset/size)*size
+        x_steps = math.ceil((window.width() - x_start) / size)
+        y_steps = math.ceil((window.height() - y_start) / size)
+        for j in range(x_steps):
+            x = x_start + j*size
+            for i in range(y_steps):
+                y = y_start + i*size
+                if i % 2 == 0:
+                    direction = j % 2
+                else:
+                    direction = (3 - j % 2)
+                source = tiles[direction]
+                painter.drawPixmap(round(x), round(y), source)
+        painter.setWindow(window)
+        painter.setViewport(viewport)

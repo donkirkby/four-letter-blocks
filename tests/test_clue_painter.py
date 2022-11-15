@@ -33,6 +33,75 @@ def test_draw_text(pixmap_differ: PixmapDiffer):
 
 
 # noinspection DuplicatedCode
+def test_draw_text_bold(pixmap_differ: PixmapDiffer):
+    with pixmap_differ.create_painters(740, 190):
+        actual = pixmap_differ.actual.painter
+        expected = pixmap_differ.expected.painter
+        pixmap_differ.radius = 6
+        pixmap_differ.tolerance = 26
+
+        font = expected.font()
+        font.setPixelSize(30)
+        bold_font = QFont(font)
+        bold_font.setBold(True)
+        expected.setFont(bold_font)
+
+        expected.setRenderHint(expected.TextAntialiasing, False)
+        expected.setRenderHint(expected.Antialiasing, False)
+        expected.drawText(QRectF(10, 10, 300, 100),
+                          0,
+                          'Lorem ipsum\ndolores sit amet.')
+
+        actual.setFont(font)
+
+        rect = QRectF(10, 10, 300, 100)
+        CluePainter.draw_text(rect,
+                              'Lorem ipsum\ndolores sit amet.',
+                              actual,
+                              is_bold=True)
+
+
+# noinspection DuplicatedCode
+def test_draw_text_background(pixmap_differ: PixmapDiffer):
+    with pixmap_differ.create_painters(740, 190):
+        actual = pixmap_differ.actual.painter
+        expected = pixmap_differ.expected.painter
+        pixmap_differ.radius = 6
+        pixmap_differ.tolerance = 26
+
+        font = expected.font()
+        font.setPixelSize(30)
+        expected.setFont(font)
+        pen = expected.pen()
+        pen.setWidth(1)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        expected.setPen(pen)
+        padding = 3
+        background_colour = QColor('burlywood')
+        text_width = CluePainter.find_text_width('dolores sit amet.', expected)
+        text_width += 2 * padding
+        text_height = CluePainter.find_text_height('X\nX', expected)
+        text_rect = QRectF(10, 10,
+                           text_width, text_height + 2 * padding)
+        expected.fillRect(text_rect, background_colour)
+        expected.drawRect(text_rect)
+
+        expected.setRenderHint(expected.TextAntialiasing, False)
+        expected.setRenderHint(expected.Antialiasing, False)
+        expected.drawText(QRectF(10+padding, 10+padding, 300-2*padding, 100),
+                          0,
+                          'Lorem ipsum\ndolores sit amet.')
+
+        actual.setFont(font)
+
+        rect = QRectF(10, 10, 300, 100)
+        CluePainter.draw_text(rect,
+                              'Lorem ipsum\ndolores sit amet.',
+                              actual,
+                              background=background_colour)
+
+
+# noinspection DuplicatedCode
 def test_draw_text_centred(pixmap_differ: PixmapDiffer):
     actual: QPainter
     expected: QPainter
@@ -126,6 +195,10 @@ def test_draw_page(pixmap_differ: PixmapDiffer):
         font = QFont('NotoSansCJK')
         font.setPixelSize(40)
         expected.setFont(font)
+        pen = expected.pen()
+        pen.setWidth(2)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        expected.setPen(pen)
         header_rect = QRectF(margin, margin, width-2*margin, height-2*margin)
         CluePainter.draw_text(header_rect,
                               'Basic Puzzle',
@@ -145,8 +218,8 @@ def test_draw_page(pixmap_differ: PixmapDiffer):
         right_rect = QRectF(header_rect)
         left_rect.setRight(width / 2 - margin)
         right_rect.setLeft(width / 2)
-        CluePainter.draw_text(left_rect, 'Across', expected)
-        CluePainter.draw_text(right_rect, 'Down', expected)
+        CluePainter.draw_text(left_rect, 'Across', expected, is_bold=True)
+        CluePainter.draw_text(right_rect, 'Down', expected, is_bold=True)
 
         number_width = CluePainter.find_text_width('1.', expected)
         padded_width = CluePainter.find_text_width('1. ', expected)
@@ -169,6 +242,72 @@ def test_draw_page(pixmap_differ: PixmapDiffer):
         clue_painter.draw_page(actual)
 
     assert clue_painter.is_finished
+
+
+# noinspection DuplicatedCode
+def test_draw_page_with_background(pixmap_differ: PixmapDiffer):
+    puzzle = parse_basic_puzzle()
+    puzzle.down_clues[1].text_with_reference = "Run between 1 Across"
+
+    width = 740
+    height = 190
+    margin = 10
+    with pixmap_differ.create_painters(width, height):
+        actual = pixmap_differ.actual.painter
+        expected = pixmap_differ.expected.painter
+        background_colour = QColor('burlywood')
+        font = QFont('NotoSansCJK')
+        font.setPixelSize(40)
+        expected.setFont(font)
+        header_rect = QRectF(margin, margin,
+                             width-2*margin, height-2*margin)
+        CluePainter.draw_text(header_rect,
+                              'Basic Puzzle',
+                              expected,
+                              is_centred=True,
+                              background=background_colour)
+        font.setPixelSize(20)
+        expected.setFont(font)
+        CluePainter.draw_text(header_rect,
+                              'Clue numbers are shuffled: 1 Across might not '
+                              'be the top left. 3 pieces.',
+                              expected)
+        line_height = CluePainter.find_text_height('X', expected)
+        pen = expected.pen()
+        pen.setWidth(2)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        expected.setPen(pen)
+        expected.drawLine(margin, round(header_rect.top() + line_height/2),
+                          width-margin, round(header_rect.top() + line_height/2))
+        header_rect.adjust(0, line_height, 0, 0)
+        left_rect = QRectF(header_rect)
+        right_rect = QRectF(header_rect)
+        left_rect.setRight(width / 2 - margin)
+        right_rect.setLeft(width / 2)
+        CluePainter.draw_text(left_rect, 'Across', expected, is_bold=True)
+
+        number_width = CluePainter.find_text_width('1.', expected)
+        padded_width = CluePainter.find_text_width('1. ', expected)
+        left_num_rect = QRectF(left_rect)
+        left_num_rect.setRight(left_num_rect.left() + number_width)
+        left_rect.adjust(padded_width, 0, 0, 0)
+        CluePainter.draw_text(left_num_rect, '1.', expected)
+        CluePainter.draw_text(left_rect,
+                              'Part of a sentence',
+                              expected)
+        right_num_rect = QRectF(right_rect)
+        right_num_rect.setWidth(number_width)
+        right_rect.adjust(padded_width, 0, 0, 0)
+        CluePainter.draw_text(right_num_rect, '3.', expected)
+        CluePainter.draw_text(right_rect,
+                              'One at a time',
+                              expected)
+
+        clue_painter = CluePainter(puzzle,
+                                   font_size=20,
+                                   margin=margin,
+                                   background=background_colour)
+        clue_painter.draw_page(actual)
 
 
 # noinspection DuplicatedCode
@@ -196,8 +335,7 @@ def test_draw_clues_wrapped(pixmap_differ: PixmapDiffer):
         across_rect = QRectF(header_rect)
         across_rect.setWidth(across_rect.width()/2)
         down_rect = across_rect.translated(across_rect.width(), 0)
-        CluePainter.draw_text(across_rect, 'Across', expected)
-        CluePainter.draw_text(down_rect, 'Down', expected)
+        CluePainter.draw_text(across_rect, 'Across', expected, is_bold=True)
         number_width = CluePainter.find_text_width('1.', expected)
         padded_width = CluePainter.find_text_width('1. ', expected)
         num_rect = QRectF(across_rect)
@@ -212,12 +350,21 @@ def test_draw_clues_wrapped(pixmap_differ: PixmapDiffer):
         num_rect.setWidth(number_width)
         down_rect.adjust(padded_width, 0, 0, 0)
         CluePainter.draw_text(num_rect,
-                              '1.\n2.',
+                              '3.',
                               expected,
                               is_aligned_right=True)
         CluePainter.draw_text(down_rect,
-                              'Sour grapes\nRun between words',
+                              'One at a time',
                               expected)
+        down_rect.setLeft(num_rect.left())
+        CluePainter.draw_text(down_rect, 'Down', expected, is_bold=True)
+        down_rect.adjust(padded_width, 0, 0, 0)
+        num_rect.setTop(down_rect.top())
+        CluePainter.draw_text(num_rect,
+                              '1.',
+                              expected,
+                              is_aligned_right=True)
+        CluePainter.draw_text(down_rect, 'Sour grapes', expected)
 
         clue_painter2 = CluePainter(puzzle, font_size=20, margin=margin)
         clue_painter2.draw_page(actual)
@@ -249,11 +396,11 @@ def test_draw_clues_next_page(pixmap_differ: PixmapDiffer):
         expected.drawText(margin, margin,
                           number_width, height,
                           align_right,
-                          '3.')
+                          '2.')
         expected.drawText(margin+padded_width, margin,
                           width, height,
                           0,
-                          'One at a time')
+                          'Run between words')
 
         clue_painter = CluePainter(puzzle1,
                                    puzzle2,
@@ -302,8 +449,8 @@ def test_draw_clues_with_suits(pixmap_differ: PixmapDiffer):
         right_rect = QRectF(header_rect)
         left_rect.setRight(width / 2 - margin)
         right_rect.setLeft(width / 2)
-        CluePainter.draw_text(left_rect, 'Across', expected)
-        CluePainter.draw_text(right_rect, 'Down', expected)
+        CluePainter.draw_text(left_rect, 'Across', expected, is_bold=True)
+        CluePainter.draw_text(right_rect, 'Down', expected, is_bold=True)
 
         number_width = CluePainter.find_text_width('1♡.', expected)
         padded_width = CluePainter.find_text_width('1♡. ', expected)
@@ -323,46 +470,6 @@ def test_draw_clues_with_suits(pixmap_differ: PixmapDiffer):
                               expected)
 
         clue_painter = CluePainter(puzzle, font_size=20, margin=margin)
-        clue_painter.draw_page(actual)
-
-
-# noinspection DuplicatedCode
-def test_draw_clues_first_clue_too_big(pixmap_differ: PixmapDiffer):
-    puzzle1 = parse_basic_puzzle()
-    puzzle1.across_clues[0].text = 'Part of an extremely long, run-on sentence'
-    puzzle1.across_clues[1].text = 'Another extremely long, run-on sentence'
-    puzzle2 = parse_basic_puzzle()
-    puzzle2.title = 'Next Puzzle'
-
-    width = 740
-    height = 190
-    margin = 10
-    align_right = int(Qt.AlignRight)
-    with pixmap_differ.create_painters(width, height):
-        pixmap_differ.radius = 5
-        pixmap_differ.tolerance = 30
-        actual = pixmap_differ.actual.painter
-        expected = pixmap_differ.expected.painter
-        clue_painter = CluePainter(puzzle1,
-                                   puzzle2,
-                                   font_size=20,
-                                   margin=margin)
-        font = QFont('NotoSansCJK')
-        font.setPixelSize(20)
-        expected.setFont(font)
-        number_width = CluePainter.find_text_width('1.', expected)
-        padded_width = CluePainter.find_text_width('1. ', expected)
-        expected.drawText(margin, margin,
-                          number_width, height,
-                          align_right,
-                          '3.')
-        expected.drawText(margin+padded_width, margin,
-                          width, height,
-                          0,
-                          'Another extremely long, run-on\nsentence')
-
-        clue_painter.draw_page(actual)
-        actual.eraseRect(actual.window())
         clue_painter.draw_page(actual)
 
 
@@ -390,8 +497,8 @@ def test_draw_clues_face_colour(pixmap_differ: PixmapDiffer):
         across_rect = QRectF(header_rect)
         across_rect.setWidth(across_rect.width()/2)
         down_rect = across_rect.translated(across_rect.width(), 0)
-        CluePainter.draw_text(across_rect, 'Across', expected)
-        CluePainter.draw_text(down_rect, 'Down', expected)
+        CluePainter.draw_text(across_rect, 'Across', expected, is_bold=True)
+        CluePainter.draw_text(down_rect, 'Down', expected, is_bold=True)
         number_width = CluePainter.find_text_width('1.', expected)
         space_width = CluePainter.find_text_width(' ', expected)
         padded_width = number_width + space_width
@@ -457,6 +564,10 @@ def test_draw_clues_long_title(pixmap_differ: PixmapDiffer):
                               'be the top left. 3 pieces.',
                               expected)
         line_height = CluePainter.find_text_height('X', expected)
+        pen = expected.pen()
+        pen.setWidth(2)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        expected.setPen(pen)
         expected.drawLine(margin, round(header_rect.top() + line_height/2),
                           width-margin, round(header_rect.top() + line_height/2))
         header_rect.adjust(0, line_height, 0, 0)
@@ -464,8 +575,8 @@ def test_draw_clues_long_title(pixmap_differ: PixmapDiffer):
         right_rect = QRectF(header_rect)
         left_rect.setRight(width / 2 - margin)
         right_rect.setLeft(width / 2)
-        CluePainter.draw_text(left_rect, 'Across', expected)
-        CluePainter.draw_text(right_rect, 'Down', expected)
+        CluePainter.draw_text(left_rect, 'Across', expected, is_bold=True)
+        CluePainter.draw_text(right_rect, 'Down', expected, is_bold=True)
 
         number_width = CluePainter.find_text_width('1.', expected)
         padded_width = CluePainter.find_text_width('1. ', expected)
@@ -512,8 +623,7 @@ def test_draw_clues_intro(pixmap_differ: PixmapDiffer):
         across_rect = QRectF(header_rect)
         across_rect.setWidth(across_rect.width()/2)
         down_rect = across_rect.translated(across_rect.width(), 0)
-        CluePainter.draw_text(across_rect, 'Across', expected)
-        CluePainter.draw_text(down_rect, 'Down', expected)
+        CluePainter.draw_text(across_rect, 'Across', expected, is_bold=True)
         number_width = CluePainter.find_text_width('1.', expected)
         padded_width = CluePainter.find_text_width('1. ', expected)
         num_rect = QRectF(across_rect)
@@ -525,10 +635,10 @@ def test_draw_clues_intro(pixmap_differ: PixmapDiffer):
         num_rect.setWidth(number_width)
         down_rect.adjust(padded_width, 0, 0, 0)
         CluePainter.draw_text(num_rect,
-                              '1.',
+                              '3.',
                               expected,
                               is_aligned_right=True)
-        CluePainter.draw_text(down_rect, 'Sour grapes', expected)
+        CluePainter.draw_text(down_rect, 'One at a time', expected)
 
         clue_painter = CluePainter(puzzle,
                                    font_size=20,
@@ -560,8 +670,7 @@ def test_draw_clues_footer(pixmap_differ: PixmapDiffer):
         across_rect = QRectF(header_rect)
         across_rect.setWidth(across_rect.width()/2)
         down_rect = across_rect.translated(across_rect.width(), 0)
-        CluePainter.draw_text(across_rect, 'Across', expected)
-        CluePainter.draw_text(down_rect, 'Down', expected)
+        CluePainter.draw_text(across_rect, 'Across', expected, is_bold=True)
         number_width = CluePainter.find_text_width('1.', expected)
         padded_width = CluePainter.find_text_width('1. ', expected)
         num_rect = QRectF(across_rect)
@@ -573,10 +682,10 @@ def test_draw_clues_footer(pixmap_differ: PixmapDiffer):
         num_rect.setWidth(number_width)
         down_rect.adjust(padded_width, 0, 0, 0)
         CluePainter.draw_text(num_rect,
-                              '1.',
+                              '3.',
                               expected,
                               is_aligned_right=True)
-        CluePainter.draw_text(down_rect, 'Sour grapes', expected)
+        CluePainter.draw_text(down_rect, 'One at a time', expected)
         footer = 'https://example.com'
         footer_height = CluePainter.find_text_height(footer, expected)
         CluePainter.draw_text(QRectF(0, height-margin-footer_height,

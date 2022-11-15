@@ -206,6 +206,7 @@ def test_draw(pixmap_differ: PixmapDiffer):
             square.draw(expected)
 
         pen = QPen('magenta')
+        pen.setWidth(3)
         expected.setPen(pen)
         expected.drawLine(0, 150, 100, 150)
         expected.drawLine(100, 50, 100, 150)
@@ -236,12 +237,14 @@ def test_draw_with_tabs(pixmap_differ: PixmapDiffer):
         for square in block.squares:
             square.draw(expected)
 
+        pen = QPen()
+        pen.setWidth(3)
+        expected.setPen(pen)
+
         expected.drawLine(25, 150, 75, 150)
         expected.drawLine(100, 75, 100, 125)
         expected.drawLine(200, 75, 200, 125)
 
-        pen = QPen()
-        pen.setWidth(3)
         pen.setCapStyle(Qt.RoundCap)
         expected.setPen(pen)
         path = QPainterPath(QPoint(-50, 0))
@@ -295,12 +298,13 @@ def test_double_tabs(pixmap_differ: PixmapDiffer):
         for square in block.squares:
             square.draw(expected, is_packed=True)
 
+        pen = QPen()
+        pen.setWidth(3)
+        expected.setPen(pen)
         expected.drawLine(25, 150, 75, 150)
         expected.drawLine(100, 75, 100, 125)
         expected.drawLine(200, 75, 200, 125)
 
-        pen = QPen()
-        pen.setWidth(3)
         pen.setCapStyle(Qt.RoundCap)
         expected.setPen(pen)
         path = QPainterPath(QPoint(-50, 0))
@@ -351,7 +355,7 @@ def test_draw_packed(pixmap_differ: PixmapDiffer):
         for square in block.squares:
             square.draw(expected, is_packed=True)
 
-        pen = QPen('magenta')
+        pen = QPen(QColor('magenta'), 3)
         expected.setPen(pen)
         expected.drawLine(25, 150, 75, 150)
         expected.drawLine(100, 75, 100, 125)

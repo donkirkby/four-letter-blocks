@@ -32,6 +32,16 @@ sizes. In Qxw builder, choose Show Statistics from the Edit menu, and leave it
 open. It will show you if you have any two-letter words. It also tells you the
 total number of grid cells, so you can check that it's a multiple of four.
 
+There are web pages with the [basic rules] of grid layout, as well as the
+[submission guidelines] for the New York Times. You can use these to guide your
+grid construction, although the rule against unchecked squares is less important
+for this puzzle. Because each letter is attached to three others, an unchecked
+letter should be possible to work out even without solving the single word that
+uses it. However, unchecked letters do make it harder to split up the blocks.
+
+[basic rules]: https://www.cruciverb.com/index.php?action=ezportal;sa=page;p=21
+[submission guidelines]: https://www.nytimes.com/article/submit-crossword-puzzles-the-new-york-times.html
+
 The grid size should be between 7x7 and 15x15. Anything bigger than 11x11 gets
 the card suits to help solvers work on one corner at a time, and anything
 bigger than 15x15 becomes too frustrating to solve. It takes too long to find
@@ -41,7 +51,8 @@ I recommend you use the statistics window to check the following things when you
 finish laying out the black squares, or blocks:
 * total cells is a multiple of four
 * no two-letter words
-* no underchecked cells
+* no underchecked words
+* few, if any, unchecked grid cells
 * not too many overchecked cells (a few are fine to build solid areas of words,
 but too many will make the grid hard to fill)
 
@@ -177,6 +188,20 @@ puzzle and in total. It's fine to have "extra" shapes in each puzzle, so long
 as they cancel each other out. Try to construct the smaller puzzles before the
 larger puzzles in a set, because it's easier to adjust the shape counts in the
 larger puzzles.
+
+The background hue sets the background colour for all the blocks. It's the hue
+angle from HSV colours, between 0 and 360. The smallest puzzle will highlight
+its letters in white, the second smallest will use the hue you enter, and the
+remaining puzzles will be evenly spaced around the colour wheel.
+
+### Puzzle Pairs
+More complex than a set of puzzles, is a pair of puzzles. The two puzzles have
+to use the same shapes, but they should have different grids. Design the grids
+to have the same number of letters, then edit their blocks on the pairs tab.
+If you can't make the shapes match by hand, then you can use the fill buttons.
+You can partially fill in the blocks and then use the fill buttons to finish.
+The front hue sets the background colour for the front side. The back side uses
+a hue 180° away.
 
 [New York Times]: https://www.nytimes.com/2018/09/14/crosswords/how-to-make-a-crossword-puzzle-the-series.html
 [Qxw builder]: https://www.quinapalus.com/qxw.html

@@ -44,11 +44,13 @@ class Puzzle:
         return Puzzle.parse_sections(*sections)
 
     @staticmethod
-    def parse_sections(title: str,
-                       grid_text: str,
-                       clues_text: str,
-                       blocks_text: str,
-                       old_clues: typing.Dict[str, Clue] = None) -> 'Puzzle':
+    def parse_sections(
+            title: str,
+            grid_text: str,
+            clues_text: str,
+            blocks_text: str,
+            old_clues: typing.Dict[str, Clue] = None,
+            old_blocks: typing.List[typing.List[str]] = None) -> 'Puzzle':
         if old_clues is None:
             old_clues = {}
         grid = Grid(grid_text)
@@ -56,7 +58,7 @@ class Puzzle:
         for word, clue in parsed_clues.items():
             old_clues[word] = clue
         all_clues = {}
-        blocks = Block.parse(blocks_text, grid)
+        blocks = Block.parse(blocks_text, grid, old_blocks)
         for block in blocks:
             for square in block.squares:
                 if square.number is None:

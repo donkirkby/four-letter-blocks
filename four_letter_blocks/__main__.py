@@ -3,7 +3,7 @@ import re
 import sys
 import traceback
 import typing
-from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, ONE_OR_MORE
 from functools import partial
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED, Path as ZipPath
@@ -70,7 +70,7 @@ class FourLetterBlocksWindow(QMainWindow):
         ui.save_action.triggered.connect(self.save)
         ui.save_as_action.triggered.connect(self.save_as)
         ui.export_action.triggered.connect(self.export)
-        ui.export_set_action.triggered.connect(self.export_laser)
+        ui.export_set_action.triggered.connect(self.export_set)
         ui.export_pair_action.triggered.connect(self.export_pair)
 
         ui.shuffle_action.triggered.connect(self.shuffle)
@@ -89,6 +89,7 @@ class FourLetterBlocksWindow(QMainWindow):
         self.file_path: typing.Optional[Path] = None
         self.settings = get_settings()
         self.old_clues = {}
+        self.old_blocks: typing.List[typing.List[str]] = []
         self.base_title = self.windowTitle()
 
         ui.title_text.textChanged.connect(self.title_changed)
@@ -189,6 +190,7 @@ class FourLetterBlocksWindow(QMainWindow):
         for field in (self.ui.grid_text,
                       self.ui.clues_text,
                       self.ui.blocks_text,
+                      self.ui.back_blocks_text,
                       self.ui.front_blocks_text):
             field.setOverwriteMode(overwrite_mode)
 
@@ -210,6 +212,8 @@ class FourLetterBlocksWindow(QMainWindow):
         self.ui.clues_text.clear()
         self.ui.blocks_text.clear()
         self.record_clean_state()
+        self.old_clues.clear()
+        self.old_blocks.clear()
 
     def add_crosswords(self):
         save_dir = self.get_save_dir()
@@ -224,6 +228,9 @@ class FourLetterBlocksWindow(QMainWindow):
         if not file_names:
             return
 
+        self.add_crossword_files(file_names)
+
+    def add_crossword_files(self, file_names: typing.Sequence[str]):
         crossword_files = self.ui.crossword_files
         old_names = [((item := crossword_files.item(i)).text(), item.toolTip())
                      for i in range(crossword_files.count())]
@@ -494,6 +501,8 @@ class FourLetterBlocksWindow(QMainWindow):
         self.ui.grid_text.setPlainText(puzzle.format_grid())
         self.ui.clues_text.setPlainText(puzzle.format_clues())
         self.ui.blocks_text.setPlainText(puzzle.format_blocks())
+        self.old_clues.clear()
+        self.old_blocks.clear()
         self.record_clean_state()
 
     def remove_crossword(self):
@@ -590,7 +599,7 @@ class FourLetterBlocksWindow(QMainWindow):
         QToolTip.showText(point, message)
         return False
 
-    def export_laser(self):
+    def export_set(self):
         ui = self.ui
         if ui.crossword_files.count() < 2:
             point = ui.add_button.mapToGlobal(QPoint(0, 0))
@@ -609,11 +618,16 @@ class FourLetterBlocksWindow(QMainWindow):
             return
         self.settings.setValue('save_path', file_name)
 
+        self.export_set_file(file_name)
+
+    def export_set_file(self, file_name: str):
         packer = BlockPacker(15, 19, tries=10_000_000, min_tries=1_000)
         puzzles = list(self.crossword_set.values())
         puzzles.sort(key=lambda p: (p.grid.width, p.title))
-        puzzle_set = PuzzleSet(*puzzles, block_packer=packer)
-
+        start_hue = self.ui.background_hue.value()
+        puzzle_set = PuzzleSet(*puzzles,
+                               block_packer=packer,
+                               start_hue=start_hue)
         svg_buffer = QBuffer()
         generator = create_svg_generator(svg_buffer)
 
@@ -623,12 +637,16 @@ class FourLetterBlocksWindow(QMainWindow):
         puzzle_set.draw_cuts(painter, nick_radius)
         painter.end()
 
-        wood_tile = QPixmap(':/light-wood-texture.jpg')
         front_buffer = QBuffer()
         front_image = QImage(2475, 3150, QImage.Format_RGB32)
         painter = QPainter(front_image)
         puzzle_set.square_size = front_image.width() / 16
-        puzzle_set.draw_background(painter, wood_tile)
+        background_colour = QColor.fromHsv(start_hue, 85, 170)
+        painter.setBackground(background_colour)
+        puzzle_set.draw_background_pattern(painter,
+                                           puzzle_set.square_size / 6,
+                                           x_offset=puzzle_set.square_size // 2,
+                                           y_offset=puzzle_set.square_size // 2)
         puzzle_set.draw_front(painter)
         painter.end()
         success = front_image.save(front_buffer, 'PNG')
@@ -637,7 +655,11 @@ class FourLetterBlocksWindow(QMainWindow):
         back_buffer = QBuffer()
         back_image = QImage(2475, 3150, QImage.Format_RGB32)
         painter = QPainter(back_image)
-        puzzle_set.draw_background(painter, wood_tile)
+        painter.setBackground(background_colour)
+        puzzle_set.draw_background_pattern(painter,
+                                           puzzle_set.square_size / 6,
+                                           x_offset=puzzle_set.square_size // 2,
+                                           y_offset=puzzle_set.square_size // 2)
         puzzle_set.draw_back(painter)
         painter.end()
         success = back_image.save(back_buffer, 'PNG')
@@ -649,11 +671,12 @@ class FourLetterBlocksWindow(QMainWindow):
         paper = QPixmap(':/paper.jpg')
         clue_painter = CluePainter(
             *puzzles,
-            font_size=60,
+            font_size=56,
             margin=75,
             intro_text='Solve each crossword puzzle with the pieces that match '
                        'the colour of the clue numbers. Good luck!\n',
-            footer_text='https://donkirkby.github.io/four-letter-blocks')
+            footer_text='https://donkirkby.github.io/four-letter-blocks',
+            background=background_colour)
         page_image = QImage(1575, 2475, QImage.Format_RGB32)
         while not clue_painter.is_finished:
             painter = QPainter(page_image)
@@ -713,45 +736,55 @@ class FourLetterBlocksWindow(QMainWindow):
         puzzle_pair = PuzzlePair(front_puzzle, back_puzzle, packer)
         puzzle_pair.tab_count = 2
 
-        wood_tile = QPixmap(':/small-wood-tile.jpg')
         front_buffer = QBuffer()
         front_image = QImage(2475, 3150, QImage.Format_RGB32)
         painter = QPainter(front_image)
-        rotate_painter(painter)
-        puzzle_pair.square_size = front_image.width() // (grid_size + 4)
-        wood_tile = wood_tile.scaled(puzzle_pair.square_size,
-                                     puzzle_pair.square_size)
-        puzzle_pair.draw_background(painter, wood_tile)
-        font_size = int(front_image.width() / 36.5)
-        grid_rect = puzzle_pair.draw_front(painter, font_size)
-        header_fraction = grid_rect.top() / front_image.width()
-        # puzzle_pair.draw_cuts(painter, header_fraction=header_fraction)
-        painter.end()
+        try:
+            rotate_painter(painter)
+            puzzle_pair.square_size = front_image.width() // (grid_size + 3)
+            front_hue = self.ui.front_hue.value()
+            painter.setBackground(QColor.fromHsv(front_hue, 85, 170))
+            font_size = int(front_image.width() / 39)
+            grid_rect = puzzle_pair.draw_front(painter, font_size)
+            header_fraction = grid_rect.top() / front_image.width()
+            puzzle_pair.draw_background_pattern(painter,
+                                                puzzle_pair.square_size / 6,
+                                                x_offset=grid_rect.top(),
+                                                y_offset=grid_rect.left())
+            puzzle_pair.draw_front(painter, font_size)
+            # puzzle_pair.draw_cuts(painter, header_fraction=header_fraction)
+        finally:
+            painter.end()
         success = front_image.save(front_buffer, 'PNG')
         assert success
 
         back_buffer = QBuffer()
         back_image = QImage(2475, 3150, QImage.Format_RGB32)
         painter = QPainter(back_image)
-        painter.setBackground(QColor('burlywood'))
-        puzzle_pair.draw_back_pattern(painter,
-                                      puzzle_pair.square_size / 6,
-                                      x_offset=grid_rect.top(),
-                                      y_offset=grid_rect.left())
-        rotate_painter(painter, -90)
-        puzzle_pair.draw_back(painter, font_size)
-        painter.end()
+        try:
+            back_hue = (front_hue + 180) % 360
+            painter.setBackground(QColor.fromHsv(back_hue, 85, 170))
+            puzzle_pair.draw_background_pattern(painter,
+                                                puzzle_pair.square_size / 6,
+                                                x_offset=grid_rect.top(),
+                                                y_offset=grid_rect.left())
+            rotate_painter(painter, -90)
+            puzzle_pair.draw_back(painter, font_size)
+        finally:
+            painter.end()
         success = back_image.save(back_buffer, 'PNG')
         assert success
 
         svg_buffer = QBuffer()
         generator = create_svg_generator(svg_buffer)
         painter = LineDeduper(QPainter(generator))
-        rotate_painter(painter)
-        puzzle_pair.square_size = generator.width() // (grid_size + 4)
-        nick_radius = 5  # DPI is 1000
-        puzzle_pair.draw_cuts(painter, nick_radius, header_fraction)
-        painter.end()
+        try:
+            rotate_painter(painter)
+            puzzle_pair.square_size = generator.width() // (grid_size + 3)
+            nick_radius = 5  # DPI is 1000
+            puzzle_pair.draw_cuts(painter, nick_radius, header_fraction)
+        finally:
+            painter.end()
 
         with ZipFile(file_name, 'w', compression=ZIP_DEFLATED) as zip_file:
             zip_file.writestr('cuts.svg', svg_buffer.data())
@@ -826,7 +859,8 @@ class FourLetterBlocksWindow(QMainWindow):
                                        self.ui.grid_text.toPlainText(),
                                        self.ui.clues_text.toPlainText(),
                                        self.ui.blocks_text.toPlainText(),
-                                       self.old_clues)
+                                       self.old_clues,
+                                       self.old_blocks)
         return puzzle
 
     def shuffle(self):
@@ -972,6 +1006,13 @@ def parse_args():
     parser.add_argument('--pair',
                         nargs=2,
                         help='Back and front puzzle files to export as a pair.')
+    parser.add_argument('--set',
+                        nargs=ONE_OR_MORE,
+                        help='Set of puzzles to export together.')
+    parser.add_argument('--hue',
+                        type=int,
+                        default=0,
+                        help='Background hue.')
     parser.add_argument('-o', '--output',
                         help='Output file to export to.')
     args = parser.parse_args()
@@ -984,12 +1025,23 @@ def main():
     args = parse_args()
     app = QApplication()
     window = FourLetterBlocksWindow()
+    done = False
+    window.ui.background_hue.setValue(args.hue)
+    window.ui.front_hue.setValue(args.hue)
+
     if args.pair is not None:
         back_file, front_file = args.pair
         window.open_pair_file(back_file, 1)
         window.open_pair_file(front_file, 0)
         window.export_pair_file(args.output)
-    else:
+        done = True
+
+    if args.set is not None:
+        window.add_crossword_files(args.set)
+        window.export_set_file(args.output)
+        done = True
+
+    if not done:
         window.show()
         exit(app.exec())
 

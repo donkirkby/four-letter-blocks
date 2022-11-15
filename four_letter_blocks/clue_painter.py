@@ -2,7 +2,7 @@ import math
 import typing
 
 from PySide6.QtCore import QRectF
-from PySide6.QtGui import QPainter, QFont, Qt, QFontMetricsF
+from PySide6.QtGui import QPainter, QFont, Qt, QFontMetricsF, QColor, QPen
 
 from four_letter_blocks.clue import Clue
 from four_letter_blocks.puzzle import Puzzle
@@ -15,13 +15,15 @@ class CluePainter:
                  font_size: float = None,
                  margin: int = 0,
                  intro_text: str = '',
-                 footer_text: str = ''):
+                 footer_text: str = '',
+                 background: QColor = QColor.fromHsv(0, 0, 0, 0)):
         self.puzzles = puzzles
         self.font_size = font_size
         self.margin = margin
         self.puzzle_index = self.across_index = self.down_index = 0
         self.intro_text = intro_text
         self.footer_text = footer_text
+        self.background = background
 
     @property
     def is_finished(self):
@@ -54,41 +56,37 @@ class CluePainter:
             painter.setFont(font)
 
             if self.across_index == 0 and self.down_index == 0:
-                if self.intro_text and self.puzzle_index == 0:
-                    self.draw_text(header_rect, self.intro_text, painter)
-                if self.footer_text and self.puzzle_index == 0:
-                    rect = QRectF(header_rect)
-                    footer_height = self.find_text_height(self.footer_text,
-                                                          painter,
-                                                          rect.width())
-                    rect.setTop(rect.bottom() - footer_height)
-                    header_rect.setBottom(rect.top() - margin/3)
-                    self.draw_text(rect,
-                                   self.footer_text,
-                                   painter,
-                                   is_centred=True)
-
                 self.draw_header(title_font, font, header_rect, painter)
-            else:
-                painter.setFont(font)
 
-            across_rect = QRectF(header_rect)
-            across_rect.setWidth(across_rect.width()/2)
-            down_rect = across_rect.translated(across_rect.width(), 0)
-            if self.across_index == 0 and self.down_index == 0:
-                self.draw_text(across_rect, 'Across', painter)
-                self.draw_text(down_rect, 'Down', painter)
-            # Do right column first, in case of slight overlap.
-            right_clue_count = self.draw_clues(
-                painter,
-                puzzle.down_clues[self.down_index:],
-                down_rect)
-            left_clue_count = self.draw_clues(
-                painter,
-                puzzle.across_clues[self.across_index:],
-                across_rect)
-            self.across_index += left_clue_count
-            self.down_index += right_clue_count
+            left_rect = QRectF(header_rect)
+            left_rect.setWidth(left_rect.width() / 2)
+            right_rect = left_rect.translated(left_rect.width(), 0)
+            for section_rect in (left_rect, right_rect):
+                if self.across_index == 0:
+                    self.draw_text(left_rect, 'Across', painter, is_bold=True)
+                clue_count = self.draw_clues(
+                    painter,
+                    puzzle.across_clues[self.across_index:],
+                    section_rect)
+                self.across_index += clue_count
+                if self.across_index == len(puzzle.across_clues):
+                    backup_rect = QRectF(section_rect)
+                    if self.down_index == 0:
+                        self.draw_text(section_rect,
+                                       'Down',
+                                       painter,
+                                       is_dry_run=True,
+                                       is_bold=True)
+                    clue_count = self.draw_clues(
+                        painter,
+                        puzzle.down_clues[self.down_index:],
+                        section_rect)
+                    if clue_count and self.down_index == 0:
+                        self.draw_text(backup_rect,
+                                       'Down',
+                                       painter,
+                                       is_bold=True)
+                    self.down_index += clue_count
 
             if self.across_index < len(puzzle.across_clues):
                 return
@@ -99,21 +97,54 @@ class CluePainter:
             return
 
     def draw_header(self,
-                    title_font,
-                    font,
-                    header_rect,
-                    painter):
+                    title_font: QFont,
+                    font: QFont,
+                    header_rect: QRectF,
+                    painter: QPainter,
+                    is_dry_run: bool = False):
+        if self.intro_text and self.puzzle_index == 0:
+            self.draw_text(header_rect,
+                           self.intro_text,
+                           painter,
+                           is_dry_run=is_dry_run)
+        if self.footer_text and self.puzzle_index == 0:
+            rect = QRectF(header_rect)
+            footer_height = self.find_text_height(self.footer_text,
+                                                  painter,
+                                                  rect.width())
+            rect.setTop(rect.bottom() - footer_height)
+            header_rect.setBottom(rect.top())
+            self.draw_text(rect,
+                           self.footer_text,
+                           painter,
+                           is_centred=True,
+                           is_dry_run=is_dry_run)
         painter.setFont(title_font)
         puzzle = self.puzzles[self.puzzle_index]
         painter.setFont(font)
         line_height = self.find_text_height('X', painter)
         painter.setFont(title_font)
-        self.draw_text(header_rect, puzzle.title, painter, is_centred=True)
+        self.draw_text(header_rect,
+                       puzzle.title,
+                       painter,
+                       is_centred=True,
+                       background=self.background,
+                       is_dry_run=is_dry_run)
         painter.setFont(font)
-        self.draw_text(header_rect, puzzle.build_hints(), painter)
-        y = round(header_rect.top() + line_height / 2)
-        painter.drawLine(header_rect.left(), y, header_rect.right(), y)
+        self.draw_text(header_rect,
+                       puzzle.build_hints(),
+                       painter,
+                       is_dry_run=is_dry_run)
+        old_pen = painter.pen()
+        pen = QPen(old_pen)
+        pen.setWidth(font.pixelSize()//10)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        painter.setPen(pen)
+        if not is_dry_run:
+            y = round(header_rect.top() + line_height / 2)
+            painter.drawLine(header_rect.left(), y, header_rect.right(), y)
         header_rect.adjust(0, line_height, 0, 0)
+        painter.setPen(old_pen)
 
     @staticmethod
     def find_text_width(text: str, painter: QPainter) -> float:
@@ -199,14 +230,40 @@ class CluePainter:
                   painter: QPainter,
                   is_centred: bool = False,
                   is_dry_run: bool = False,
-                  is_aligned_right: bool = False):
-        metrics = QFontMetricsF(painter.font())
+                  is_aligned_right: bool = False,
+                  is_bold: bool = False,
+                  background: QColor = None):
+        font = painter.font()
+        if is_bold:
+            bold_font = QFont(font)
+            bold_font.setBold(is_bold)
+            painter.setFont(bold_font)
+        old_pen = painter.pen()
+        pen = QPen(old_pen)
+        pen.setWidth(font.pixelSize() // 20)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        painter.setPen(pen)
+        metrics = QFontMetricsF(font)
         flags = int(Qt.TextWordWrap)
         if is_centred:
             flags = flags | Qt.AlignHCenter
         if is_aligned_right:
             flags = flags | Qt.AlignRight
-        height = metrics.boundingRect(rect, flags, text).height()
+        if background is None or background.alpha() == 0:
+            target_rect = rect
+            padding = 0
+        else:
+            padding = font.pixelSize() // 10
+            target_rect = rect.adjusted(padding, padding, -padding, -padding)
+        bounding_rect = metrics.boundingRect(target_rect, flags, text)
+        if padding and not is_dry_run:
+            background_rect = bounding_rect.adjusted(-padding, -padding,
+                                                     padding, padding)
+            painter.fillRect(background_rect, background)
+            painter.drawRect(background_rect)
+        height = bounding_rect.height()
         if not is_dry_run:
-            painter.drawText(rect, flags, text)
-        rect.adjust(0, math.ceil(height + metrics.leading()), 0, 0)
+            painter.drawText(target_rect, flags, text)
+        rect.adjust(0, math.ceil(height + metrics.leading() + 2*padding), 0, 0)
+        painter.setPen(old_pen)
+        painter.setFont(font)

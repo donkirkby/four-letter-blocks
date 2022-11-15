@@ -324,6 +324,75 @@ DASH - Run between words
                                 'WINE': Clue('', 1)}
 
 
+def test_parse_includes_old_blocks():
+    grid_text1 = dedent("""\
+        WORD
+        I##A
+        N##S
+        EACH""")
+    block_text1 = dedent("""\
+        AAAA
+        B##C
+        B##C
+        BBCC""")
+    grid_text2 = dedent("""\
+        WRD
+        I##A
+        N##S
+        EACH""")
+
+    old_blocks = []
+    puzzle1 = Puzzle.parse_sections('',
+                                    grid_text1,
+                                    '',
+                                    block_text1,
+                                    old_blocks=old_blocks)
+    puzzle2 = Puzzle.parse_sections('',
+                                    grid_text2,
+                                    '',
+                                    puzzle1.format_blocks(),
+                                    old_blocks=old_blocks)
+    puzzle3 = Puzzle.parse_sections('',
+                                    grid_text1,
+                                    '',
+                                    puzzle2.format_blocks(),
+                                    old_blocks=old_blocks)
+    
+    assert puzzle3.format_blocks() == puzzle1.format_blocks()
+
+
+def test_parse_can_force_unused():
+    grid_text1 = dedent("""\
+        WORD
+        I##A
+        N##S
+        EACH""")
+    block_text1 = dedent("""\
+        AAAA
+        B##C
+        B##C
+        BBCC""")
+    block_text2 = dedent("""\
+        AA?A
+        B##C
+        B##C
+        BBCC""")
+
+    old_blocks = []
+    puzzle1 = Puzzle.parse_sections('',
+                                    grid_text1,
+                                    '',
+                                    block_text1,
+                                    old_blocks=old_blocks)
+    puzzle2 = Puzzle.parse_sections('',
+                                    puzzle1.format_grid(),
+                                    '',
+                                    block_text2,
+                                    old_blocks=old_blocks)
+
+    assert puzzle2.format_blocks() == block_text2
+
+
 def test_resize():
     puzzle = parse_basic_puzzle()
 
