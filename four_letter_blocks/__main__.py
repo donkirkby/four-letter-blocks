@@ -84,6 +84,8 @@ class FourLetterBlocksWindow(QMainWindow):
 
         ui.add_button.clicked.connect(self.add_crosswords)
         ui.remove_button.clicked.connect(self.remove_crossword)
+        ui.puzzle_set_fill_button.clicked.connect(self.fill_puzzle_set_blocks)
+        ui.puzzle_set_clear_button.clicked.connect(self.clear_puzzle_set_blocks)
 
         sys.excepthook = self.on_error
         self.file_path: typing.Optional[Path] = None
@@ -98,6 +100,9 @@ class FourLetterBlocksWindow(QMainWindow):
         ui.blocks_text.textChanged.connect(self.blocks_changed)
         ui.blocks_text.focused.connect(self.blocks_changed)
         ui.clues_text.textChanged.connect(self.clues_changed)
+
+        self.old_puzzle_set_blocks = ''
+        ui.puzzle_set_blocks.textChanged.connect(self.puzzle_set_blocks_changed)
 
         ui.warnings_label.setVisible(False)
 
@@ -191,7 +196,8 @@ class FourLetterBlocksWindow(QMainWindow):
                       self.ui.clues_text,
                       self.ui.blocks_text,
                       self.ui.back_blocks_text,
-                      self.ui.front_blocks_text):
+                      self.ui.front_blocks_text,
+                      self.ui.puzzle_set_blocks):
             field.setOverwriteMode(overwrite_mode)
 
     def on_rotations_display_changed(self):
@@ -513,6 +519,14 @@ class FourLetterBlocksWindow(QMainWindow):
             del self.crossword_set[file_name]
             self.selected_crossword_file = self.ui.crossword_files.currentRow()
             self.summarize_crossword_set()
+
+    def fill_puzzle_set_blocks(self):
+        pass
+
+    def clear_puzzle_set_blocks(self):
+        blocks_text = self.ui.puzzle_set_blocks.toPlainText()
+        cleared_text = re.sub(r'[^#\s]', '?', blocks_text)
+        self.ui.puzzle_set_blocks.setPlainText(cleared_text)
 
     def record_clean_state(self):
         self.clean_state = self.build_current_state()
@@ -892,6 +906,20 @@ class FourLetterBlocksWindow(QMainWindow):
         if block_summary:
             self.statusBar().showMessage(block_summary)
 
+    def puzzle_set_blocks_changed(self):
+        blocks_text = self.ui.puzzle_set_blocks.toPlainText()
+        if blocks_text == self.old_puzzle_set_blocks:
+            return
+        self.old_puzzle_set_blocks = blocks_text
+        file_name = self.ui.crossword_files.currentItem().toolTip()
+        old_puzzle = self.crossword_set[file_name]
+        new_puzzle = Puzzle.parse_sections(old_puzzle.title,
+                                           old_puzzle.format_grid(),
+                                           old_puzzle.format_clues(),
+                                           blocks_text)
+        self.crossword_set[file_name] = new_puzzle
+        self.summarize_crossword_set()
+
     def clues_changed(self):
         if not self.is_state_changed():
             return
@@ -934,7 +962,14 @@ class FourLetterBlocksWindow(QMainWindow):
 
     def select_crossword_file(self, file_index):
         self.selected_crossword_file = file_index
-        self.ui.remove_button.setEnabled(file_index >= 0)
+        is_enabled = file_index >= 0
+        self.ui.remove_button.setEnabled(is_enabled)
+        if not is_enabled:
+            self.ui.puzzle_set_blocks.setPlainText('')
+        else:
+            file_name = self.ui.crossword_files.item(file_index).toolTip()
+            puzzle = self.crossword_set[file_name]
+            self.ui.puzzle_set_blocks.setPlainText(puzzle.format_blocks())
 
     def update_font(self):
         font_size = self.settings.value('font_size', 11, int)
@@ -951,7 +986,8 @@ class FourLetterBlocksWindow(QMainWindow):
                        self.ui.clues_text,
                        self.ui.blocks_text,
                        self.ui.back_blocks_text,
-                       self.ui.front_blocks_text):
+                       self.ui.front_blocks_text,
+                       self.ui.puzzle_set_blocks):
             target.setFont(font)
 
 
