@@ -166,6 +166,7 @@ class Packing(Individual):
 class FitnessScore:
     empty_spaces: int  # negative
     empty_area: float  # negative, bounding rect of empties as fraction of grid
+    missed_targets: int = 0  # negative
     warning_count: int = 0  # negative
 
 
@@ -173,6 +174,10 @@ class PackingFitnessCalculator:
     def __init__(self):
         self.details = []
         self.summaries = []
+        self.count_parities: typing.Dict[str, int] = {}
+        self.count_diffs: typing.Dict[str, int] = {}  # {ab: diff}
+        self.count_min: typing.Dict[str, int] = {}  # {shapes: min}
+        self.count_max: typing.Dict[str, int] = {}  # {shapes: max}
 
     def format_summaries(self):
         display = '\n'.join(self.summaries)
@@ -196,6 +201,7 @@ class PackingFitnessCalculator:
         state = value['state']
         empty = np.nonzero(state == 0)
         empty_spaces = empty[0].size
+        missed_targets = 0
 
         if empty_spaces == 0:
             empty_fraction = 0
@@ -210,20 +216,20 @@ class PackingFitnessCalculator:
                                 if warning.startswith('complete word'))
             # Required features to balance the puzzle set.
             shape_counts = puzzle.shape_counts
-            if shape_counts['O'] % 2 != 1:
-                warning_count += 10
-            if shape_counts['L'] - shape_counts['J'] != 1:
-                warning_count += 10
-            if shape_counts['S'] - shape_counts['Z'] != 1:
-                warning_count += 10
-            elif shape_counts['S'] + shape_counts['Z'] < 3:
-                warning_count += 10
-            if shape_counts['T'] % 2 != 0:
-                warning_count += 10
-            elif shape_counts['T'] < 2:
-                warning_count += 10
-            if shape_counts['I'] % 2 != 0 or 4 < shape_counts['I'] or shape_counts['I'] < 2:
-                warning_count += 10
+            for shape, parity in self.count_parities.items():
+                if shape_counts[shape] % 2 != parity:
+                    missed_targets += 1
+            for (shape1, shape2), expected_diff in self.count_diffs.items():
+                actual_diff = shape_counts[shape1] - shape_counts[shape2]
+                missed_targets += abs(actual_diff)
+            for shapes, expected_min in self.count_min.items():
+                actual_count = sum(shape_counts[shape] for shape in shapes)
+                if actual_count < expected_min:
+                    missed_targets += expected_min - actual_count
+            for shapes, expected_max in self.count_max.items():
+                actual_count = sum(shape_counts[shape] for shape in shapes)
+                if actual_count > expected_max:
+                    missed_targets += actual_count - expected_max
         else:
             warning_count = 0
             min_row = min(empty[0])
@@ -235,6 +241,7 @@ class PackingFitnessCalculator:
             empty_fraction = round(empty_area / total_area, 3)
         fitness = FitnessScore(empty_spaces=-empty_spaces,
                                empty_area=-empty_fraction,
+                               missed_targets=-missed_targets,
                                warning_count=-warning_count)
         self.summaries.append(str(fitness))
 
@@ -264,10 +271,13 @@ class EvoPacker(BlockPacker):
         self.top_fitness: FitnessScore = FitnessScore(0, 0)
         self.top_blocks = ''
 
-    def setup(self, shape_counts: typing.Counter[str]):
+    def setup(self,
+              shape_counts: typing.Counter[str],
+              fitness_calculator: PackingFitnessCalculator = None):
         init_params = dict(start_state=self.state.copy(),
                            shape_counts=shape_counts)
-        fitness_calculator = PackingFitnessCalculator()
+        if fitness_calculator is None:
+            fitness_calculator = PackingFitnessCalculator()
 
         self.evo = Evolution(
             pool_size=1000,

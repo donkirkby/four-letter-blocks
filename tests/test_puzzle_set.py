@@ -1,3 +1,4 @@
+from collections import Counter
 from io import StringIO
 from pathlib import Path
 from textwrap import dedent
@@ -65,6 +66,24 @@ def test_summary():
 
     set_summary = puzzle_set.block_summary
     assert set_summary == '10 blocks with extras: I: 1(2), JL: 2(1), L: 2, O: 1(1), SZ: 2(2)'
+
+    assert puzzle_set.count_parities == {'I': 1,
+                                         'O': 1,
+                                         'T': 0,
+                                         'SZ': 0,
+                                         'JL': 0}
+    assert puzzle_set.count_diffs == {'SZ': 0,
+                                      'JL': 2}
+    assert puzzle_set.count_min == {'I': 1,
+                                    'O': 1,
+                                    'T': 0,
+                                    'SZ': 2,
+                                    'JL': 2}
+    assert puzzle_set.count_max == {'I': 1,
+                                    'O': 1,
+                                    'T': 0,
+                                    'SZ': 2,
+                                    'JL': 6}
 
 
 def test_summary_of_three():
@@ -146,10 +165,7 @@ def test_shape_counts():
 
     shape_counts = puzzle_set.shape_counts
 
-    assert shape_counts == {'I': 1,
-                            'J': 4,
-                            'O': 1,
-                            'S': 2}
+    assert shape_counts == Counter({'I': 1, 'J': 4, 'O': 1, 'S': 2})
 
 
 def test_shape_counts_z_only():
@@ -176,10 +192,7 @@ def test_shape_counts_z_only():
 
     shape_counts = puzzle_set.shape_counts
 
-    assert shape_counts == {'I': 1,
-                            'J': 2,
-                            'T': 2,
-                            'S': 4}
+    assert shape_counts == Counter({'I': 1, 'J': 2, 'T': 2, 'S': 4})
     block_count = sum(1
                       for shape_blocks in (puzzle_set.front_blocks,
                                            puzzle_set.back_blocks)

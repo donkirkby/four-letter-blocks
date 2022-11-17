@@ -158,6 +158,84 @@ def test_fitness():
     assert fitness == FitnessScore(empty_spaces=-8, empty_area=-0.6)
 
 
+def test_fitness_parity():
+    start_state = EvoPacker(start_text=dedent("""\
+        E##DA
+        EDDDA
+        EE#AA
+        BBCCC
+        BB##C""")).state
+    packing = Packing(dict(state=start_state, shape_counts={'O': 3}))
+    calculator = PackingFitnessCalculator()
+    calculator.count_parities['O'] = 0
+
+    fitness = calculator.calculate(packing)
+
+    assert fitness == FitnessScore(empty_spaces=0,
+                                   empty_area=0,
+                                   missed_targets=-1,
+                                   warning_count=-3)
+
+
+# noinspection DuplicatedCode
+def test_fitness_count_diff():
+    start_state = EvoPacker(start_text=dedent("""\
+        A##EE
+        ADDDE
+        AD#CE
+        ABBCC
+        BB##C""")).state
+    packing = Packing(dict(state=start_state, shape_counts={'O': 3}))
+    calculator = PackingFitnessCalculator()
+    calculator.count_diffs['SZ'] = 0
+
+    fitness = calculator.calculate(packing)
+
+    assert fitness == FitnessScore(empty_spaces=0,
+                                   empty_area=0,
+                                   missed_targets=-2,
+                                   warning_count=-2)
+
+
+def test_fitness_count_min():
+    start_state = EvoPacker(start_text=dedent("""\
+        A##EE
+        ADDDE
+        AD#CE
+        ABBCC
+        BB##C""")).state
+    packing = Packing(dict(state=start_state, shape_counts={'O': 3}))
+    calculator = PackingFitnessCalculator()
+    calculator.count_min['SZ'] = 4
+
+    fitness = calculator.calculate(packing)
+
+    assert fitness == FitnessScore(empty_spaces=0,
+                                   empty_area=0,
+                                   missed_targets=-2,
+                                   warning_count=-2)
+
+
+# noinspection DuplicatedCode
+def test_fitness_count_max():
+    start_state = EvoPacker(start_text=dedent("""\
+        A##EE
+        ADDDE
+        AD#CE
+        ABBCC
+        BB##C""")).state
+    packing = Packing(dict(state=start_state, shape_counts={'O': 3}))
+    calculator = PackingFitnessCalculator()
+    calculator.count_max['SZ'] = 0
+
+    fitness = calculator.calculate(packing)
+
+    assert fitness == FitnessScore(empty_spaces=0,
+                                   empty_area=0,
+                                   missed_targets=-2,
+                                   warning_count=-2)
+
+
 def test_fitness_full():
     start_state = EvoPacker(start_text=dedent("""\
         D##EA

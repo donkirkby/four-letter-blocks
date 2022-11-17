@@ -40,6 +40,10 @@ class PuzzleSet:
             self.pairs[first] = last
             self.pairs[last] = first
         self.start_hue = start_hue
+        self.count_parities = {}
+        self.count_diffs = {}
+        self.count_min = {}
+        self.count_max = {}
         self.pack_puzzles()
 
     def pack_puzzles(self):
@@ -64,9 +68,8 @@ class PuzzleSet:
                 if count > max_counts[combo]:
                     max_counts[combo] = count
                     max_puzzles[combo] = i
-        all_combos = set(combos)
+        all_combos = set(Block.shape_names())
         all_combos.update(combos.values())
-        all_combos.update(total_counts)
         extras = []
         for combo in sorted(all_combos):
             total_count = total_counts[combo]
@@ -74,6 +77,9 @@ class PuzzleSet:
             mirror = pairs.get(combo)
             if mirror is None:
                 extra = 2 * max_count - total_count
+                self.count_parities[combo] = total_count % 2
+                self.count_min[combo] = extra
+                self.count_max[combo] = total_count
                 if extra > 0:
                     extras.append(f'{combo}: {extra}({max_puzzles[combo] + 1})')
                 elif total_count % 2 != 0:
@@ -92,6 +98,7 @@ class PuzzleSet:
                     self.shape_counts[combo] = max(total_count,
                                                    mirror_count,
                                                    max_count)
+                    self.count_diffs[full_combo] = -extra
 
         for combo in all_combos:
             if len(combo) > 1:

@@ -5,7 +5,7 @@ from pathlib import Path
 from PySide6.QtCore import QThread, Signal, QObject
 
 from four_letter_blocks.block import Block
-from four_letter_blocks.evo_packer import EvoPacker
+from four_letter_blocks.evo_packer import EvoPacker, PackingFitnessCalculator
 from four_letter_blocks.puzzle import Puzzle
 
 
@@ -18,19 +18,28 @@ class FillThread(QThread):
                  back_puzzle: Puzzle,
                  front_puzzle: Puzzle,
                  is_packing_back: bool,
-                 report_path: Path | None = None):
+                 report_path: Path | None = None,
+                 fitness_calculator: PackingFitnessCalculator = None):
         super().__init__(parent)
         # copy puzzles, so we don't access them from two threads.
         self.back_puzzle = Puzzle.parse_sections(back_puzzle.title,
                                                  back_puzzle.format_grid(),
                                                  back_puzzle.format_clues(),
                                                  back_puzzle.format_blocks())
-        self.front_puzzle = Puzzle.parse_sections(front_puzzle.title,
-                                                  front_puzzle.format_grid(),
-                                                  front_puzzle.format_clues(),
-                                                  front_puzzle.format_blocks())
+        if front_puzzle is None:
+            self.front_puzzle = None
+        else:
+            self.front_puzzle = Puzzle.parse_sections(
+                front_puzzle.title,
+                front_puzzle.format_grid(),
+                front_puzzle.format_clues(),
+                front_puzzle.format_blocks())
         self.is_packing_back = is_packing_back
         self.report_path = report_path
+        if fitness_calculator is None:
+            self.fitness_calculator = PackingFitnessCalculator()
+        else:
+            self.fitness_calculator = fitness_calculator
         self.attempt_count = 0
         self.solutions = []
 
@@ -110,10 +119,14 @@ class FillThread(QThread):
         block_count = back_puzzle.grid.letter_count // 4
         back_shapes = Counter({shape_name: block_count
                                for shape_name in Block.shape_names()})
+        if self.front_puzzle is None:
+            front_blocks = '...'
+        else:
+            front_blocks = self.front_puzzle.format_blocks()
         packed_puzzle = self.run_epochs(
             back_puzzle,
             back_shapes,
-            front_blocks=self.front_puzzle.format_blocks())
+            front_blocks=front_blocks)
         if packed_puzzle is None:
             return False
         self.back_puzzle = packed_puzzle

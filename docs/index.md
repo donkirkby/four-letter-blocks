@@ -16,32 +16,28 @@ top left. The good news is that every word has at least the first letter given.
 Here's a small starter puzzle to see how they work. You can also print out the
 [PDF]. Find more challenging puzzles I've published on [Puzzling Stack Exchange].
 
-## Famous Puzzles
-Clue numbers are shuffled: 1 Across might not be in the top left.
+## Greetings (7x7)
+Clue numbers are shuffled: 1 Across might not be the top left. 10 pieces.
 
 Across  
-**1.** Lamb's mother  
-**2.** Polka you can't dance to  
-**3.** Small gear  
-**5.** __ and Knaves  
-**7.** English marshland  
-**8.** Go out, like the tide  
-**9.** "We __ Family"  
-**10.** Seven-piece puzzle  
-**13.** Desperately request  
-**15.** League of higher learning
+**1.** Made a promise  
+**3.** Brewed leaves  
+**4.** Friendly door mat  
+**7.** Caribou cousin  
+**10.** Zsa Zsa's sister  
+**11.** Latin land  
+**12.** The Beatles' "___ ___ Sunshine"  
+**14.** McCloskey's "Blueberries for ___"  
 
 Down  
-**4.** Sweaty spot  
-**5.** Finger lickin' good  
-**6.** The One from The Matrix  
-**8.** Consume  
-**11.** Upper underwear  
-**12.** Unstraightening  
-**13.** Brought to life  
-**14.** WALL·E's love interest  
-**16.** A couple  
-**17.** Tennis games
+**1.** Match a bet  
+**2.** Britain's first prime minister  
+**3.** Sticks in a nest  
+**5.** Shuffle  
+**6.** Freddy's "Nightmare" street  
+**8.** Nairobi's land  
+**9.** Ms. DuVernay, director of "Selma"  
+**13.** Meal for a horse or a baker
 
 [![starter]][starter]
 

@@ -14,11 +14,12 @@ from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, \
     QTextCharFormat, QPyTextObject, QImage
 from PySide6.QtSvg import QSvgGenerator
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog, QInputDialog, QToolTip, \
-    QListWidgetItem, QPlainTextEdit
+    QListWidgetItem, QPlainTextEdit, QPushButton
 
 import four_letter_blocks
 from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.clue_painter import CluePainter
+from four_letter_blocks.evo_packer import PackingFitnessCalculator
 from four_letter_blocks.fill_thread import FillThread
 from four_letter_blocks.line_deduper import LineDeduper
 from four_letter_blocks.main_window import Ui_MainWindow
@@ -407,35 +408,51 @@ class FourLetterBlocksWindow(QMainWindow):
 
     def interrupt_fill(self):
         self.fill_thread.requestInterruption()
-        self.ui.back_fill_button.setText('Fill')
-        self.ui.front_fill_button.setText('Fill')
-        self.ui.front_refill_button.setText('Refill...')
-        self.ui.back_fill_button.setEnabled(True)
-        self.ui.front_fill_button.setEnabled(True)
-        self.ui.front_refill_button.setEnabled(True)
+        self.reset_fill_buttons()
         self.statusBar().showMessage('Stopped filling.')
         self.fill_thread.wait()
         self.fill_thread = None
 
+    def reset_fill_buttons(self):
+        ui = self.ui
+        for button in (ui.back_fill_button,
+                       ui.front_fill_button,
+                       ui.front_refill_button,
+                       ui.puzzle_set_fill_button):
+            if button is ui.front_refill_button:
+                button.setText('Refill...')
+            else:
+                button.setText('Fill')
+            button.setEnabled(True)
+
     def launch_fill(self,
-                    clicked_button,
-                    is_packing_back=False,
-                    report_path=None):
+                    clicked_button: QPushButton,
+                    is_packing_back: bool = False,
+                    report_path: Path = None,
+                    fitness_calculator: PackingFitnessCalculator = None):
         if self.fill_thread is not None:
             self.interrupt_fill()
             return
-        front_puzzle, back_puzzle = self.pair_puzzles
+        if fitness_calculator is None:
+            front_puzzle, back_puzzle = self.pair_puzzles
+        else:
+            front_puzzle = None
+            item = self.ui.crossword_files.item(self.selected_crossword_file)
+            back_puzzle = self.crossword_set[item.toolTip()]
+            is_packing_back = True
         self.fill_thread = FillThread(self,
                                       back_puzzle,
                                       front_puzzle,
                                       is_packing_back,
-                                      report_path)
+                                      report_path,
+                                      fitness_calculator)
         self.fill_thread.status_update.connect(self.on_fill_update_status)
         self.fill_thread.completed.connect(self.on_fill_completed)
         self.fill_thread.start()
         for fill_button in (self.ui.back_fill_button,
                             self.ui.front_fill_button,
-                            self.ui.front_refill_button):
+                            self.ui.front_refill_button,
+                            self.ui.puzzle_set_fill_button):
             if fill_button is clicked_button:
                 continue
             fill_button.setEnabled(False)
@@ -446,16 +463,21 @@ class FourLetterBlocksWindow(QMainWindow):
                               back_blocks: str,
                               front_blocks: str):
         self.statusBar().showMessage(status)
-        self.ui.back_blocks_text.setPlainText(back_blocks)
-        self.ui.front_blocks_text.setPlainText(front_blocks)
+        if self.ui.puzzle_set_fill_button.isEnabled():
+            self.ui.puzzle_set_blocks.setPlainText(back_blocks)
+        else:
+            self.ui.back_blocks_text.setPlainText(back_blocks)
+            self.ui.front_blocks_text.setPlainText(front_blocks)
 
     def on_fill_completed(self,
                           is_filled: bool,
                           summary: str,
                           back_puzzle: Puzzle,
                           front_puzzle: Puzzle):
-        self.statusBar().showMessage(summary)
-        if is_filled:
+        self.fill_thread = None
+        if self.ui.puzzle_set_fill_button.isEnabled():
+            self.ui.puzzle_set_blocks.setPlainText(back_puzzle.format_blocks())
+        elif is_filled:
             self.pair_puzzles[0] = front_puzzle
             self.pair_puzzles[1] = back_puzzle
             self.ui.back_blocks_text.setPlainText(back_puzzle.format_blocks())
@@ -466,9 +488,10 @@ class FourLetterBlocksWindow(QMainWindow):
             front_puzzle, back_puzzle = self.pair_puzzles
             self.ui.back_blocks_text.setPlainText(back_puzzle.format_blocks())
             self.ui.front_blocks_text.setPlainText(front_puzzle.format_blocks())
-        self.fill_thread = None
+        self.reset_fill_buttons()
+        self.statusBar().showMessage(summary)
 
-    def summarize_crossword_set(self):
+    def build_puzzle_set(self) -> PuzzleSet:
         puzzles = []
         crossword_files = self.ui.crossword_files
         for i in range(crossword_files.count()):
@@ -476,6 +499,10 @@ class FourLetterBlocksWindow(QMainWindow):
             puzzles.append(self.crossword_set[file_name])
 
         puzzle_set = PuzzleSet(*puzzles)
+        return puzzle_set
+
+    def summarize_crossword_set(self):
+        puzzle_set = self.build_puzzle_set()
         self.statusBar().showMessage(puzzle_set.block_summary)
 
     def open(self):
@@ -521,7 +548,16 @@ class FourLetterBlocksWindow(QMainWindow):
             self.summarize_crossword_set()
 
     def fill_puzzle_set_blocks(self):
-        pass
+        self.statusBar().showMessage('Filling puzzle set...')
+        puzzle_set = self.build_puzzle_set()
+        fitness_calculator = PackingFitnessCalculator()
+        fitness_calculator.count_parities.update(puzzle_set.count_parities)
+        fitness_calculator.count_diffs.update(puzzle_set.count_diffs)
+        fitness_calculator.count_min.update(puzzle_set.count_min)
+        fitness_calculator.count_max.update(puzzle_set.count_max)
+        self.launch_fill(self.ui.puzzle_set_fill_button,
+                         is_packing_back=True,
+                         fitness_calculator=fitness_calculator)
 
     def clear_puzzle_set_blocks(self):
         blocks_text = self.ui.puzzle_set_blocks.toPlainText()
@@ -842,6 +878,7 @@ class FourLetterBlocksWindow(QMainWindow):
 
     def export_png(self, file_path: Path):
         puzzle = self.parse_puzzle()
+        puzzle.face_colour = QColor('white')
         width, height = 640, 2000
         pixmap = QPixmap(width, height)
         transparent = QColor(255, 255, 255, 0)
@@ -909,6 +946,8 @@ class FourLetterBlocksWindow(QMainWindow):
     def puzzle_set_blocks_changed(self):
         blocks_text = self.ui.puzzle_set_blocks.toPlainText()
         if blocks_text == self.old_puzzle_set_blocks:
+            return
+        if self.fill_thread is not None:
             return
         self.old_puzzle_set_blocks = blocks_text
         file_name = self.ui.crossword_files.currentItem().toolTip()
