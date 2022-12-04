@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import pytest
 from PySide6.QtCore import QRectF
 from PySide6.QtGui import QPainter, QColor
 
@@ -124,7 +123,6 @@ def test_draw_front_slug1(pixmap_differ: PixmapDiffer):
 
 
 # noinspection DuplicatedCode
-@pytest.mark.skip("Not implemented yet.")
 def test_draw_front_slug2(pixmap_differ: PixmapDiffer):
     front_file = Path(__file__).parent / 'test-front11x11.txt'
     back_file = Path(__file__).parent / 'test-back11x11.txt'
@@ -141,36 +139,42 @@ def test_draw_front_slug2(pixmap_differ: PixmapDiffer):
     expected: QPainter
     actual: QPainter
     with pixmap_differ.create_painters(width, height) as (actual, expected):
-        font = actual.font()
-
-        font.setPixelSize(7)
+        font = expected.font()
+        font.setPixelSize(4)
         expected.setFont(font)
-        clue_width = 293 / 4
-        clue_height = height - 200
-        clue_rect = QRectF(20, 180, clue_width, clue_height)
+        expected.rotate(-90)
+        frame_start = width - (width - 275) / 2
+        link_height = CluePainter.find_text_height(pair.LINK_TEXT, expected)
+        link_start = (width + frame_start - 4 - link_height) / 2
+        link_rect = QRectF(-158, link_start, 150, width)
+        CluePainter.draw_text(link_rect,
+                              pair.LINK_TEXT,
+                              expected,
+                              is_centred=True)
+        expected.rotate(90)
+        font.setPixelSize(8)
+        expected.setFont(font)
+        clue_width = 317 / 4 - 4
+        clue_height = height - 174
+        clue_rect = QRectF(8, 166, clue_width, clue_height)
         CluePainter.draw_text(clue_rect, 'Down', expected, is_bold=True)
         clue_painter = CluePainter(front_puzzle)
         clue_count = clue_painter.draw_clues(expected,
                                              front_puzzle.down_clues,
                                              clue_rect)
-        clue_rect = QRectF(20+clue_width, 180, clue_width, clue_height)
+        clue_rect = QRectF(8+clue_width+4, 166, clue_width, clue_height)
         clue_count += clue_painter.draw_clues(
             expected,
             front_puzzle.down_clues[clue_count:],
             clue_rect)
-        clue_rect = QRectF(20+2*clue_width, 180, clue_width, clue_height)
-        clue_count += clue_painter.draw_clues(
-            expected,
-            front_puzzle.down_clues[clue_count:],
-            clue_rect)
-        clue_rect = QRectF(20+3*clue_width, 180, clue_width, clue_height)
+        clue_rect = QRectF(8+2*(clue_width+4), 166, clue_width, clue_height)
         clue_count += clue_painter.draw_clues(
             expected,
             front_puzzle.down_clues[clue_count:],
             clue_rect)
 
         x_shift = (333 - 12 * pair.square_size) / 2
-        y_shift = -117.5
+        y_shift = -129.5
         expected.translate(x_shift, y_shift)
         for block in pair.display_blocks(pair.block_packer, pair.front_blocks):
             if block.display_y > 125:
@@ -185,18 +189,13 @@ def test_draw_front_slug2(pixmap_differ: PixmapDiffer):
                            (237.5, 162.5),
                            (237.5, 187.5),
                            (12.5, 212.5),
-                           (237.5, 212.5),
-                           (262.5, 212.5),
                            (62.5, 237.5),
                            (87.5, 237.5),
                            (137.5, 237.5),
                            (237.5, 237.5),
                            (262.5, 237.5),
                            (12.5, 262.5),
-                           (37.5, 262.5),
-                           (62.5, 262.5),
                            (87.5, 262.5),
-                           (112.5, 262.5),
                            (137.5, 262.5),
                            (162.5, 262.5),
                            (187.5, 262.5),
@@ -207,22 +206,31 @@ def test_draw_front_slug2(pixmap_differ: PixmapDiffer):
             black_block.draw(expected, is_packed=True)
 
         # cuts
+        expected.setPen(Block.CUT_COLOUR)
         expected.translate(-x_shift, -y_shift)
-        expected.drawLine(10, height-10, 323, height-10)
-        expected.drawLine(10, 20, 10, height-10)
-        expected.drawLine(323, 20, 323, height-10)
+        expected.drawLine(4, height-4, 329, height-4)
+        expected.drawLine(4, 8, 4, height-4)
+        expected.drawLine(329, 8, 329, height-4)
         black_block.draw_nicked_line(expected,
                                      0,
-                                     10, 20,
-                                     round(x_shift+12.5), 20)
+                                     4, 8,
+                                     round(x_shift+12.5), 8)
         black_block.draw_nicked_line(expected,
                                      0,
-                                     round(x_shift+287.5), 20,
-                                     323, 20)
+                                     round(x_shift+287.5), 8,
+                                     329, 8)
         expected.translate(x_shift, y_shift)
         for block in pair.display_blocks(pair.block_packer, pair.front_blocks):
+            block.border_colour = Block.CUT_COLOUR
             if block.display_y > 125:
                 block.tab_count = 2
                 block.draw_outline(expected)
+        black_block.border_colour = Block.CUT_COLOUR
         for black_block.x, black_block.y in black_positions:
             black_block.draw_outline(expected)
+
+        pair.tab_count = 2
+        pair.slug_index = 1
+        grid_rect = pair.draw_front(actual, font_size=8)
+        header_fraction = grid_rect.top() / height
+        pair.draw_cuts(actual, header_fraction=header_fraction)

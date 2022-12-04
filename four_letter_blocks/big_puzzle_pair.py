@@ -18,13 +18,17 @@ class BigPuzzlePair(PuzzlePair):
                  back_puzzle: Puzzle,
                  block_packer: BlockPacker | None = None):
         super().__init__(front_puzzle, back_puzzle, block_packer)
-        self.slug_index = 0
+        self.slug_count = 2
 
     def draw_header(self,
                     painter: QPainter,
                     puzzle: Puzzle,
                     font_size: float | None = None,
                     is_dry_run: bool = False) -> QRectF:
+        if self.slug_index == 1:
+            return self.draw_header2(painter, puzzle, font_size)
+
+        # noinspection DuplicatedCode
         height = painter.window().height()
         width = painter.window().width()
         margin = round(height / 66)  # Covers cutter drift
@@ -55,29 +59,92 @@ class BigPuzzlePair(PuzzlePair):
         clues_width = (width - 4*margin) / 4 - margin
         clues_height = grid_rect.top() - clues_start - 2*margin
 
-        clues_rect = QRectF(2*margin, clues_start, clues_width, clues_height)
-        CluePainter.draw_text(clues_rect, 'Across', painter, is_bold=True)
-        clue_painter = CluePainter(puzzle, font_size=font_size)
-        clue_count = clue_painter.draw_clues(painter,
-                                             puzzle.across_clues,
-                                             clues_rect)
-
-        clues_rect = QRectF(2*margin + clues_width + margin, clues_start,
-                            clues_width, clues_height)
-        clue_count += clue_painter.draw_clues(painter,
-                                              puzzle.across_clues[clue_count:],
-                                              clues_rect)
-        clues_rect = QRectF(2*margin + 2*(clues_width + margin), clues_start,
-                            clues_width, clues_height)
-        clue_count += clue_painter.draw_clues(painter,
-                                              puzzle.across_clues[clue_count:],
-                                              clues_rect)
-        clues_rect = QRectF(2*margin + 3*(clues_width + margin), clues_start,
-                            clues_width, clues_height)
-        clue_count += clue_painter.draw_clues(painter,
-                                              puzzle.across_clues[clue_count:],
-                                              clues_rect)
+        clue_rect_template = QRectF(2*margin, clues_start, clues_width, clues_height)
+        self.draw_header_clues(painter,
+                               CluePainter(puzzle, font_size=font_size),
+                               'Across',
+                               puzzle.across_clues,
+                               clue_rect_template,
+                               margin)
         return grid_rect
+
+    def draw_header2(self,
+                     painter: QPainter,
+                     puzzle: Puzzle,
+                     font_size: float | None = None) -> QRectF:
+        # noinspection DuplicatedCode
+        height = painter.window().height()
+        width = painter.window().width()
+        margin = round(height / 66)  # Covers cutter drift
+        column_count = puzzle.grid.width
+        hidden_row_count = math.floor(column_count/2)
+        hidden_height = hidden_row_count * self.square_size
+        grid_width = column_count * self.square_size
+        grid_rect = QRectF((width - grid_width) / 2,
+                           2 * margin - hidden_height,
+                           grid_width,
+                           grid_width)
+
+        font = painter.font()
+        font.setPixelSize(font_size / 2)
+        painter.setFont(font)
+        painter.rotate(-90)
+        frame_start = width - (width - grid_width) / 2
+        link_height = CluePainter.find_text_height(self.LINK_TEXT, painter)
+        link_start = (width + frame_start - margin - link_height) / 2
+        link_rect = QRectF(hidden_height-grid_width-2*margin, link_start,
+                           grid_width-hidden_height, width)
+        CluePainter.draw_text(link_rect,
+                              self.LINK_TEXT,
+                              painter,
+                              is_centred=True)
+        painter.rotate(90)
+
+        font.setPixelSize(font_size)
+        painter.setFont(font)
+        clue_start = grid_rect.bottom() + 2*margin
+        clue_width = (width - 4*margin) / 4 - margin
+        clue_height = height - clue_start - 2*margin
+        clue_rect_template = QRectF(2*margin,
+                                    clue_start,
+                                    clue_width,
+                                    clue_height)
+        self.draw_header_clues(painter,
+                               CluePainter(puzzle, font_size=font_size),
+                               'Down',
+                               puzzle.down_clues,
+                               clue_rect_template,
+                               margin)
+
+        return grid_rect
+
+    @staticmethod
+    def draw_header_clues(painter,
+                          clue_painter,
+                          section_name,
+                          clues,
+                          clue_rect_template,
+                          margin):
+        clue_rect = QRectF(clue_rect_template)
+        CluePainter.draw_text(clue_rect, section_name, painter, is_bold=True)
+        clue_count = clue_painter.draw_clues(painter,
+                                             clues,
+                                             clue_rect)
+        clue_rect_template.translate(clue_rect_template.width() + margin, 0)
+        clue_rect = QRectF(clue_rect_template)
+        clue_count += clue_painter.draw_clues(painter,
+                                              clues[clue_count:],
+                                              clue_rect)
+        clue_rect_template.translate(clue_rect_template.width() + margin, 0)
+        clue_rect = QRectF(clue_rect_template)
+        clue_count += clue_painter.draw_clues(painter,
+                                              clues[clue_count:],
+                                              clue_rect)
+        clue_rect_template.translate(clue_rect_template.width() + margin, 0)
+        clue_rect = QRectF(clue_rect_template)
+        clue_painter.draw_clues(painter,
+                                clues[clue_count:],
+                                clue_rect)
 
     def draw_clues(self,
                    painter: QPainter,
@@ -94,13 +161,18 @@ class BigPuzzlePair(PuzzlePair):
         y = block.display_y
         if y is None:
             y = block.y
-        return y < limit
+        if self.slug_index == 0:
+            return y < limit
+        return limit <= y
 
     def draw_cuts(self,
                   painter: QPainter | LineDeduper,
                   nick_radius: int = 0,
                   header_fraction: float = 0.1):
         super().draw_cuts(painter, nick_radius, header_fraction)
+        if self.slug_index == 1:
+            self.draw_cuts2(painter, nick_radius)
+            return
         width = painter.window().width()
         height = painter.window().height()
         margin = round(height / 66)  # Covers cutter drift
@@ -132,3 +204,38 @@ class BigPuzzlePair(PuzzlePair):
                                nick_radius,
                                (width + grid_width)/2, height - 2*margin,
                                width - margin, height - 2*margin)
+
+    def draw_cuts2(self,
+                   painter: QPainter | LineDeduper,
+                   nick_radius: int = 0):
+        column_count = self.puzzles[0].grid.width
+        grid_width = column_count * self.square_size
+        width = painter.window().width()
+        height = painter.window().height()
+        margin = round(height / 66)  # Covers cutter drift
+
+        painter.setPen(Block.CUT_COLOUR)
+
+        block = Block(Square(' '))
+        block.squares[0].size = self.square_size
+        block.draw_nicked_line(painter,
+                               nick_radius,
+                               margin, 2*margin,
+                               margin, height - margin)
+        block.draw_nicked_line(painter,
+                               nick_radius,
+                               margin, height - margin,
+                               width - margin, height - margin)
+        block.draw_nicked_line(painter,
+                               nick_radius,
+                               width - margin, 2*margin,
+                               width - margin, height - margin)
+        block.tab_count = self.tab_count
+        block.draw_nicked_line(painter,
+                               nick_radius,
+                               margin, 2*margin,
+                               (width - grid_width)/2, 2*margin)
+        block.draw_nicked_line(painter,
+                               nick_radius,
+                               (width + grid_width)/2, 2*margin,
+                               width - margin, 2*margin)

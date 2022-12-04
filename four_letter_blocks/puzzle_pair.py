@@ -15,6 +15,8 @@ from four_letter_blocks.square import Square
 
 
 class PuzzlePair(PuzzleSet):
+    LINK_TEXT = 'https://donkirkby.github.io/four-letter-blocks'
+
     def __init__(self,
                  front_puzzle: Puzzle,
                  back_puzzle: Puzzle,
@@ -26,6 +28,8 @@ class PuzzlePair(PuzzleSet):
             for x, c in enumerate(line):
                 if c in '.#':
                     self.black_positions.append((x, y))
+        self.slug_count = 1
+        self.slug_index = 0
 
     def pack_puzzles(self):
         front_puzzle, back_puzzle = self.puzzles
@@ -208,9 +212,8 @@ class PuzzlePair(PuzzleSet):
 
         font.setPixelSize(font_size/2)
         painter.setFont(font)
-        link = 'https://donkirkby.github.io/four-letter-blocks'
         CluePainter.draw_text(grid_rect,
-                              link,
+                              self.LINK_TEXT,
                               painter,
                               is_centred=True,
                               is_dry_run=is_dry_run)

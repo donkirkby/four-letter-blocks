@@ -147,7 +147,7 @@ def test_draw_header(pixmap_differ: PixmapDiffer):
         font.setPixelSize(4)
         expected.setFont(font)
         CluePainter.draw_text(grid_rect,
-                              'https://donkirkby.github.io/four-letter-blocks',
+                              pair.LINK_TEXT,
                               expected,
                               is_centred=True)
         grid_rect.translate(0, 9.09)
