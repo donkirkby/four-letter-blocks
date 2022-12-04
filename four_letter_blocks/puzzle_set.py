@@ -238,17 +238,24 @@ class PuzzleSet:
                 square.x = (square.x + 0.5) * square_size
                 square.y = (square.y + 0.5) * square_size
             block.border_colour = Block.CUT_COLOUR
-            block.draw_outline(painter, nick_radius)
+            if self.can_draw_block(block):
+                block.draw_outline(painter, nick_radius)
 
     def draw_front(self, painter: typing.Union[QPainter, LineDeduper]):
         for block in self.display_blocks(self.block_packer,
                                          self.front_blocks):
-            block.draw(painter, is_packed=True)
+            if self.can_draw_block(block):
+                block.draw(painter, is_packed=True)
+
+    # noinspection PyUnusedLocal,PyMethodMayBeStatic
+    def can_draw_block(self, block: Block) -> bool:
+        return True
 
     def draw_back(self, painter: typing.Union[QPainter, LineDeduper]):
         block_packer = self.block_packer.flip()
         for block in self.display_blocks(block_packer, self.back_blocks):
-            block.draw(painter, is_packed=True)
+            if self.can_draw_block(block):
+                block.draw(painter, is_packed=True)
 
     @staticmethod
     def draw_background(painter: QPainter, tile: QPixmap):

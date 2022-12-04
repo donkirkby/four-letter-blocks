@@ -317,6 +317,23 @@ def test_fill_with_underhang():
     assert packer.display() == expected_display
 
 
+def test_fill_with_split_row():
+    width, height = 3, 7
+    shape_counts = Counter('OOT')
+    expected_display = dedent("""\
+        AA#
+        AA#
+        ###
+        BB#
+        BBC
+        .CC
+        ..C""")
+    packer = BlockPacker(width, height, split_row=3, tries=100)
+    packer.fill(shape_counts)
+
+    assert packer.display() == expected_display
+
+
 def test_fill_overflow():
     """ Overflow 8-bit block numbers with 255 blocks. (0 and 1 are blanks.) """
     shape_counts = Counter({'O': 254})

@@ -18,7 +18,8 @@ class BlockPacker:
                  tries=-1,
                  min_tries=-1,
                  start_text: str = None,
-                 start_state: np.ndarray = None):
+                 start_state: np.ndarray = None,
+                 split_row=0):
         if start_state is not None:
             self.height, self.width = start_state.shape
             self.state = start_state
@@ -36,6 +37,7 @@ class BlockPacker:
                     self.state[row, col] = (0 if char == '.'
                                             else 1 if char == '#'
                                             else ord(char) - 63)
+        self.split_row = split_row
         self.tries = tries
         self.stop_tries = 0
         if 0 <= min_tries < tries:
@@ -235,9 +237,10 @@ class BlockPacker:
             if start_col >= first_square_index:
                 start_col -= first_square_index
                 end_col -= first_square_index
-            target = new_state[
-                     target_row:target_row + block.shape[0],
-                     start_col:end_col]
+            end_row = target_row + block.shape[0]
+            if target_row < self.split_row < end_row:
+                continue
+            target = new_state[target_row:end_row, start_col:end_col]
             if target.shape != block.shape:
                 # hanging over the edge
                 continue

@@ -344,6 +344,36 @@ def test_double_tabs(pixmap_differ: PixmapDiffer):
         block.draw_outline(actual)
 
 
+# noinspection DuplicatedCode
+def test_double_tabs_short(pixmap_differ: PixmapDiffer):
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(400, 260) as (actual, expected):
+        block = create_basic_block()
+        block.tab_count = 2
+
+        pen = QPen()
+        pen.setWidth(3)
+        expected.setPen(pen)
+
+        pen.setCapStyle(Qt.RoundCap)
+        expected.setPen(pen)
+        path = QPainterPath(QPoint(-30, 0))
+        path.lineTo(-15, 0)
+        path.arcTo(-22, -13.3, 13.3, 13.3, -90, 66)
+        path.arcTo(-10, -10, 20, 20, 156.4, -66.4)
+        path.arcTo(-5, -10, 10, 10, 90, -180)
+        path.arcTo(-5, 0, 10, 10, 90, 180)
+        path.arcTo(-10, -10, 20, 20, 270, 66.4)
+        path.arcTo(8.6, 0, 13.3, 13.3, 156, -66)
+        path.lineTo(30, 0)
+        path.translate(50, 50)
+        expected.drawPath(path)
+
+        actual.setPen(pen)
+        block.draw_nicked_line(actual, 0, 20, 50, 80, 50)
+
+
 def test_draw_packed(pixmap_differ: PixmapDiffer):
     actual: QPainter
     expected: QPainter

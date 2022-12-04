@@ -44,9 +44,11 @@ class PuzzlePair(PuzzleSet):
             self.block_packer = flipped_packer
         else:
             grid_size = front_puzzle.grid.width
-            self.block_packer = BlockPacker(grid_size,
-                                            grid_size,
-                                            self.block_packer.tries)
+            self.block_packer = BlockPacker(
+                grid_size,
+                grid_size,
+                self.block_packer.tries,
+                split_row=self.block_packer.split_row)
             is_filled = self.block_packer.fill(self.shape_counts)
             if not is_filled:
                 raise RuntimeError("Blocks didn't fit.")
@@ -116,7 +118,8 @@ class PuzzlePair(PuzzleSet):
         for x, y in self.black_positions:
             block.x = self.square_size * (x + 0.5)
             block.y = self.square_size * (y + 0.5)
-            block.draw(painter, is_packed=True)
+            if self.can_draw_block(block):
+                block.draw(painter, is_packed=True)
 
     # noinspection DuplicatedCode
     def draw_back(self,
@@ -140,7 +143,8 @@ class PuzzlePair(PuzzleSet):
         for x, y in self.black_positions:
             block.x = self.square_size * (grid_size - x - 0.5)
             block.y = self.square_size * (y + 0.5)
-            block.draw(painter, is_packed=True)
+            if self.can_draw_block(block):
+                block.draw(painter, is_packed=True)
 
     def draw_cuts(self,
                   painter: QPainter | LineDeduper,
@@ -155,7 +159,9 @@ class PuzzlePair(PuzzleSet):
                            grid_length,
                            grid_length)
         shift = self.square_size / 2
-        painter.translate(grid_rect.left() - shift, grid_rect.top() - shift)
+        x_shift = grid_rect.left() - shift
+        y_shift = grid_rect.top() - shift
+        painter.translate(x_shift, y_shift)
         super().draw_cuts(painter, nick_radius)
         block = Block(Square(' '))
         block.squares[0].size = self.square_size
@@ -165,7 +171,10 @@ class PuzzlePair(PuzzleSet):
         for x, y in self.black_positions:
             block.x = self.square_size * (x + 0.5)
             block.y = self.square_size * (y + 0.5)
-            block.draw_outline(painter, nick_radius)
+            if self.can_draw_block(block):
+                block.draw_outline(painter, nick_radius)
+
+        painter.translate(-x_shift, -y_shift)
     
     def draw_header(self,
                     painter: QPainter,
@@ -209,8 +218,8 @@ class PuzzlePair(PuzzleSet):
         grid_rect.setHeight(grid_rect.width())
         return grid_rect
 
-    @staticmethod
-    def draw_clues(painter: QPainter,
+    def draw_clues(self,
+                   painter: QPainter,
                    grid_rect: QRectF,
                    puzzle: Puzzle,
                    font_size: float | None = None):

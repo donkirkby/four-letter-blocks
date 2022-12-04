@@ -289,10 +289,18 @@ class Block:
             create_tab_path(path, square_size)
         else:
             create_double_tab_path(path, square_size, nick_radius)
+        shortfall = round(cell_count * square_size - length)
         path.translate(square_size/2, 0)
         painter.rotate(angle)
         path.translate(x0, y0)
         for i in range(cell_count):
+            if i == cell_count - 1 and shortfall:
+                x = path.elementAt(0).x
+                path.translate(-shortfall/2, 0)
+                path.setElementPositionAt(0, x, y0)
+                path.setElementPositionAt(path.elementCount() - 1,
+                                          x + square_size - shortfall,
+                                          y0)
             painter.drawPath(path)
             path.translate(step, 0)
         painter.rotate(-angle)
