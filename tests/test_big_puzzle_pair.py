@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from PySide6.QtCore import QRectF
-from PySide6.QtGui import QPainter, QColor
+from PySide6.QtGui import QPainter, QColor, Qt
 
 from four_letter_blocks.big_puzzle_pair import BigPuzzlePair
 from four_letter_blocks.block import Block
@@ -92,6 +92,7 @@ def test_draw_front_slug1(pixmap_differ: PixmapDiffer):
 
         # cuts
         pen = expected.pen()
+        pen.setCapStyle(Qt.FlatCap)
         pen.setColor(Block.CUT_COLOUR)
         expected.setPen(pen)
         expected.translate(-x_shift, -y_shift)
@@ -211,7 +212,10 @@ def test_draw_front_slug2(pixmap_differ: PixmapDiffer):
             black_block.draw(expected, is_packed=True)
 
         # cuts
-        expected.setPen(Block.CUT_COLOUR)
+        pen = expected.pen()
+        pen.setCapStyle(Qt.FlatCap)
+        pen.setColor(Block.CUT_COLOUR)
+        expected.setPen(pen)
         expected.translate(-x_shift, -y_shift)
         expected.drawLine(4, height-4, 329, height-4)
         expected.drawLine(4, 8, 4, height-4)

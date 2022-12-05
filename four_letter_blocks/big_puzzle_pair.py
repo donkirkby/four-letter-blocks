@@ -182,7 +182,7 @@ class BigPuzzlePair(PuzzlePair):
             return
         width = painter.window().width()
         height = painter.window().height()
-        margin = height / 66  # Covers cutter drift
+        margin = round(height / 66)  # Covers cutter drift
         column_count = self.puzzles[0].grid.width
         grid_width = column_count * self.square_size
 
@@ -217,7 +217,7 @@ class BigPuzzlePair(PuzzlePair):
         grid_width = column_count * self.square_size
         width = painter.window().width()
         height = painter.window().height()
-        margin = height / 66  # Covers cutter drift
+        margin = round(height / 66)  # Covers cutter drift
 
         block = Block(Square(' '))
         block.squares[0].size = self.square_size
