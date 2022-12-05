@@ -17,6 +17,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialo
     QListWidgetItem, QPlainTextEdit, QPushButton
 
 import four_letter_blocks
+from four_letter_blocks.big_puzzle_pair import BigPuzzlePair
 from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.clue_painter import CluePainter
 from four_letter_blocks.evo_packer import PackingFitnessCalculator
@@ -783,64 +784,81 @@ class FourLetterBlocksWindow(QMainWindow):
                              start_text=packing,
                              tries=10_000_000,
                              min_tries=1_000)
-        puzzle_pair = PuzzlePair(front_puzzle, back_puzzle, packer)
+        if grid_size <= 9:
+            puzzle_pair = PuzzlePair(front_puzzle, back_puzzle, packer)
+            square_coefficient = 1 / (grid_size + 3)
+            font_coefficient = 1 / 39
+        else:
+            packer.split_row = grid_size // 2
+            puzzle_pair = BigPuzzlePair(front_puzzle, back_puzzle, packer)
+            square_coefficient = 1 / (grid_size - 1)
+            font_coefficient = 1 / 30
         puzzle_pair.tab_count = 2
 
-        front_buffer = QBuffer()
-        front_image = QImage(2475, 3150, QImage.Format_RGB32)
-        painter = QPainter(front_image)
-        try:
-            rotate_painter(painter)
-            puzzle_pair.square_size = front_image.width() // (grid_size + 3)
-            front_hue = self.ui.front_hue.value()
-            painter.setBackground(QColor.fromHsv(front_hue, 85, 170))
-            font_size = int(front_image.width() / 39)
-            grid_rect = puzzle_pair.draw_front(painter, font_size)
-            header_fraction = grid_rect.top() / front_image.width()
-            puzzle_pair.draw_background_pattern(painter,
-                                                puzzle_pair.square_size / 6,
-                                                x_offset=grid_rect.top(),
-                                                y_offset=grid_rect.left())
-            puzzle_pair.draw_front(painter, font_size)
-            # puzzle_pair.draw_cuts(painter, header_fraction=header_fraction)
-        finally:
-            painter.end()
-        success = front_image.save(front_buffer, 'PNG')
-        assert success
+        zip_contents = {}  # {file_name: data}
+        for puzzle_pair.slug_index in range(puzzle_pair.slug_count):
+            front_buffer = QBuffer()
+            front_image = QImage(2475, 3150, QImage.Format_RGB32)
+            painter = QPainter(front_image)
+            try:
+                rotate_painter(painter)
+                puzzle_pair.square_size = int(front_image.width() *
+                                              square_coefficient)
+                front_hue = self.ui.front_hue.value()
+                font_size = int(front_image.width() * font_coefficient)
+                grid_rect = puzzle_pair.draw_front(painter, font_size)
+                header_fraction = grid_rect.top() / front_image.width()
+                painter.setBackground(QColor.fromHsv(front_hue, 85, 170))
+                puzzle_pair.draw_background_pattern(painter,
+                                                    puzzle_pair.square_size / 6,
+                                                    x_offset=grid_rect.top(),
+                                                    y_offset=grid_rect.left())
+                # painter.eraseRect(painter.window())
+                puzzle_pair.draw_front(painter, font_size)
+                # puzzle_pair.draw_cuts(painter, header_fraction=header_fraction)
+            finally:
+                painter.end()
+            success = front_image.save(front_buffer, 'PNG')
+            assert success
 
-        back_buffer = QBuffer()
-        back_image = QImage(2475, 3150, QImage.Format_RGB32)
-        painter = QPainter(back_image)
-        try:
-            back_hue = (front_hue + 180) % 360
-            painter.setBackground(QColor.fromHsv(back_hue, 85, 170))
-            puzzle_pair.draw_background_pattern(painter,
-                                                puzzle_pair.square_size / 6,
-                                                x_offset=grid_rect.top(),
-                                                y_offset=grid_rect.left())
-            rotate_painter(painter, -90)
-            puzzle_pair.draw_back(painter, font_size)
-        finally:
-            painter.end()
-        success = back_image.save(back_buffer, 'PNG')
-        assert success
+            back_buffer = QBuffer()
+            back_image = QImage(2475, 3150, QImage.Format_RGB32)
+            painter = QPainter(back_image)
+            try:
+                back_hue = (front_hue + 180) % 360
+                painter.setBackground(QColor.fromHsv(back_hue, 85, 170))
+                puzzle_pair.draw_background_pattern(painter,
+                                                    puzzle_pair.square_size / 6,
+                                                    x_offset=grid_rect.top(),
+                                                    y_offset=grid_rect.left())
+                # painter.eraseRect(painter.window())
+                rotate_painter(painter, -90)
+                puzzle_pair.draw_back(painter, font_size)
+            finally:
+                painter.end()
+            success = back_image.save(back_buffer, 'PNG')
+            assert success
 
-        svg_buffer = QBuffer()
-        generator = create_svg_generator(svg_buffer)
-        painter = LineDeduper(QPainter(generator))
-        try:
-            rotate_painter(painter)
-            puzzle_pair.square_size = generator.width() // (grid_size + 3)
-            nick_radius = 5  # DPI is 1000
-            puzzle_pair.draw_cuts(painter, nick_radius, header_fraction)
-        finally:
-            painter.end()
+            svg_buffer = QBuffer()
+            generator = create_svg_generator(svg_buffer)
+            painter = LineDeduper(QPainter(generator))
+            try:
+                rotate_painter(painter)
+                puzzle_pair.square_size = int(generator.width() *
+                                              square_coefficient)
+                nick_radius = 5  # DPI is 1000
+                puzzle_pair.draw_cuts(painter, nick_radius, header_fraction)
+            finally:
+                painter.end()
+            slug_index = puzzle_pair.slug_index
+            zip_contents[f'cuts{slug_index}.svg'] = svg_buffer.data()
+            zip_contents[f'front{slug_index}.png'] = front_buffer.data()
+            zip_contents[f'back{slug_index}.png'] = back_buffer.data()
 
         with ZipFile(file_name, 'w', compression=ZIP_DEFLATED) as zip_file:
-            zip_file.writestr('cuts.svg', svg_buffer.data())
-            zip_file.writestr('front.png', front_buffer.data())
-            zip_file.writestr('back.png', back_buffer.data())
-            zip_file.writestr('packing.txt', packer.display())
+            for name, data in zip_contents.items():
+                zip_file.writestr(name, data)
+            zip_file.writestr('packing.txt', puzzle_pair.block_packer.display())
 
         self.statusBar().showMessage(f'Exported to {file_name}.')
 

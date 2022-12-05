@@ -374,6 +374,47 @@ def test_double_tabs_short(pixmap_differ: PixmapDiffer):
         block.draw_nicked_line(actual, 0, 20, 50, 80, 50)
 
 
+# noinspection DuplicatedCode
+def test_double_tabs_too_short(pixmap_differ: PixmapDiffer):
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(400, 260) as (actual, expected):
+        block = create_basic_block()  # square size is 100
+        block.tab_count = 2
+
+        pen = QPen()
+        pen.setWidth(3)
+        expected.setPen(pen)
+
+        pen.setCapStyle(Qt.RoundCap)
+        expected.setPen(pen)
+        expected.drawLine(26, 50, 74, 50)
+
+        actual.setPen(pen)
+        block.draw_nicked_line(actual, 0, 26, 50, 74, 50)
+
+
+# noinspection DuplicatedCode
+def test_draw_nicked_line(pixmap_differ: PixmapDiffer):
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(400, 260) as (actual, expected):
+        block = create_basic_block()  # square size is 100
+
+        pen = QPen()
+        pen.setWidth(3)
+        expected.setPen(pen)
+
+        pen.setCapStyle(Qt.RoundCap)
+        expected.setPen(pen)
+        expected.drawLine(20, 50, 60, 50)
+        expected.drawLine(70, 50, 150, 50)
+        expected.drawLine(160, 50, 200, 50)
+
+        actual.setPen(pen)
+        block.draw_nicked_line(actual, 5, 20, 50, 200, 50)
+
+
 def test_draw_packed(pixmap_differ: PixmapDiffer):
     actual: QPainter
     expected: QPainter

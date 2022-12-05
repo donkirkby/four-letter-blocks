@@ -255,15 +255,17 @@ class Block:
                          y1: int,
                          x2: int,
                          y2: int):
-        if nick_radius == 0 and self.tab_count == 0:
-            painter.drawLine(x1, y1, x2, y2)
-            return
 
         square_size = self.squares[0].size
         length = max(abs(x2-x1), abs(y2-y1))
         cell_count = round(length / square_size)
-        xstep = (x2-x1) / (cell_count*2)
-        ystep = (y2-y1) / (cell_count*2)
+
+        if (nick_radius == 0 and self.tab_count == 0) or cell_count == 0:
+            painter.drawLine(x1, y1, x2, y2)
+            return
+
+        xstep = (x2-x1) / cell_count
+        ystep = (y2-y1) / cell_count
         if xstep > 0:
             x0, y0 = x1, y1
             angle = 0
@@ -280,27 +282,24 @@ class Block:
             x0, y0 = -y1, x1
             angle = -90
             step = -ystep
-        path = QPainterPath(QPoint(-square_size/2, 0))
+        shortfall = round(square_size - step)
+        path = QPainterPath(QPoint((shortfall-square_size)/2, 0))
         if self.tab_count == 0:
             path.lineTo(-nick_radius, 0)
             path.moveTo(nick_radius, 0)
-            path.lineTo(square_size/2, 0)
+            path.lineTo((square_size-shortfall)/2, 0)
         elif self.tab_count == 1:
             create_tab_path(path, square_size)
         else:
             create_double_tab_path(path, square_size, nick_radius)
-        shortfall = round(cell_count * square_size - length)
-        path.translate(square_size/2, 0)
+        if shortfall:
+            path.setElementPositionAt(path.elementCount() - 1,
+                                      (square_size - shortfall)/2,
+                                      0)
+        path.translate((square_size - shortfall)/2, 0)
         painter.rotate(angle)
         path.translate(x0, y0)
         for i in range(cell_count):
-            if i == cell_count - 1 and shortfall:
-                x = path.elementAt(0).x
-                path.translate(-shortfall/2, 0)
-                path.setElementPositionAt(0, x, y0)
-                path.setElementPositionAt(path.elementCount() - 1,
-                                          x + square_size - shortfall,
-                                          y0)
             painter.drawPath(path)
             path.translate(step, 0)
         painter.rotate(-angle)

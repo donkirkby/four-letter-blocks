@@ -172,6 +172,11 @@ def test_draw_front_slug2(pixmap_differ: PixmapDiffer):
             expected,
             front_puzzle.down_clues[clue_count:],
             clue_rect)
+        clue_rect = QRectF(8+3*(clue_width+4), 166, clue_width, clue_height)
+        clue_painter.draw_clues(
+            expected,
+            front_puzzle.down_clues[clue_count:],
+            clue_rect)
 
         x_shift = (333 - 12 * pair.square_size) / 2
         y_shift = -129.5

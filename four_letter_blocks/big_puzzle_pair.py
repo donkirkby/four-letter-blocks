@@ -1,7 +1,7 @@
 import math
 
 from PySide6.QtCore import QRectF
-from PySide6.QtGui import QPainter
+from PySide6.QtGui import QPainter, Qt
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
@@ -170,16 +170,21 @@ class BigPuzzlePair(PuzzlePair):
                   nick_radius: int = 0,
                   header_fraction: float = 0.1):
         super().draw_cuts(painter, nick_radius, header_fraction)
+
+        pen = painter.pen()
+        pen.setWidth(math.floor(self.square_size / 33))
+        pen.setCapStyle(Qt.FlatCap)
+        pen.setColor(Block.CUT_COLOUR)
+        painter.setPen(pen)
+
         if self.slug_index == 1:
             self.draw_cuts2(painter, nick_radius)
             return
         width = painter.window().width()
         height = painter.window().height()
-        margin = round(height / 66)  # Covers cutter drift
+        margin = height / 66  # Covers cutter drift
         column_count = self.puzzles[0].grid.width
         grid_width = column_count * self.square_size
-
-        painter.setPen(Block.CUT_COLOUR)
 
         block = Block(Square(' '))
         block.squares[0].size = self.square_size
@@ -212,9 +217,7 @@ class BigPuzzlePair(PuzzlePair):
         grid_width = column_count * self.square_size
         width = painter.window().width()
         height = painter.window().height()
-        margin = round(height / 66)  # Covers cutter drift
-
-        painter.setPen(Block.CUT_COLOUR)
+        margin = height / 66  # Covers cutter drift
 
         block = Block(Square(' '))
         block.squares[0].size = self.square_size
