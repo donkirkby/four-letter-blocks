@@ -692,7 +692,7 @@ class FourLetterBlocksWindow(QMainWindow):
         front_image = QImage(2475, 3150, QImage.Format_RGB32)
         painter = QPainter(front_image)
         puzzle_set.square_size = front_image.width() / 16
-        background_colour = QColor.fromHsv(start_hue, 85, 170)
+        background_colour = puzzle_set.puzzles[0].face_colour
         painter.setBackground(background_colour)
         puzzle_set.draw_background_pattern(painter,
                                            puzzle_set.square_size / 6,
@@ -784,16 +784,27 @@ class FourLetterBlocksWindow(QMainWindow):
                              start_text=packing,
                              tries=10_000_000,
                              min_tries=1_000)
+        start_hue = self.ui.front_hue.value()
         if grid_size <= 9:
-            puzzle_pair = PuzzlePair(front_puzzle, back_puzzle, packer)
+            puzzle_pair = PuzzlePair(front_puzzle,
+                                     back_puzzle,
+                                     packer,
+                                     start_hue=start_hue)
             square_coefficient = 1 / (grid_size + 3)
             font_coefficient = 1 / 39
         else:
             packer.split_row = grid_size // 2
-            puzzle_pair = BigPuzzlePair(front_puzzle, back_puzzle, packer)
+            puzzle_pair = BigPuzzlePair(front_puzzle,
+                                        back_puzzle,
+                                        packer,
+                                        start_hue=start_hue)
             square_coefficient = 1 / (grid_size - 1)
             font_coefficient = 1 / 30
         puzzle_pair.tab_count = 2
+        front_bg = puzzle_pair.puzzles[0].face_colour
+        puzzle_pair.puzzles[0].face_colour = QColor('transparent')
+        back_bg = puzzle_pair.puzzles[1].face_colour
+        puzzle_pair.puzzles[1].face_colour = QColor('transparent')
 
         zip_contents = {}  # {file_name: data}
         for puzzle_pair.slug_index in range(puzzle_pair.slug_count):
@@ -804,11 +815,10 @@ class FourLetterBlocksWindow(QMainWindow):
                 rotate_painter(painter)
                 puzzle_pair.square_size = int(front_image.width() *
                                               square_coefficient)
-                front_hue = self.ui.front_hue.value()
                 font_size = int(front_image.width() * font_coefficient)
                 grid_rect = puzzle_pair.draw_front(painter, font_size)
                 header_fraction = grid_rect.top() / front_image.width()
-                painter.setBackground(QColor.fromHsv(front_hue, 85, 170))
+                painter.setBackground(front_bg)
                 puzzle_pair.draw_background_pattern(painter,
                                                     puzzle_pair.square_size / 6,
                                                     x_offset=grid_rect.top(),
@@ -825,8 +835,7 @@ class FourLetterBlocksWindow(QMainWindow):
             back_image = QImage(2475, 3150, QImage.Format_RGB32)
             painter = QPainter(back_image)
             try:
-                back_hue = (front_hue + 180) % 360
-                painter.setBackground(QColor.fromHsv(back_hue, 85, 170))
+                painter.setBackground(back_bg)
                 puzzle_pair.draw_background_pattern(painter,
                                                     puzzle_pair.square_size / 6,
                                                     x_offset=grid_rect.top(),
@@ -881,7 +890,7 @@ class FourLetterBlocksWindow(QMainWindow):
         doc_layout.registerHandler(DIAGRAM_TEXT_FORMAT, diagram_handler)
 
         cursor = QTextCursor(document)
-        cursor.movePosition(cursor.End)
+        cursor.movePosition(QTextCursor.End)
         cursor.insertText('\n')
 
         diagram_format = QTextCharFormat()

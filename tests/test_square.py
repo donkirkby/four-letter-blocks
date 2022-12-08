@@ -1,6 +1,7 @@
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPen, QColor, QPainter, QRadialGradient, \
     QLinearGradient, QPainterPath
+from colorspacious import cspace_convert
 
 from four_letter_blocks.square import Square, draw_gradient_rect, draw_text_path
 from tests.pixmap_differ import PixmapDiffer
@@ -51,63 +52,59 @@ def test_paint(pixmap_differ: PixmapDiffer):
 
 # noinspection DuplicatedCode
 def test_paint_with_number(pixmap_differ: PixmapDiffer):
-    actual, expected = pixmap_differ.start(
-        180, 180,
-        'test_square_paint_with_number')
-    font = expected.font()
-    font.setPixelSize(20)
-    expected.setFont(font)
-    expected.drawText(24, 20, 80, 80, 0, '12')
-    font.setPixelSize(60)
-    expected.setFont(font)
-    expected.drawText(20, 30, 80, 80, Qt.AlignHCenter, 'W')
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(180, 180) as (actual, expected):
+        font = expected.font()
+        font.setPixelSize(20)
+        expected.setFont(font)
+        expected.drawText(24, 20, 80, 80, 0, '12')
+        font.setPixelSize(60)
+        expected.setFont(font)
+        expected.drawText(20, 30, 80, 80, Qt.AlignHCenter, 'W')
 
-    square = Square('W', 12)
-    square.x = 20
-    square.y = 20
-    square.size = 80
+        square = Square('W', 12)
+        square.x = 20
+        square.y = 20
+        square.size = 80
 
-    square.draw(actual)
+        square.draw(actual)
 
-    expected.drawRect(20, 20, 80, 80)
-    actual.drawRect(20, 20, 80, 80)
-
-    pixmap_differ.assert_equal()
+        expected.drawRect(20, 20, 80, 80)
+        actual.drawRect(20, 20, 80, 80)
 
 
 # noinspection DuplicatedCode
 def test_paint_with_number_and_suit(pixmap_differ: PixmapDiffer):
-    actual, expected = pixmap_differ.start(
-        180, 180,
-        'test_square_paint_with_number_and_suit')
-    font = expected.font()
-    font.setPixelSize(80)
-    expected.setFont(font)
-    gray1 = 227
-    gray2 = 166
-    expected.setPen(QPen(QColor(gray1, gray1, gray1)))
-    expected.drawText(20, 20, 80, 80, Qt.AlignHCenter, '♥')
-    expected.setPen(QPen(QColor(gray2, gray2, gray2)))
-    expected.drawText(20, 20, 80, 80, Qt.AlignHCenter, '♡')
-    expected.setPen(QPen('black'))
-    font.setPixelSize(20)
-    expected.setFont(font)
-    expected.drawText(24, 20, 80, 80, 0, '12')
-    font.setPixelSize(60)
-    expected.setFont(font)
-    expected.drawText(20, 30, 80, 80, Qt.AlignHCenter, 'W')
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(180, 180) as (actual, expected):
+        font = expected.font()
+        font.setPixelSize(80)
+        expected.setFont(font)
+        gray1 = 227
+        gray2 = 140
+        expected.setPen(QPen(QColor(gray1, gray1, gray1)))
+        expected.drawText(20, 20, 80, 80, Qt.AlignHCenter, '♥')
+        expected.setPen(QPen(QColor(gray2, gray2, gray2)))
+        expected.drawText(20, 20, 80, 80, Qt.AlignHCenter, '♡')
+        expected.setPen(QPen('black'))
+        font.setPixelSize(20)
+        expected.setFont(font)
+        expected.drawText(24, 20, 80, 80, 0, '12')
+        font.setPixelSize(60)
+        expected.setFont(font)
+        expected.drawText(20, 30, 80, 80, Qt.AlignHCenter, 'W')
 
-    square = Square('W', 12, 'H')
-    square.x = 20
-    square.y = 20
-    square.size = 80
+        square = Square('W', 12, 'H')
+        square.x = 20
+        square.y = 20
+        square.size = 80
 
-    square.draw(actual)
+        square.draw(actual)
 
-    expected.drawRect(20, 20, 80, 80)
-    actual.drawRect(20, 20, 80, 80)
-
-    pixmap_differ.assert_equal()
+        expected.drawRect(20, 20, 80, 80)
+        actual.drawRect(20, 20, 80, 80)
 
 
 def test_gradient_rect(pixmap_differ: PixmapDiffer):
@@ -173,7 +170,7 @@ def test_draw_text_path(pixmap_differ: PixmapDiffer):
         path.addText(x, y, font, '42')
         rect = path.boundingRect()
         path.translate(50 - (rect.left()+rect.right())/2, 0)
-        expected.setRenderHint(painter.Antialiasing)
+        expected.setRenderHint(QPainter.Antialiasing)
         expected.fillPath(path, QColor('blue'))
 
         actual.setFont(font)
@@ -228,7 +225,7 @@ def test_paint_packed_with_suit(pixmap_differ: PixmapDiffer):
         font.setPixelSize(65)
         expected.setFont(font)
         gray1 = 227
-        gray2 = 166
+        gray2 = 140
         expected.setPen(QPen(QColor(gray1, gray1, gray1)))
         draw_text_path(expected, 60, 82, '♥', is_centred=True)
         expected.setPen(QPen(QColor(gray2, gray2, gray2)))
@@ -258,3 +255,41 @@ def test_paint_packed_with_suit(pixmap_differ: PixmapDiffer):
             painter.drawLine(0, 80, 15, 80)
             painter.drawLine(40, 0, 40, 15)
             painter.drawLine(80, 0, 80, 15)
+
+
+# noinspection DuplicatedCode
+def test_paint_packed_with_suit_and_face_colour(pixmap_differ: PixmapDiffer):
+    face_rgb = cspace_convert((60, 30, 300), 'JCh', 'sRGB255')
+    face_colour = QColor.fromRgb(*face_rgb)
+    bg_rgb = cspace_convert((60, 30, 0), 'JCh', 'sRGB255')
+    bg_colour = QColor.fromRgb(*bg_rgb)
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(180, 180) as (actual, expected):
+        expected.fillRect(expected.window(), bg_colour)
+        draw_gradient_rect(expected,
+                           face_colour,
+                           25, 25, 70, 70, 25)
+        font = expected.font()
+        font.setPixelSize(65)
+        expected.setFont(font)
+        gray2 = 140
+        expected.setPen(QPen(QColor(gray2, gray2, gray2)))
+        draw_text_path(expected, 60, 82, '♣', is_centred=True)
+        expected.setPen(QPen('black'))
+        font.setPixelSize(15)
+        expected.setFont(font)
+        draw_text_path(expected, 38, 49, '12')
+
+        font.setPixelSize(45)
+        expected.setFont(font)
+        draw_text_path(expected, 60, 82, 'W', is_centred=True)
+
+        square = Square('W', 12, 'C')
+        square.x = 20
+        square.y = 20
+        square.size = 80
+        square.face_colour = face_colour
+
+        actual.fillRect(actual.window(), bg_colour)
+        square.draw(actual, is_packed=True)

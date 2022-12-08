@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from PySide6.QtCore import QPoint
 from PySide6.QtGui import QPainter, QColor, QPixmap, QTransform, QPainterPath, \
     QBrush, QLinearGradient
+from colorspacious import cspace_convert
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
@@ -165,19 +166,20 @@ class PuzzleSet:
         is_filled = self.block_packer.fill(self.shape_counts)
         if not is_filled:
             raise RuntimeError("Blocks wouldn't fit.")
+        self.set_face_colours()
+
+    def set_face_colours(self):
         size_pairs = [(puzzle.grid.width, i)
                       for i, puzzle in enumerate(self.puzzles)]
         size_pairs.sort()
-        angle = 360 / (len(self.puzzles) - 1)
+        angle = 360 / len(self.puzzles)
         for i, (width, puzzle_index) in enumerate(size_pairs):
             puzzle = self.puzzles[puzzle_index]
-            if i == 0:
-                hue = saturation = 0
-            else:
-                hue = (self.start_hue + (i - 1) * angle) % 360
-                saturation = 60
-            value = 255
-            colour = QColor.fromHsv(hue, saturation, value)
+            lightness = 60
+            chroma = 30
+            hue = (self.start_hue + i * angle) % 360
+            rgb = cspace_convert((lightness, chroma, hue), "JCh", "sRGB255")
+            colour = QColor.fromRgb(*rgb)
             puzzle.face_colour = colour
 
     @property
@@ -265,7 +267,7 @@ class PuzzleSet:
 
     def draw_background_tile(self, painter):
         background: QColor = painter.background().color()
-        dark, light = self.get_target_colours(background, shift=0.5)
+        dark, light = self.get_target_colours(background, shift=0.75)
         window = painter.window()
         size = window.width()
         for i in range(2):
@@ -297,13 +299,15 @@ class PuzzleSet:
 
     @staticmethod
     def get_target_colours(start, shift):
-        value_diff = (255 - start.value()) * shift
-        light = QColor.fromHsv(start.hsvHue(),
-                               start.hsvSaturation(),
-                               start.value() + value_diff)
-        dark = QColor.fromHsv(start.hsvHue(),
-                              start.hsvSaturation(),
-                              start.value() - value_diff)
+        rgb = start.toRgb().toTuple()[:3]
+        lightness, chroma, hue = cspace_convert(rgb, 'sRGB255', 'JCh')
+        lightness_diff = (75 - lightness) * shift
+        light_jch = [lightness + lightness_diff, chroma, hue]
+        dark_jch = [lightness - lightness_diff, chroma, hue]
+        light_rgb = cspace_convert(light_jch, 'JCh', 'sRGB255')
+        dark_rgb = cspace_convert(dark_jch, 'JCh', 'sRGB255')
+        light = QColor.fromRgb(*light_rgb)
+        dark = QColor.fromRgb(*dark_rgb)
         return dark, light
 
     def draw_background_pattern(self,

@@ -16,8 +16,12 @@ class BigPuzzlePair(PuzzlePair):
     def __init__(self,
                  front_puzzle: Puzzle,
                  back_puzzle: Puzzle,
-                 block_packer: BlockPacker | None = None):
-        super().__init__(front_puzzle, back_puzzle, block_packer)
+                 block_packer: BlockPacker | None = None,
+                 start_hue: int = 0):
+        super().__init__(front_puzzle,
+                         back_puzzle,
+                         block_packer,
+                         start_hue=start_hue)
         self.slug_count = 2
 
     def draw_header(self,

@@ -20,8 +20,12 @@ class PuzzlePair(PuzzleSet):
     def __init__(self,
                  front_puzzle: Puzzle,
                  back_puzzle: Puzzle,
-                 block_packer: BlockPacker | None = None):
-        super().__init__(front_puzzle, back_puzzle, block_packer=block_packer)
+                 block_packer: BlockPacker | None = None,
+                 start_hue: int = 0):
+        super().__init__(front_puzzle,
+                         back_puzzle,
+                         block_packer=block_packer,
+                         start_hue=start_hue)
         self.black_positions: typing.List[typing.Tuple[int, int]] = []
         state = self.block_packer.display()
         for y, line in enumerate(state.splitlines()):
@@ -82,6 +86,7 @@ class PuzzlePair(PuzzleSet):
         for shape, count in remaining_counts.items():
             assert count == 0, (shape, count)
         front_puzzle.rotations_display = RotationsDisplay.OFF
+        self.set_face_colours()
 
     # noinspection DuplicatedCode
     def draw_front(self,
@@ -284,7 +289,7 @@ class PuzzlePair(PuzzleSet):
 
     def draw_background_tile(self, painter: QPainter):
         background: QColor = painter.background().color()
-        dark, light = self.get_target_colours(background, shift=0.25)
+        dark, light = self.get_target_colours(background, shift=0.75)
         window = painter.window()
         size = window.width()
         target = window.adjusted(0, 0, -size/2, -size/2)

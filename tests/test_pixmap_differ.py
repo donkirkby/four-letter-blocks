@@ -1,4 +1,5 @@
 from PySide6.QtCore import QRectF
+from PySide6.QtGui import QPainter
 
 from tests.pixmap_differ import PixmapDiffer
 
@@ -11,7 +12,7 @@ def test_no_diff(pixmap_differ: PixmapDiffer):
 
         expected.fillRect(QRectF(100, 100, 100, 100), 'black')
 
-        actual.setRenderHint(actual.Antialiasing, True)
+        actual.setRenderHint(QPainter.Antialiasing, True)
         actual.fillRect(QRectF(100, 100, 100, 100), 'black')
     finally:
         pixmap_differ.end()
@@ -31,7 +32,7 @@ def test_diff(pixmap_differ: PixmapDiffer):
 
         expected.fillRect(QRectF(100, 100, 100, 100), 'black')
 
-        actual.setRenderHint(actual.Antialiasing, True)
+        actual.setRenderHint(QPainter.Antialiasing, True)
         actual.fillRect(QRectF(100.5, 100, 100, 100), 'black')
     finally:
         pixmap_differ.end()
@@ -52,7 +53,7 @@ def test_diff_radius(pixmap_differ: PixmapDiffer):
         expected.fillRect(QRectF(100, 100, 100, 100), 'black')
 
         actual.drawText(100, 50, 'HelIo')
-        actual.setRenderHint(actual.Antialiasing, True)
+        actual.setRenderHint(QPainter.Antialiasing, True)
         actual.fillRect(QRectF(100.5, 100, 100, 100), 'black')
     finally:
         pixmap_differ.end()

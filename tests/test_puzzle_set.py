@@ -5,6 +5,7 @@ from textwrap import dedent
 
 import pytest
 from PySide6.QtGui import QPainter, QPixmap, QImage, QColor
+from colorspacious import cspace_convert
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
@@ -308,18 +309,19 @@ def test_background_tile(pixmap_differ: PixmapDiffer):
 
 
 @pytest.mark.parametrize(
-    'sizes, start_hue, expected',
-    # Sizes in order, expected is ((hue, saturation))
-    (((7, 9, 11, 13, 15), 0, ((0, 0), (0, 60), (90, 60), (180, 60), (270, 60))),
+    'sizes, start_hue, expected_hues',
+    # Sizes in order
+    (((7, 9, 11, 13, 15), 0, (0, 72, 144, 216, 289)),  # 289 is rounding error.
      # Sizes out of order
-     ((9, 7, 11, 13, 15), 0, ((0, 60), (0, 0), (90, 60), (180, 60), (270, 60))),
+     ((9, 7, 11, 13, 15), 0, (72, 0, 144, 216, 289)),  # 289 is rounding error.
      # Fewer sizes
-     ((9, 10, 11, 12), 0, ((0, 0), (0, 60), (120, 60), (240, 60))),
+     ((9, 10, 11, 12), 0, (0, 90, 180, 270)),
      # Nonzero start
-     ((9, 10, 11, 12), 120, ((0, 0), (120, 60), (240, 60), (0, 60))),
+     ((9, 10, 11, 12), 120, (120, 210, 300, 30)),
      # Repeated sizes
-     ((9, 9, 11), 0, ((0, 0), (0, 60), (180, 60)))))
-def test_colours(sizes, start_hue, expected):
+     ((9, 9, 11), 0, (0, 120, 240))))
+def test_colours(sizes, start_hue, expected_hues):
+    expected_jchs = [(60, 30, hue) for hue in expected_hues]
     puzzles = []
     for size in sizes:
         grid_text = '\n'.join(['X'*size]*size)
@@ -334,6 +336,9 @@ def test_colours(sizes, start_hue, expected):
               start_hue=start_hue)
 
     colours = (puzzle.face_colour for puzzle in puzzles)
-    colour_params = tuple((colour.hue(), colour.saturation())
-                          for colour in colours)
-    assert colour_params == expected
+    jchs = []
+    for colour in colours:
+        rgb = colour.toRgb().toTuple()[:3]
+        lightness, chroma, hue = cspace_convert(rgb, 'sRGB255', 'JCh')
+        jchs.append((round(lightness), round(chroma), round(hue)))
+    assert jchs == expected_jchs

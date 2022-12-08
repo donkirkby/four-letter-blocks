@@ -39,7 +39,7 @@ class Square:
                      self.size)
         face = QColor(self.face_colour)
         black = QColor('black')
-        suit_outline = QColor(166, 166, 166)
+        suit_outline = QColor(140, 140, 140)
         suit_fill = QColor(227, 227, 227)
         font = painter.font()
 
@@ -137,10 +137,10 @@ def draw_text_path(painter: QPainter,
         rect = path.boundingRect()
         path.translate(x-(rect.left()+rect.right())/2, 0)
 
-    old_hint = painter.testRenderHint(painter.Antialiasing)
-    painter.setRenderHint(painter.Antialiasing)
+    old_hint = painter.testRenderHint(QPainter.Antialiasing)
+    painter.setRenderHint(QPainter.Antialiasing)
     painter.fillPath(path, painter.pen().color())
-    painter.setRenderHint(painter.Antialiasing, old_hint)
+    painter.setRenderHint(QPainter.Antialiasing, old_hint)
 
 
 # noinspection DuplicatedCode

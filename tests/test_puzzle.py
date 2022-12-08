@@ -3,7 +3,7 @@ from io import StringIO
 from textwrap import dedent
 
 import pytest
-from PySide6.QtGui import QTextDocument
+from PySide6.QtGui import QTextDocument, QPainter
 
 from four_letter_blocks.clue import Clue
 from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
@@ -747,27 +747,24 @@ DEED
 
 
 def test_draw_blocks(pixmap_differ: PixmapDiffer):
-    actual, expected = pixmap_differ.start(
-        150, 180,
-        'test_puzzle_draw_blocks')
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(150, 180) as (actual, expected):
+        puzzle1 = parse_basic_puzzle()
+        puzzle1.square_size = 20
+        block1, block2, block3 = puzzle1.blocks
+        block1.x = 20
+        block1.y = 50
+        block2.x = 70
+        block2.y = 50
+        block3.x = 20
+        block3.y = 20
+        block1.draw(expected)
+        block2.draw(expected)
+        block3.draw(expected)
 
-    puzzle1 = parse_basic_puzzle()
-    puzzle1.square_size = 20
-    block1, block2, block3 = puzzle1.blocks
-    block1.x = 20
-    block1.y = 50
-    block2.x = 70
-    block2.y = 50
-    block3.x = 20
-    block3.y = 20
-    block1.draw(expected)
-    block2.draw(expected)
-    block3.draw(expected)
-
-    puzzle2 = parse_basic_puzzle()
-    puzzle2.draw_blocks(actual, square_size=20)
-
-    pixmap_differ.assert_equal()
+        puzzle2 = parse_basic_puzzle()
+        puzzle2.draw_blocks(actual, square_size=20)
 
 
 def test_draw_blocks_one_row(pixmap_differ: PixmapDiffer):
@@ -789,142 +786,136 @@ def test_draw_blocks_one_row(pixmap_differ: PixmapDiffer):
 
 
 def test_draw_clues(pixmap_differ: PixmapDiffer):
-    actual, expected = pixmap_differ.start(
-        400, 180,
-        'test_puzzle_draw_clues')
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(400, 180) as (actual, expected):
+        puzzle = parse_basic_puzzle()
+        puzzle.across_clues[0] = Clue('Part of a long run-on sentence that really '
+                                      'desperately needs to wrap',
+                                      1)
 
-    puzzle = parse_basic_puzzle()
-    puzzle.across_clues[0] = Clue('Part of a long run-on sentence that really '
-                                  'desperately needs to wrap',
-                                  1)
+        expected_doc = QTextDocument()
+        expected_doc.setPageSize(expected.window().size())
+        font = expected_doc.defaultFont()
+        font.setPixelSize(9)
+        expected_doc.setDefaultFont(font)
+        expected_doc.setDefaultStyleSheet("""\
+            h1 {text-align: center}
+            hr.footer {line-height:10px}
+            p.footer {page-break-after: always}
+            td {padding: 1px }
+            td.num {text-align: right}
+            a {color: black}
+            """)
+        expected_doc.setHtml(dedent("""\
+            <h1>Basic Puzzle</h1>
+            <p>Clue numbers are shuffled: 1 Across might not be the top left. 3 pieces.</p>
+            <hr>
+            <table>
+            <tr><td>Across</td><td>Down</td></tr>
+            <tr><td>
+              <table>
+              <tr><td class="num">1.</td>
+                <td>Part of a long run-on sentence that really desperately needs to wrap</td></tr>
+              <tr><td class="num">3.</td>
+                <td>One at a time</td></tr>
+              </table>
+            </td><td>
+              <table>
+              <tr><td class="num">1.</td>
+                <td>Sour grapes</td></tr>
+              <tr><td class="num">2.</td>
+                <td>Run between words</td></tr>
+              </table>
+            </td></tr>
+            </table>
+            <hr class="footer">
+            <p><center><a href="#">https://donkirkby.github.io/four-letter-blocks</a></center></p>
+            <p></p>
+        """))
+        expected_doc.drawContents(expected)
 
-    expected_doc = QTextDocument()
-    expected_doc.setPageSize(expected.window().size())
-    font = expected_doc.defaultFont()
-    font.setPixelSize(9)
-    expected_doc.setDefaultFont(font)
-    expected_doc.setDefaultStyleSheet("""\
-h1 {text-align: center}
-hr.footer {line-height:10px}
-p.footer {page-break-after: always}
-td {padding: 1px }
-td.num {text-align: right}
-a {color: black}
-""")
-    expected_doc.setHtml("""\
-<h1>Basic Puzzle</h1>
-<p>Clue numbers are shuffled: 1 Across might not be the top left. 3 pieces.</p>
-<hr>
-<table>
-<tr><td>Across</td><td>Down</td></tr>
-<tr><td>
-  <table>
-  <tr><td class="num">1.</td>
-    <td>Part of a long run-on sentence that really desperately needs to wrap</td></tr>
-  <tr><td class="num">3.</td>
-    <td>One at a time</td></tr>
-  </table>
-</td><td>
-  <table>
-  <tr><td class="num">1.</td>
-    <td>Sour grapes</td></tr>
-  <tr><td class="num">2.</td>
-    <td>Run between words</td></tr>
-  </table>
-</td></tr>
-</table>
-<hr class="footer">
-<p><center><a href="#">https://donkirkby.github.io/four-letter-blocks</a></center></p>
-<p></p>
-""")
-    expected_doc.drawContents(expected)
+        actual_doc = QTextDocument()
+        actual_doc.setDefaultFont(font)
+        actual_doc.setPageSize(actual.window().size())
 
-    actual_doc = QTextDocument()
-    actual_doc.setDefaultFont(font)
-    actual_doc.setPageSize(actual.window().size())
+        puzzle.build_clues(actual_doc)
 
-    puzzle.build_clues(actual_doc)
-
-    actual_doc.drawContents(actual)
-
-    pixmap_differ.assert_equal()
+        actual_doc.drawContents(actual)
 
 
 def test_draw_clues_with_reference(pixmap_differ: PixmapDiffer):
-    actual, expected = pixmap_differ.start(
-        400, 180,
-        'test_puzzle_draw_clues_with_reference')
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(400, 180) as (actual, expected):
+        source_file = StringIO(dedent("""\
+            Basic Puzzle
+            
+            WORD
+            I##A
+            N##S
+            EACH
+            
+            WORD - Part of a sentence
+            EACH - One at a time
+            WINE - Sour grapes
+            DASH - Run between WORD and a neighbour
+            
+            AABB
+            A##B
+            A##B
+            CCCC
+            """))
+        puzzle = Puzzle.parse(source_file)
 
-    source_file = StringIO("""\
-Basic Puzzle
+        expected_doc = QTextDocument()
+        expected_doc.setPageSize(expected.window().size())
+        font = expected_doc.defaultFont()
+        font.setPixelSize(9)
+        expected_doc.setDefaultFont(font)
+        expected_doc.setDefaultStyleSheet("""\
+            h1 {text-align: center}
+            hr.footer {line-height:10px}
+            p.footer {page-break-after: always}
+            td {padding: 1px }
+            td.num {text-align: right}
+            a {color: black}
+            """)
+        expected_doc.setHtml(dedent("""\
+            <h1>Basic Puzzle</h1>
+            <p>Clue numbers are shuffled: 1 Across might not be the top left. 3 pieces.</p>
+            <hr>
+            <table>
+            <tr><td>Across</td><td>Down</td></tr>
+            <tr><td>
+              <table>
+              <tr><td class="num">1.</td>
+                <td>Part of a sentence</td></tr>
+              <tr><td class="num">3.</td>
+                <td>One at a time</td></tr>
+              </table>
+            </td><td>
+              <table>
+              <tr><td class="num">1.</td>
+                <td>Sour grapes</td></tr>
+              <tr><td class="num">2.</td>
+                <td>Run between 1 Across and a neighbour</td></tr>
+              </table>
+            </td></tr>
+            </table>
+            <hr class="footer">
+            <p><center><a href="#">https://donkirkby.github.io/four-letter-blocks</a></center></p>
+            <p></p>
+            """))
+        expected_doc.drawContents(expected)
 
-WORD
-I##A
-N##S
-EACH
+        actual_doc = QTextDocument()
+        actual_doc.setDefaultFont(font)
+        actual_doc.setPageSize(actual.window().size())
 
-WORD - Part of a sentence
-EACH - One at a time
-WINE - Sour grapes
-DASH - Run between WORD and a neighbour
+        puzzle.build_clues(actual_doc)
 
-AABB
-A##B
-A##B
-CCCC
-""")
-    puzzle = Puzzle.parse(source_file)
-
-    expected_doc = QTextDocument()
-    expected_doc.setPageSize(expected.window().size())
-    font = expected_doc.defaultFont()
-    font.setPixelSize(9)
-    expected_doc.setDefaultFont(font)
-    expected_doc.setDefaultStyleSheet("""\
-h1 {text-align: center}
-hr.footer {line-height:10px}
-p.footer {page-break-after: always}
-td {padding: 1px }
-td.num {text-align: right}
-a {color: black}
-""")
-    expected_doc.setHtml("""\
-<h1>Basic Puzzle</h1>
-<p>Clue numbers are shuffled: 1 Across might not be the top left. 3 pieces.</p>
-<hr>
-<table>
-<tr><td>Across</td><td>Down</td></tr>
-<tr><td>
-  <table>
-  <tr><td class="num">1.</td>
-    <td>Part of a sentence</td></tr>
-  <tr><td class="num">3.</td>
-    <td>One at a time</td></tr>
-  </table>
-</td><td>
-  <table>
-  <tr><td class="num">1.</td>
-    <td>Sour grapes</td></tr>
-  <tr><td class="num">2.</td>
-    <td>Run between 1 Across and a neighbour</td></tr>
-  </table>
-</td></tr>
-</table>
-<hr class="footer">
-<p><center><a href="#">https://donkirkby.github.io/four-letter-blocks</a></center></p>
-<p></p>
-""")
-    expected_doc.drawContents(expected)
-
-    actual_doc = QTextDocument()
-    actual_doc.setDefaultFont(font)
-    actual_doc.setPageSize(actual.window().size())
-
-    puzzle.build_clues(actual_doc)
-
-    actual_doc.drawContents(actual)
-
-    pixmap_differ.assert_equal()
+        actual_doc.drawContents(actual)
 
 
 def test_format_grid():

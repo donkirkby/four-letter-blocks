@@ -70,7 +70,10 @@ def parse_puzzle_pair(block_packer: BlockPacker = None):
         DAAEE
         #AAE#
     """)))
-    return PuzzlePair(puzzle1, puzzle2, block_packer=block_packer)
+    pair = PuzzlePair(puzzle1, puzzle2, block_packer=block_packer)
+    puzzle1.face_colour = QColor('transparent')
+    puzzle2.face_colour = QColor('transparent')
+    return pair
 
 
 def test_draw_blocks(pixmap_differ: PixmapDiffer):

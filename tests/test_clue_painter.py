@@ -19,8 +19,8 @@ def test_draw_text(pixmap_differ: PixmapDiffer):
         font.setPixelSize(30)
         expected.setFont(font)
 
-        expected.setRenderHint(expected.TextAntialiasing, False)
-        expected.setRenderHint(expected.Antialiasing, False)
+        expected.setRenderHint(QPainter.TextAntialiasing, False)
+        expected.setRenderHint(QPainter.Antialiasing, False)
         expected.drawText(QRectF(10, 10, 300, 100),
                           0,
                           'Lorem ipsum\ndolores sit amet.')
@@ -46,8 +46,8 @@ def test_draw_text_bold(pixmap_differ: PixmapDiffer):
         bold_font.setBold(True)
         expected.setFont(bold_font)
 
-        expected.setRenderHint(expected.TextAntialiasing, False)
-        expected.setRenderHint(expected.Antialiasing, False)
+        expected.setRenderHint(QPainter.TextAntialiasing, False)
+        expected.setRenderHint(QPainter.Antialiasing, False)
         expected.drawText(QRectF(10, 10, 300, 100),
                           0,
                           'Lorem ipsum\ndolores sit amet.')
@@ -86,8 +86,8 @@ def test_draw_text_background(pixmap_differ: PixmapDiffer):
         expected.fillRect(text_rect, background_colour)
         expected.drawRect(text_rect)
 
-        expected.setRenderHint(expected.TextAntialiasing, False)
-        expected.setRenderHint(expected.Antialiasing, False)
+        expected.setRenderHint(QPainter.TextAntialiasing, False)
+        expected.setRenderHint(QPainter.Antialiasing, False)
         expected.drawText(QRectF(10+padding, 10+padding, 300-2*padding, 100),
                           0,
                           'Lorem ipsum\ndolores sit amet.')

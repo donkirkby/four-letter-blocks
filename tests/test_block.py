@@ -475,85 +475,73 @@ def test_draw_face_colour(pixmap_differ: PixmapDiffer):
 
 
 def test_rotate180(pixmap_differ: PixmapDiffer):
-    actual, expected = pixmap_differ.start(
-        410, 260,
-        'test_block_rotate180')
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(410, 260) as (actual, expected):
+        block1 = create_basic_block()
+        block2 = create_basic_block()
 
-    block1 = create_basic_block()
-    block2 = create_basic_block()
+        block1.draw(expected)
+        expected.rotate(180)
+        expected.translate(-400, -300)
+        block2.draw(expected)
 
-    block1.draw(expected)
-    expected.rotate(180)
-    expected.translate(-400, -300)
-    block2.draw(expected)
+        block2.x = 100
+        block2.set_display(100, 50, rotation=1)
 
-    block2.x = 100
-    block2.set_display(100, 50, rotation=1)
-    
-    block1.draw(actual)
-    block2.draw(actual)
-
-    pixmap_differ.assert_equal()
+        block1.draw(actual)
+        block2.draw(actual)
 
 
 def test_rotate90(pixmap_differ: PixmapDiffer):
-    actual, expected = pixmap_differ.start(
-        510, 260,
-        'test_block_rotate90')
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(510, 260) as (actual, expected):
+        block1 = create_basic_block()
+        block2 = create_basic_block()
 
-    block1 = create_basic_block()
-    block2 = create_basic_block()
+        block1.draw(expected)
+        expected.translate(550, 50)
+        expected.rotate(90)
+        block2.draw(expected)
 
-    block1.draw(expected)
-    expected.translate(550, 50)
-    expected.rotate(90)
-    block2.draw(expected)
+        block2.x = 100
+        block2.set_display(300, 50, rotation=2)
 
-    block2.x = 100
-    block2.set_display(300, 50, rotation=2)
-
-    block1.draw(actual)
-    block2.draw(actual)
-
-    pixmap_differ.assert_equal()
+        block1.draw(actual)
+        block2.draw(actual)
 
 
 def test_rotate270(pixmap_differ: PixmapDiffer):
-    actual, expected = pixmap_differ.start(
-        510, 260,
-        'test_block_rotate270')
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(510, 260) as (actual, expected):
+        block1 = create_basic_block()
+        block2 = create_basic_block()
 
-    block1 = create_basic_block()
-    block2 = create_basic_block()
+        block1.draw(expected)
+        expected.translate(250, 350)
+        expected.rotate(270)
+        block2.draw(expected)
 
-    block1.draw(expected)
-    expected.translate(250, 350)
-    expected.rotate(270)
-    block2.draw(expected)
+        block2.x = 100
+        block2.set_display(300, 50, rotation=0)
 
-    block2.x = 100
-    block2.set_display(300, 50, rotation=0)
-
-    block1.draw(actual)
-    block2.draw(actual)
-
-    pixmap_differ.assert_equal()
+        block1.draw(actual)
+        block2.draw(actual)
 
 
 def test_fractional_position(pixmap_differ: PixmapDiffer):
-    actual, expected = pixmap_differ.start(
-        510, 260,
-        'test_block_fractional_position')
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(510, 260) as (actual, expected):
+        block1 = create_basic_block()
+        block1.x = 100
 
-    block1 = create_basic_block()
-    block1.x = 100
+        block1.draw(expected)
 
-    block1.draw(expected)
-
-    block1.x = 100.2
-    block1.draw(actual)
-
-    pixmap_differ.assert_equal()
+        block1.x = 100.2
+        block1.draw(actual)
 
 
 def test_shape_names():

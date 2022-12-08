@@ -455,7 +455,7 @@ class Puzzle:
 
     def build_clues(self, document: QTextDocument, show_link=True):
         cursor = QTextCursor(document)
-        cursor.movePosition(cursor.End)
+        cursor.movePosition(QTextCursor.End)
 
         font_size = document.defaultFont().pixelSize()
         padding = font_size // 5
@@ -491,7 +491,7 @@ a {{color: black}}
                 <p></p>
             """)
         cursor.insertHtml(html)
-        cursor.movePosition(cursor.End)
+        cursor.movePosition(QTextCursor.End)
 
     def build_hints(self):
         hints = self.HINT
