@@ -31,7 +31,7 @@ Four-Letter Blocks with pip. Releasing a new version means publishing it on the
 
 4. Temporarily install the build tools using pip, not pipenv.
 
-        python -m pip install --upgrade setuptools wheel twine
+        python -m pip install --upgrade pip setuptools wheel twine
 
 5. Build the release files.
 
