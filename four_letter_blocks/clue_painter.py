@@ -2,10 +2,10 @@ import math
 import typing
 
 from PySide6.QtCore import QRectF
-from PySide6.QtGui import QPainter, QFont, Qt, QFontMetricsF, QColor, QPen
+from PySide6.QtGui import QPainter, QFont, Qt, QFontMetricsF, QColor, QPen, QPixmap
 
 from four_letter_blocks.clue import Clue
-from four_letter_blocks.puzzle import Puzzle
+from four_letter_blocks.puzzle import Puzzle, draw_rotated_tiles
 from four_letter_blocks.square import Square, draw_gradient_rect
 
 
@@ -16,7 +16,8 @@ class CluePainter:
                  margin: int = 0,
                  intro_text: str = '',
                  footer_text: str = '',
-                 background: QColor = QColor.fromHsv(0, 0, 0, 0)):
+                 background: QColor = QColor.fromHsv(0, 0, 0, 0),
+                 background_tile: QPixmap = None):
         self.puzzles = puzzles
         self.font_size = font_size
         self.margin = margin
@@ -24,6 +25,7 @@ class CluePainter:
         self.intro_text = intro_text
         self.footer_text = footer_text
         self.background = background
+        self.background_tile = background_tile
 
     @property
     def is_finished(self):
@@ -102,11 +104,22 @@ class CluePainter:
                     header_rect: QRectF,
                     painter: QPainter,
                     is_dry_run: bool = False):
+        """ Draw the page header.
+
+        :param title_font: for writing the title
+        :param font: for writing other text
+        :param header_rect: bounds for the header, top() will be updated to be
+            below divider
+        :param painter: where to draw
+        :param is_dry_run: don't actually draw, if True, just update header rect
+        """
+        bleed_top = 0
         if self.intro_text and self.puzzle_index == 0:
             self.draw_text(header_rect,
                            self.intro_text,
                            painter,
                            is_dry_run=is_dry_run)
+            bleed_top = header_rect.top()
         if self.footer_text and self.puzzle_index == 0:
             rect = QRectF(header_rect)
             footer_height = self.find_text_height(self.footer_text,
@@ -124,22 +137,41 @@ class CluePainter:
         painter.setFont(font)
         line_height = self.find_text_height('X', painter)
         painter.setFont(title_font)
+        old_pen = painter.pen()
+        pen = QPen(old_pen)
+        pen.setWidth(font.pixelSize()//10)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        painter.setPen(pen)
+        if not self.background_tile:
+            is_gradient = False
+        else:
+            is_gradient = True
+            temp_rect = QRectF(header_rect)
+            self.draw_text(temp_rect,
+                           puzzle.title,
+                           painter,
+                           background=self.background,
+                           is_dry_run=True)
+            window = painter.window()
+            bg_rect = QRectF(window.left(), bleed_top,
+                             window.width(), temp_rect.top() - bleed_top)
+            draw_rotated_tiles(self.background_tile,
+                               painter,
+                               self.background_tile.width(),
+                               bounds=bg_rect)
+            painter.drawRect(bg_rect)
         self.draw_text(header_rect,
                        puzzle.title,
                        painter,
                        is_centred=True,
                        background=self.background,
+                       is_gradient=is_gradient,
                        is_dry_run=is_dry_run)
         painter.setFont(font)
         self.draw_text(header_rect,
                        puzzle.build_hints(),
                        painter,
                        is_dry_run=is_dry_run)
-        old_pen = painter.pen()
-        pen = QPen(old_pen)
-        pen.setWidth(font.pixelSize()//10)
-        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-        painter.setPen(pen)
         if not is_dry_run:
             y = round(header_rect.top() + line_height / 2)
             painter.drawLine(header_rect.left(), y, header_rect.right(), y)
@@ -157,7 +189,7 @@ class CluePainter:
         if not width:
             width = painter.window().width()
         rect = metrics.boundingRect(QRectF(0, 0, width, 0),
-                                    int(Qt.TextWordWrap),
+                                    int(Qt.TextFlag.TextWordWrap),
                                     text)
         return rect.height()
 
@@ -182,11 +214,9 @@ class CluePainter:
         else:
             suit_display = Square.SUIT_DISPLAYS['H'].filled
 
-        puzzle = self.puzzles[self.puzzle_index]
-        face_color = puzzle.face_colour
         metrics = QFontMetricsF(painter.font())
         space_width = metrics.horizontalAdvance(' ')
-        align_right = int(Qt.AlignRight)
+        align_right = int(Qt.AlignmentFlag.AlignRight)
         number_width = self.find_text_width(
             f'{max_clue}{suit_display}.',
             painter)
@@ -215,11 +245,6 @@ class CluePainter:
         if number_entries:
             rect = QRectF(number_entries[0][0])
             rect.setBottom(bounds.top())
-            draw_gradient_rect(painter,
-                               face_color,
-                               rect.left()-space_width, rect.top(),
-                               rect.width()+2*space_width, rect.height(),
-                               space_width*2)
             for rect, text in number_entries:
                 painter.drawText(rect, align_right, text)
         return clue_count
@@ -232,7 +257,8 @@ class CluePainter:
                   is_dry_run: bool = False,
                   is_aligned_right: bool = False,
                   is_bold: bool = False,
-                  background: QColor = None):
+                  background: QColor = None,
+                  is_gradient: bool = False):
         font = painter.font()
         if is_bold:
             bold_font = QFont(font)
@@ -244,11 +270,11 @@ class CluePainter:
         pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         painter.setPen(pen)
         metrics = QFontMetricsF(font)
-        flags = int(Qt.TextWordWrap)
+        flags = int(Qt.TextFlag.TextWordWrap)
         if is_centred:
-            flags = flags | Qt.AlignHCenter
+            flags = flags | Qt.AlignmentFlag.AlignHCenter
         if is_aligned_right:
-            flags = flags | Qt.AlignRight
+            flags = flags | Qt.AlignmentFlag.AlignRight
         if background is None or background.alpha() == 0:
             target_rect = rect
             padding = 0
@@ -259,8 +285,17 @@ class CluePainter:
         if padding and not is_dry_run:
             background_rect = bounding_rect.adjusted(-padding, -padding,
                                                      padding, padding)
-            painter.fillRect(background_rect, background)
-            painter.drawRect(background_rect)
+            if is_gradient:
+                draw_gradient_rect(painter,
+                                   background,
+                                   background_rect.left(),
+                                   background_rect.top(),
+                                   background_rect.width(),
+                                   background_rect.height(),
+                                   padding)
+            else:
+                painter.fillRect(background_rect, background)
+                painter.drawRect(background_rect)
         height = bounding_rect.height()
         if not is_dry_run:
             painter.drawText(target_rect, flags, text)

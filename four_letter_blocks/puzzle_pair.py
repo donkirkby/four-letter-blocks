@@ -15,8 +15,6 @@ from four_letter_blocks.square import Square
 
 
 class PuzzlePair(PuzzleSet):
-    LINK_TEXT = 'https://donkirkby.github.io/four-letter-blocks'
-
     def __init__(self,
                  front_puzzle: Puzzle,
                  back_puzzle: Puzzle,
@@ -286,6 +284,7 @@ class PuzzlePair(PuzzleSet):
                 clue_count += clue_painter.draw_clues(painter,
                                                       clues[clue_count:],
                                                       clue_rect)
+            print(f"{group_name}: {clue_count} of {len(clues)} clues.")
 
     def draw_background_tile(self, painter: QPainter):
         background: QColor = painter.background().color()

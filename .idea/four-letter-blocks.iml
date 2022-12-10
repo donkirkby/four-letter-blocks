@@ -6,7 +6,7 @@
       <excludeFolder url="file://$MODULE_DIR$/build" />
       <excludeFolder url="file://$MODULE_DIR$/dist" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.9 (four-letter-blocks-Mirmoh7N)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.10 (four-letter-blocks-Mirmoh7N)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="TestRunnerService">

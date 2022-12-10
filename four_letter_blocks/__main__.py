@@ -693,9 +693,12 @@ class FourLetterBlocksWindow(QMainWindow):
         painter = QPainter(front_image)
         puzzle_set.square_size = front_image.width() / 16
         background_colour = puzzle_set.puzzles[0].face_colour
+        tile_size = puzzle_set.square_size / 6
+        background_tile = puzzle_set.create_background_tile(round(tile_size),
+                                                            background_colour)
         painter.setBackground(background_colour)
         puzzle_set.draw_background_pattern(painter,
-                                           puzzle_set.square_size / 6,
+                                           tile_size,
                                            x_offset=puzzle_set.square_size // 2,
                                            y_offset=puzzle_set.square_size // 2)
         puzzle_set.draw_front(painter)
@@ -708,7 +711,7 @@ class FourLetterBlocksWindow(QMainWindow):
         painter = QPainter(back_image)
         painter.setBackground(background_colour)
         puzzle_set.draw_background_pattern(painter,
-                                           puzzle_set.square_size / 6,
+                                           tile_size,
                                            x_offset=puzzle_set.square_size // 2,
                                            y_offset=puzzle_set.square_size // 2)
         puzzle_set.draw_back(painter)
@@ -726,12 +729,15 @@ class FourLetterBlocksWindow(QMainWindow):
             margin=75,
             intro_text='Solve each crossword puzzle with the pieces that match '
                        'the colour of the clue numbers. Good luck!\n',
-            footer_text='https://donkirkby.github.io/four-letter-blocks',
-            background=background_colour)
+            footer_text=puzzle_set.LINK_TEXT,
+            background=background_colour,
+            background_tile=background_tile)
         page_image = QImage(1575, 2475, QImage.Format_RGB32)
         while not clue_painter.is_finished:
             painter = QPainter(page_image)
             painter.drawPixmap(0, 0, paper)
+            puzzle = puzzle_set.puzzles[clue_painter.puzzle_index]
+            clue_painter.background = puzzle.face_colour
             clue_painter.draw_page(painter)
             painter.end()
             page_buffer = QBuffer()
@@ -799,7 +805,7 @@ class FourLetterBlocksWindow(QMainWindow):
                                         packer,
                                         start_hue=start_hue)
             square_coefficient = 1 / (grid_size - 1)
-            font_coefficient = 1 / 30
+            font_coefficient = 1 / 34
         puzzle_pair.tab_count = 2
         front_bg = puzzle_pair.puzzles[0].face_colour
         puzzle_pair.puzzles[0].face_colour = QColor('transparent')

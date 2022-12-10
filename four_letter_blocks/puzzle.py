@@ -1,3 +1,4 @@
+import math
 import re
 import typing
 from collections import Counter, defaultdict
@@ -9,7 +10,9 @@ from operator import attrgetter
 from random import shuffle
 from textwrap import dedent
 
-from PySide6.QtGui import QPainter, QTextDocument, QTextCursor
+from PySide6.QtCore import QRectF
+from PySide6.QtGui import QPainter, QTextDocument, QTextCursor, QPixmap, \
+    QTransform
 
 from four_letter_blocks.clue import Clue
 from four_letter_blocks.grid import Grid
@@ -541,3 +544,70 @@ def parse_clues(text) -> typing.Dict[str, Clue]:
         if word:
             clues[word] = Clue(clue_text.strip())
     return clues
+
+
+def draw_rotated_tiles(tile: QPixmap,
+                       painter: QPainter,
+                       size: float,
+                       x_offset: float = 0,
+                       y_offset: float = 0,
+                       bounds: QRectF = None):
+    """ Draw a tile, converted to four-fold rotational symmetry.
+
+    Tile will be drawn throughout bounds, repeated every size pixels.
+    Repetitions will be rotated, so the combined pattern has four-fold
+    rotational symmetry.
+
+    :param tile: image to rotate and tile
+    :param painter: to draw tiles on, with background colour set to match tile
+    :param size: width and height to repeat tile pattern
+    :param x_offset: offset to a tile left. Tiles are also repeated to the left.
+    :param y_offset: offset to a tile top. Tiles are also repeated above.
+    :param bounds: area to draw tiles within. Defaults to painter.window().
+    """
+    if bounds is None:
+        bounds = painter.window()
+    painter.eraseRect(bounds)
+    tiles = []
+    for direction in range(4):
+        rotated_tile = tile.transformed(QTransform().rotate(90 * direction))
+        tiles.append(rotated_tile)
+    x_start = x_offset - math.ceil(x_offset / size) * size
+    y_start = y_offset - math.ceil(y_offset / size) * size
+    x_steps = math.ceil((bounds.width() - x_start) / size)
+    y_steps = math.ceil((bounds.height() - y_start) / size)
+    x_start += bounds.left()
+    y_start += bounds.top()
+    for j in range(x_steps):
+        x = x_start + j * size
+        if x + size <= bounds.right():
+            source_width = round(size)
+        else:
+            source_width = round(bounds.right() - x)
+        if x >= bounds.left():
+            source_x = 0
+        else:
+            source_x = bounds.left() - x
+            source_width -= source_x
+            x = bounds.left()
+        for i in range(y_steps):
+            y = y_start + i * size
+            if y + size <= bounds.bottom():
+                source_height = round(size)
+            else:
+                source_height = round(bounds.bottom() - y)
+            if y >= bounds.top():
+                source_y = 0
+            else:
+                source_y = bounds.top() - y
+                source_height -= source_y
+                y = bounds.top()
+            if i % 2 == 0:
+                direction = j % 2
+            else:
+                direction = (3 - j % 2)
+            source = tiles[direction]
+            painter.drawPixmap(round(x), round(y),
+                               source,
+                               source_x, source_y,
+                               source_width, source_height)

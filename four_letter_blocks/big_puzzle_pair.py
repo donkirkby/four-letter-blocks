@@ -146,9 +146,10 @@ class BigPuzzlePair(PuzzlePair):
                                               clue_rect)
         clue_rect_template.translate(clue_rect_template.width() + margin, 0)
         clue_rect = QRectF(clue_rect_template)
-        clue_painter.draw_clues(painter,
-                                clues[clue_count:],
-                                clue_rect)
+        clue_count += clue_painter.draw_clues(painter,
+                                              clues[clue_count:],
+                                              clue_rect)
+        print(f'{section_name}: {clue_count} of {len(clues)} clues.')
 
     def draw_clues(self,
                    painter: QPainter,
@@ -177,7 +178,7 @@ class BigPuzzlePair(PuzzlePair):
 
         pen = painter.pen()
         pen.setWidth(math.floor(self.square_size / 33))
-        pen.setCapStyle(Qt.FlatCap)
+        pen.setCapStyle(Qt.PenCapStyle.FlatCap)
         pen.setColor(Block.CUT_COLOUR)
         painter.setPen(pen)
 

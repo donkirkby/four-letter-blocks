@@ -4,17 +4,19 @@ from collections import Counter, defaultdict
 from collections.abc import Iterable
 
 from PySide6.QtCore import QPoint
-from PySide6.QtGui import QPainter, QColor, QPixmap, QTransform, QPainterPath, \
+from PySide6.QtGui import QPainter, QColor, QPixmap, QPainterPath, \
     QBrush, QLinearGradient
 from colorspacious import cspace_convert
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.line_deduper import LineDeduper
-from four_letter_blocks.puzzle import Puzzle
+from four_letter_blocks.puzzle import Puzzle, draw_rotated_tiles
 
 
 class PuzzleSet:
+    LINK_TEXT = 'https://donkirkby.github.io/four-letter-blocks'
+
     def __init__(self,
                  *puzzles: Puzzle,
                  block_packer: BlockPacker = None,
@@ -315,36 +317,17 @@ class PuzzleSet:
                                 size: float,
                                 x_offset: int = 0,
                                 y_offset: int = 0):
-        window = painter.window()
-        viewport = painter.viewport()
-        painter.eraseRect(window)
-        tile_size = round(size)
+        tile = self.create_background_tile(round(size), painter.background())
+        draw_rotated_tiles(tile, painter, size, x_offset, y_offset)
+
+    def create_background_tile(self, tile_size: int,
+                               background: QColor) -> QPixmap:
         tile = QPixmap(tile_size, tile_size)
         tile_painter = QPainter(tile)
-        tile_painter.setBackground(painter.background())
+        tile_painter.setBackground(background)
         tile_painter.eraseRect(tile_painter.window())
         try:
             self.draw_background_tile(tile_painter)
         finally:
             tile_painter.end()
-        tiles = []
-        for direction in range(4):
-            rotated_tile = tile.transformed(QTransform().rotate(90*direction))
-            tiles.append(rotated_tile)
-
-        x_start = x_offset - math.ceil(x_offset/size)*size
-        y_start = y_offset - math.ceil(y_offset/size)*size
-        x_steps = math.ceil((window.width() - x_start) / size)
-        y_steps = math.ceil((window.height() - y_start) / size)
-        for j in range(x_steps):
-            x = x_start + j*size
-            for i in range(y_steps):
-                y = y_start + i*size
-                if i % 2 == 0:
-                    direction = j % 2
-                else:
-                    direction = (3 - j % 2)
-                source = tiles[direction]
-                painter.drawPixmap(round(x), round(y), source)
-        painter.setWindow(window)
-        painter.setViewport(viewport)
+        return tile
