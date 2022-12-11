@@ -23,6 +23,7 @@ def test_draw_front_slug1(pixmap_differ: PixmapDiffer):
     packer = BlockPacker(width=11, height=11, split_row=5, tries=100)
     pair = BigPuzzlePair(front_puzzle, back_puzzle, packer)
     pair.margin = 10
+    front_puzzle.face_colour = QColor('transparent')
     front_puzzle.square_size = 25
     width = 333
     height = round(width / 10.5 * 8.25)
@@ -92,7 +93,7 @@ def test_draw_front_slug1(pixmap_differ: PixmapDiffer):
 
         # cuts
         pen = expected.pen()
-        pen.setCapStyle(Qt.FlatCap)
+        pen.setCapStyle(Qt.PenCapStyle.FlatCap)
         pen.setColor(Block.CUT_COLOUR)
         expected.setPen(pen)
         expected.translate(-x_shift, -y_shift)
@@ -133,6 +134,7 @@ def test_draw_front_slug2(pixmap_differ: PixmapDiffer):
         back_puzzle = Puzzle.parse(f)
     packer = BlockPacker(width=11, height=11, split_row=5, tries=100)
     pair = BigPuzzlePair(front_puzzle, back_puzzle, packer)
+    front_puzzle.face_colour = QColor('transparent')
     pair.margin = 10
     front_puzzle.square_size = 25
     width = 333
@@ -213,7 +215,7 @@ def test_draw_front_slug2(pixmap_differ: PixmapDiffer):
 
         # cuts
         pen = expected.pen()
-        pen.setCapStyle(Qt.FlatCap)
+        pen.setCapStyle(Qt.PenCapStyle.FlatCap)
         pen.setColor(Block.CUT_COLOUR)
         expected.setPen(pen)
         expected.translate(-x_shift, -y_shift)

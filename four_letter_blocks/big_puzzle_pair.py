@@ -170,12 +170,9 @@ class BigPuzzlePair(PuzzlePair):
             return y < limit
         return limit <= y
 
-    def draw_cuts(self,
-                  painter: QPainter | LineDeduper,
-                  nick_radius: int = 0,
-                  header_fraction: float = 0.1):
-        super().draw_cuts(painter, nick_radius, header_fraction)
-
+    def draw_boundary_cuts(self,
+                           painter: QPainter | LineDeduper,
+                           nick_radius: int = 0):
         pen = painter.pen()
         pen.setWidth(math.floor(self.square_size / 33))
         pen.setCapStyle(Qt.PenCapStyle.FlatCap)
@@ -183,7 +180,7 @@ class BigPuzzlePair(PuzzlePair):
         painter.setPen(pen)
 
         if self.slug_index == 1:
-            self.draw_cuts2(painter, nick_radius)
+            self.draw_boundary_cuts2(painter, nick_radius)
             return
         width = painter.window().width()
         height = painter.window().height()
@@ -215,9 +212,9 @@ class BigPuzzlePair(PuzzlePair):
                                (width + grid_width)/2, height - 2*margin,
                                width - margin, height - 2*margin)
 
-    def draw_cuts2(self,
-                   painter: QPainter | LineDeduper,
-                   nick_radius: int = 0):
+    def draw_boundary_cuts2(self,
+                            painter: QPainter | LineDeduper,
+                            nick_radius: int = 0):
         column_count = self.puzzles[0].grid.width
         grid_width = column_count * self.square_size
         width = painter.window().width()

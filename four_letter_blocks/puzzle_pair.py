@@ -1,9 +1,10 @@
+import math
 import typing
 from collections import Counter
 
 from PySide6.QtCore import QPoint, QRectF
 from PySide6.QtGui import QPainter, QColor, QPainterPath, QBrush, \
-    QRadialGradient, QConicalGradient
+    QRadialGradient, QConicalGradient, Qt
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
@@ -182,7 +183,40 @@ class PuzzlePair(PuzzleSet):
                 block.draw_outline(painter, nick_radius)
 
         painter.translate(-x_shift, -y_shift)
+        self.draw_boundary_cuts(painter, nick_radius)
     
+    def draw_boundary_cuts(self,
+                           painter: QPainter | LineDeduper,
+                           nick_radius: int = 0):
+        pen = painter.pen()
+        pen.setWidth(math.floor(self.square_size / 33))
+        pen.setCapStyle(Qt.PenCapStyle.FlatCap)
+        pen.setColor(Block.CUT_COLOUR)
+        painter.setPen(pen)
+
+        width = painter.window().width()
+        height = painter.window().height()
+        margin = round(height / 66)  # Covers cutter drift
+
+        block = Block(Square(' '))
+        block.squares[0].size = self.square_size
+        block.draw_nicked_line(painter,
+                               nick_radius,
+                               margin, margin,
+                               width - margin, margin)
+        block.draw_nicked_line(painter,
+                               nick_radius,
+                               margin, margin,
+                               margin, height - margin)
+        block.draw_nicked_line(painter,
+                               nick_radius,
+                               width - margin, margin,
+                               width - margin, height - margin)
+        block.draw_nicked_line(painter,
+                               nick_radius,
+                               margin, height - margin,
+                               width - margin, height - margin)
+
     def draw_header(self,
                     painter: QPainter,
                     puzzle: Puzzle,

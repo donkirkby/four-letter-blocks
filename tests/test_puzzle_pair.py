@@ -3,13 +3,14 @@ from pathlib import Path
 from textwrap import dedent
 
 from PySide6.QtCore import QRectF
-from PySide6.QtGui import QPainter, QColor, QImage, QFont
+from PySide6.QtGui import QPainter, QColor, QImage, QFont, Qt
 
+from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.clue_painter import CluePainter
 from four_letter_blocks.puzzle import Puzzle, draw_rotated_tiles
 from four_letter_blocks.puzzle_pair import PuzzlePair
-from four_letter_blocks.square import draw_gradient_rect
+from four_letter_blocks.square import draw_gradient_rect, Square
 from tests.pixmap_differ import PixmapDiffer
 
 
@@ -301,6 +302,51 @@ def test_draw_front(pixmap_differ: PixmapDiffer):
         pair2 = parse_puzzle_pair()
         pair2.square_size = 30
         pair2.draw_front(actual, font_size=9)
+
+
+def test_draw_cuts(pixmap_differ: PixmapDiffer):
+    block_text = dedent("""\
+        AABBB
+        AA#B#
+        #CCC#
+        DDCEE
+        #DDEE
+    """)
+    puzzle = Puzzle.parse_sections('',
+                                   block_text,
+                                   '',
+                                   block_text)
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(500, 260) as (actual, expected):
+        expected.fillRect(0, 0, 500, 300, 'cornsilk')
+        actual.fillRect(0, 0, 500, 300, 'cornsilk')
+        puzzle.square_size = 30
+
+        pen = expected.pen()
+        pen.setColor(Block.CUT_COLOUR)
+        pen.setCapStyle(Qt.PenCapStyle.FlatCap)
+        expected.setPen(pen)
+        expected.drawLine(4, 4, 496, 4)
+        expected.drawLine(4, 4, 4, 256)
+        expected.drawLine(4, 256, 496, 256)
+        expected.drawLine(496, 4, 496, 256)
+        expected.translate(175, 26)
+        for block in puzzle.blocks:
+            block.tab_count = 2
+            block.border_colour = block.CUT_COLOUR
+            block.draw_outline(expected)
+        block = Block(Square(' '))
+        block.squares[0].size = puzzle.square_size
+        block.tab_count = 2
+        block.border_colour = block.CUT_COLOUR
+        for block.x, block.y in ((120, 30), (0, 60), (120, 60), (0, 120)):
+            block.draw_outline(expected)
+
+        pair2 = parse_puzzle_pair()
+        pair2.square_size = 30
+        pair2.tab_count = 2
+        pair2.draw_cuts(actual, header_fraction=0.1)
 
 
 def test_draw_back(pixmap_differ: PixmapDiffer):
