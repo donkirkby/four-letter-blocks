@@ -443,21 +443,24 @@ def test_background_pattern_bounds(pixmap_differ: PixmapDiffer):
     actual: QPainter
     expected: QPainter
     with pixmap_differ.create_painters(520, 260) as (actual, expected):
-        expected_image = QImage(Path(__file__).parent / 'pair_pattern.png')
+        expected_image = QImage(Path(__file__).parent /
+                                'pair_pattern_offset.png')
         expected.fillRect(expected.window(), 'burlywood')
         expected.drawImage(100, 100,
                            expected_image,
-                           260//6-25, 260//6-10,
+                           0, 0,
                            100, 100)
 
         actual.setBackground(QColor('burlywood'))
         actual.eraseRect(actual.window())
 
         puzzle_pair = parse_puzzle_pair()
-        tile = puzzle_pair.create_background_tile(260//6, QColor('burlywood'))
+        size = 260 / 6
+        tile = puzzle_pair.create_background_tile(round(size),
+                                                  QColor('burlywood'))
         draw_rotated_tiles(tile,
                            actual,
-                           260//6,
-                           x_offset=25,
-                           y_offset=10,
+                           size,
+                           x_offset=int(size*1.5),
+                           y_offset=int(size*1.33),
                            bounds=QRectF(100, 100, 100, 100))

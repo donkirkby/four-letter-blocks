@@ -567,6 +567,7 @@ def draw_rotated_tiles(tile: QPixmap,
     """
     if bounds is None:
         bounds = painter.window()
+        bounds.setRight(bounds.right() + 1)
     painter.eraseRect(bounds)
     tiles = []
     for direction in range(4):
@@ -587,20 +588,20 @@ def draw_rotated_tiles(tile: QPixmap,
         if x >= bounds.left():
             source_x = 0
         else:
-            source_x = bounds.left() - x
-            source_width -= source_x
+            source_x = bounds.left() - x + 1
+            source_width -= source_x - 1
             x = bounds.left()
         for i in range(y_steps):
             y = y_start + i * size
             if y + size <= bounds.bottom():
                 source_height = round(size)
             else:
-                source_height = round(bounds.bottom() - y)
+                source_height = round(bounds.bottom() - y + 1)
             if y >= bounds.top():
                 source_y = 0
             else:
-                source_y = bounds.top() - y
-                source_height -= source_y
+                source_y = bounds.top() - y + 1
+                source_height -= source_y - 1
                 y = bounds.top()
             if i % 2 == 0:
                 direction = j % 2
