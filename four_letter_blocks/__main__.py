@@ -727,8 +727,8 @@ class FourLetterBlocksWindow(QMainWindow):
             *puzzles,
             font_size=56,
             margin=75,
-            intro_text='Solve each crossword puzzle with the pieces that match '
-                       'the colour of the clue numbers. Good luck!\n',
+            intro_text='Solve each set of crossword clues with the pieces that '
+                       'match the colour of its title. Good luck!\n',
             footer_text=puzzle_set.LINK_TEXT,
             background=background_colour,
             background_tile=background_tile)
