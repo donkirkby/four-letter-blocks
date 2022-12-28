@@ -79,15 +79,16 @@ class Block:
     UNUSED = 'unused'
     CUT_COLOUR = '#ed2224'  # Special colour for Game Crafter cutting
 
-    def __init__(self, *squares: Square, marker: str = None):
+    def __init__(self, *squares: Square, marker: str = UNUSED):
         self.squares = squares
-        self.marker = marker
+        self.marker = marker  # display letter in grid of blocks, or UNUSED.
         self.border_colour = 'black'
         self.divider_colour = 'black'
         coordinates = normalize_coordinates(
             [(square.x, square.y) for square in squares])
-        self.shape, self.shape_rotation = shape_rotations().get(coordinates,
-                                                                (None, 0))
+        pair: typing.Tuple[str | None, int] = shape_rotations().get(coordinates,
+                                                                    (None, 0))
+        self.shape, self.shape_rotation = pair
         self.display_x: typing.Optional[int] = None
         self.display_y: typing.Optional[int] = None
         self.display_rotation: typing.Optional[int] = None
@@ -113,7 +114,7 @@ class Block:
     @staticmethod
     def parse(text: str,
               grid: Grid,
-              old_blocks: typing.List[typing.List[str]] = None
+              old_blocks: typing.List[typing.List[str]] | None = None
               ) -> typing.List['Block']:
         if old_blocks is None:
             old_blocks = []
@@ -121,7 +122,7 @@ class Block:
                           for row in grid.squares
                           for square in row
                           if square is not None}
-        square_lists = defaultdict(list)
+        square_lists: typing.Dict[str, typing.List[Square]] = defaultdict(list)
         lines = text.splitlines()
         while len(old_blocks) < len(lines):
             old_blocks.append([])
@@ -202,12 +203,12 @@ class Block:
             painter.setPen(divider_pen)
             if (round(x), round(y-size)) in square_positions:
                 if is_packed or self.tab_count:
-                    painter.drawLine(x+size/4, y, x+size*3/4, y)
+                    painter.drawLine(round(x+size/4), y, round(x+size*3/4), y)
                 else:
                     painter.drawLine(x, y, x + size, y)
             if (round(x-size), round(y)) in square_positions:
                 if is_packed or self.tab_count:
-                    painter.drawLine(x, y+size/4, x, y+size*3/4)
+                    painter.drawLine(x, round(y+size/4), x, round(y+size*3/4))
                 else:
                     painter.drawLine(x, y, x, y+size)
             painter.setPen(old_pen)
@@ -283,7 +284,7 @@ class Block:
             angle = -90
             step = -ystep
         shortfall = round(square_size - step)
-        path = QPainterPath(QPoint((shortfall-square_size)/2, 0))
+        path = QPainterPath(QPoint(round((shortfall-square_size)/2), 0))
         if self.tab_count == 0:
             path.lineTo(-nick_radius, 0)
             path.moveTo(nick_radius, 0)
@@ -374,7 +375,9 @@ def shape_rotations() -> typing.Dict[
          T
         """)
     sections = shapes_text.split('\n\n')
-    names = {}
+    names: typing.Dict[
+        typing.FrozenSet[typing.Tuple[int, int]],
+        typing.Tuple[str, int]] = {}
     for section in sections:
         name = section.replace(' ', '')[0]
         lines = section.splitlines()

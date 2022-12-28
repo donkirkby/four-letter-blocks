@@ -12,12 +12,12 @@ from four_letter_blocks.square import Square, draw_gradient_rect
 class CluePainter:
     def __init__(self,
                  *puzzles: Puzzle,
-                 font_size: float = None,
+                 font_size: float | None = None,
                  margin: int = 0,
                  intro_text: str = '',
                  footer_text: str = '',
                  background: QColor = QColor.fromHsv(0, 0, 0, 0),
-                 background_tile: QPixmap = None):
+                 background_tile: QPixmap | None = None):
         self.puzzles = puzzles
         self.font_size = font_size
         self.margin = margin
@@ -44,9 +44,9 @@ class CluePainter:
         else:
             font_size = painter.window().height() // 60
         font = QFont('NotoSansCJK')
-        font.setPixelSize(font_size)
+        font.setPixelSize(round(font_size))
         title_font = QFont(font)
-        title_font.setPixelSize(font_size*2)
+        title_font.setPixelSize(round(font_size*2))
         window_width = painter.window().width()
         window_height = painter.window().height()
         header_rect = QRectF(margin, margin,
@@ -119,7 +119,7 @@ class CluePainter:
                            self.intro_text,
                            painter,
                            is_dry_run=is_dry_run)
-            bleed_top = header_rect.top()
+            bleed_top = round(header_rect.top())
         if self.footer_text and self.puzzle_index == 0:
             rect = QRectF(header_rect)
             footer_height = self.find_text_height(self.footer_text,
@@ -174,7 +174,8 @@ class CluePainter:
                        is_dry_run=is_dry_run)
         if not is_dry_run:
             y = round(header_rect.top() + line_height / 2)
-            painter.drawLine(header_rect.left(), y, header_rect.right(), y)
+            painter.drawLine(round(header_rect.left()), y,
+                             round(header_rect.right()), y)
         header_rect.adjust(0, line_height, 0, 0)
         painter.setPen(old_pen)
 
@@ -190,13 +191,14 @@ class CluePainter:
             width = painter.window().width()
         rect = metrics.boundingRect(QRectF(0, 0, width, 0),
                                     int(Qt.TextFlag.TextWordWrap),
-                                    text)
+                                    text,
+                                    tabstops=0)
         return rect.height()
 
     def draw_clues(self,
                    painter: QPainter,
                    clues: typing.List[Clue],
-                   bounds: QRectF = None,
+                   bounds: QRectF | None = None,
                    is_dry_run: bool = False) -> int:
         """ Draw clues within a rectangle.
 
@@ -206,8 +208,10 @@ class CluePainter:
         if not clues:
             return 0
         if bounds is None:
-            bounds = painter.window()
-        max_clue = max(clue.number for clue in clues)
+            bounds = QRectF(painter.window())
+        max_clue = max(clue.number
+                       for clue in clues
+                       if clue.number is not None)
         first_clue = clues[0]
         if first_clue.suit is None:
             suit_display = ''
@@ -257,7 +261,7 @@ class CluePainter:
                   is_dry_run: bool = False,
                   is_aligned_right: bool = False,
                   is_bold: bool = False,
-                  background: QColor = None,
+                  background: QColor | None = None,
                   is_gradient: bool = False):
         font = painter.font()
         if is_bold:
@@ -281,10 +285,14 @@ class CluePainter:
         else:
             padding = font.pixelSize() // 10
             target_rect = rect.adjusted(padding, padding, -padding, -padding)
-        bounding_rect = metrics.boundingRect(target_rect, flags, text)
+        bounding_rect = metrics.boundingRect(target_rect,
+                                             flags,
+                                             text,
+                                             tabstops=0)
         if padding and not is_dry_run:
             background_rect = bounding_rect.adjusted(-padding, -padding,
                                                      padding, padding)
+            assert background is not None
             if is_gradient:
                 draw_gradient_rect(painter,
                                    background,

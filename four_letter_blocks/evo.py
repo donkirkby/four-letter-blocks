@@ -1,5 +1,6 @@
 # Based on https://github.com/Garve/Evolutionary-Algorithm
 # Added my own features in https://github.com/donkirkby/donimoes
+import typing
 from abc import ABC, abstractmethod
 from datetime import datetime
 from random import shuffle
@@ -8,7 +9,9 @@ from four_letter_blocks.block_packer import BlockPacker
 
 
 class Individual(ABC):
-    def __init__(self, value: dict = None, init_params: dict = None):
+    def __init__(self,
+                 value: dict | None = None,
+                 init_params: dict | None = None):
         if value is not None:
             self.value = value
         else:
@@ -85,10 +88,10 @@ class Evolution:
         self.individual_class = individual_class
         self.init_params = init_params
         self.pool_count = pool_count
-        self.pools = []
+        self.pools: typing.List[Population] = []
         self.add_pools()
         self.n_offsprings = n_offsprings
-        self.history = []
+        self.history: typing.List[str] = []
 
     @property
     def pool(self):
@@ -168,7 +171,7 @@ class Evolution:
                 pool_fitness = pool.fitness(pool.individuals[-1])
                 total = pool_fitness
                 summaries.append(f'{total}')
-            self.history.append(top_fitness)
+            self.history.append(str(top_fitness))
             self.print_step_summaries(top_individual,
                                       top_fitness,
                                       mid_fitness,

@@ -17,22 +17,21 @@ class BlockMover:
                  source: np.ndarray,
                  target: np.ndarray,
                  can_rotate: bool,
-                 shape_counts: typing.Counter[str] = None):
+                 shape_counts: typing.Counter[str | None] | None = None):
         self.source = source
         self.target = target
         self.can_rotate = can_rotate
         self.packer = BlockPacker(start_state=self.source)
         self.blocks = {
             block_number: block
-            for block_number, block in self.packer.create_blocks(
-                with_block_num=True)}
+            for block_number, block in self.packer.create_blocks_with_block_num()}
         if shape_counts is not None:
             self.shape_counts = shape_counts
         else:
             self.shape_counts = Counter()
             for block in self.blocks.values():
                 shape = block.shape
-                if shape != 'O' and not can_rotate:
+                if shape != 'O' and shape is not None and not can_rotate:
                     shape += str(block.shape_rotation)
                 self.shape_counts[shape] += 1
 
@@ -51,6 +50,7 @@ class BlockMover:
         except KeyError:
             return
         shape = block.shape
+        assert shape is not None
         if shape != 'O' and not self.can_rotate:
             shape += str(block.shape_rotation)
         if self.shape_counts[shape] == 0:
@@ -106,7 +106,7 @@ class Packing(Individual):
                             pos1=(row1, col1),
                             pos2=(row2, col2)))
 
-    def mutate(self, mutate_params):
+    def mutate(self, mutate_params) -> None:
         self.value: dict
 
         state: np.ndarray = self.value['state'].copy()
@@ -171,9 +171,9 @@ class FitnessScore:
 
 
 class PackingFitnessCalculator:
-    def __init__(self):
-        self.details = []
-        self.summaries = []
+    def __init__(self) -> None:
+        self.details: typing.List[str] = []
+        self.summaries: typing.List[str] = []
         self.count_parities: typing.Dict[str, int] = {}
         self.count_diffs: typing.Dict[str, int] = {}  # {ab: diff}
         self.count_min: typing.Dict[str, int] = {}  # {shapes: min}
@@ -255,8 +255,8 @@ class EvoPacker(BlockPacker):
                  height=0,
                  tries=-1,
                  min_tries=-1,
-                 start_text: str = None,
-                 start_state: np.ndarray = None):
+                 start_text: str | None = None,
+                 start_state: np.ndarray | None = None):
         super().__init__(width,
                          height,
                          tries,
@@ -273,7 +273,8 @@ class EvoPacker(BlockPacker):
 
     def setup(self,
               shape_counts: typing.Counter[str],
-              fitness_calculator: PackingFitnessCalculator = None):
+              fitness_calculator: PackingFitnessCalculator | None = None):
+        assert self.state is not None
         init_params = dict(start_state=self.state.copy(),
                            shape_counts=shape_counts)
         if fitness_calculator is None:
@@ -304,6 +305,7 @@ class EvoPacker(BlockPacker):
         :return: True if a successful packing was found.
         """
         evo = self.evo
+        assert evo is not None
         top_individual = evo.pool.individuals[-1]
         top_fitness: FitnessScore = evo.pool.fitness(top_individual)
         mid_fitness = evo.pool.fitness(
@@ -322,7 +324,9 @@ class EvoPacker(BlockPacker):
         packer = BlockPacker(start_state=top_individual.value['state'])
         packer.sort_blocks()
         self.top_blocks = packer.display()
-        if top_fitness.empty_spaces == 0 and top_fitness.warning_count == 0:
+        if (top_fitness.empty_spaces == 0 and
+                top_fitness.missed_targets == 0 and
+                top_fitness.warning_count == 0):
             self.state = top_individual.value['state']
             return True
         evo.step()
@@ -331,12 +335,14 @@ class EvoPacker(BlockPacker):
 
     def find_usable_packing(self) -> bool:
         evo = self.evo
+        assert evo is not None
+        original_state = self.state
         top_individual = evo.pool.individuals[-1]
         top_fitness: FitnessScore = evo.pool.fitness(top_individual)
         if top_fitness is not None and top_fitness.empty_spaces == 0:
             self.state = top_individual.value['state']
             return True
-        self.state = None
+        self.state = original_state
         return False
 
 

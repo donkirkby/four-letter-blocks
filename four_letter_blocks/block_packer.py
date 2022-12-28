@@ -1,6 +1,7 @@
 import typing
 from collections import defaultdict
 from functools import cache
+from random import shuffle
 
 import numpy as np
 
@@ -17,9 +18,10 @@ class BlockPacker:
                  height=0,
                  tries=-1,
                  min_tries=-1,
-                 start_text: str = None,
-                 start_state: np.ndarray = None,
+                 start_text: str | None = None,
+                 start_state: np.ndarray | None = None,
                  split_row=0):
+        self.state: np.ndarray | None
         if start_state is not None:
             self.height, self.width = start_state.shape
             self.state = start_state
@@ -71,9 +73,10 @@ class BlockPacker:
                 rotated_positions[rotated_shape].append((x, y))
         return rotated_positions
 
-    def display(self, state: np.ndarray = None) -> str:
+    def display(self, state: np.ndarray | None = None) -> str:
         if state is None:
             state = self.state
+        assert state is not None
         ascii_offset = 63  # Displays first block as A.
         last_block = np.amax(state) + ascii_offset
         if last_block >= 127:
@@ -104,17 +107,26 @@ class BlockPacker:
                 next_block += 1
         self.state = state
 
-    def create_blocks(self, with_block_num=False) -> typing.Iterable[Block]:
+    def create_blocks(self) -> typing.Iterable[Block]:
+        assert self.state is not None
         max_block = np.max(self.state)
         for block_num in range(2, max_block + 1):
             try:
                 block = self.create_block(block_num)
             except ValueError:
                 continue
-            if with_block_num:
-                yield block_num, block
-            else:
-                yield block
+            yield block
+
+    def create_blocks_with_block_num(self) -> typing.Iterable[
+            typing.Tuple[int, Block]]:
+        assert self.state is not None
+        max_block = np.max(self.state)
+        for block_num in range(2, max_block + 1):
+            try:
+                block = self.create_block(block_num)
+            except ValueError:
+                continue
+            yield block_num, block
 
     def create_block(self, block_num):
         coordinates = np.column_stack(np.nonzero(self.state == block_num))
@@ -146,6 +158,7 @@ class BlockPacker:
         if self.tries > 0:
             self.tries -= 1
         best_state = None
+        assert self.state is not None
         start_state = self.state
         empty = np.nonzero(self.state == 0)
         if len(empty[0]) == 0:
@@ -221,6 +234,7 @@ class BlockPacker:
         :param block_num: block value to place in the state
         :return: an iterator of states for each successful placement
         """
+        assert self.state is not None
         start_state = self.state
         blocks = shape_coordinates()
         if len(shape_name) == 1:
@@ -260,6 +274,7 @@ class BlockPacker:
 
     def random_fill(self, shape_counts: typing.Counter[str]):
         """ Randomly place pieces from shape_counts on empty spaces. """
+        assert self.state is not None
         empty = np.argwhere(self.state == 0)
         np.random.shuffle(empty)
         used_blocks = np.unique(self.state)
@@ -276,7 +291,7 @@ class BlockPacker:
                            if count > 0)
         if not shape_items:
             return
-        np.random.shuffle(shape_items)
+        shuffle(shape_items)
         for shape, count in shape_items:
             for row, col in empty:
                 for new_state in self.place_block(shape, row, col, next_block):
@@ -286,6 +301,7 @@ class BlockPacker:
                     return
 
     def flip(self) -> 'BlockPacker':
+        assert self.state is not None
         flipped_state = np.copy(np.fliplr(self.state))
         return BlockPacker(start_state=flipped_state, tries=self.tries)
 

@@ -26,6 +26,9 @@ jobs:
           pip install pipenv
           pipenv install --dev
           pip install coverage # Extra copy for codecov upload.
+      - name: Scan with mypy
+        run: |
+          pipenv run mypy four_letter_blocks
       - name: Test with pytest
         id: test
         run: |

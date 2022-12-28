@@ -29,6 +29,8 @@ class BigPuzzlePair(PuzzlePair):
                     puzzle: Puzzle,
                     font_size: float | None = None,
                     is_dry_run: bool = False) -> QRectF:
+        if font_size is None:
+            font_size = painter.font().pixelSize()
         if self.slug_index == 1:
             return self.draw_header2(painter, puzzle, font_size)
 
@@ -46,7 +48,7 @@ class BigPuzzlePair(PuzzlePair):
                            grid_height)
 
         font = painter.font()
-        font.setPixelSize(font_size * 1.5)
+        font.setPixelSize(round(font_size * 1.5))
         painter.setFont(font)
         header_rect = QRectF(2*margin, 2*margin,
                              width - 4*margin, grid_rect.top() - 2*margin)
@@ -55,7 +57,7 @@ class BigPuzzlePair(PuzzlePair):
             0, 0)
         CluePainter.draw_text(header_rect, puzzle.title, painter)
 
-        font.setPixelSize(font_size)
+        font.setPixelSize(round(font_size))
         painter.setFont(font)
         CluePainter.draw_text(hints_rect, puzzle.build_hints(), painter)
 
@@ -75,7 +77,7 @@ class BigPuzzlePair(PuzzlePair):
     def draw_header2(self,
                      painter: QPainter,
                      puzzle: Puzzle,
-                     font_size: float | None = None) -> QRectF:
+                     font_size: float) -> QRectF:
         # noinspection DuplicatedCode
         height = painter.window().height()
         width = painter.window().width()
@@ -90,7 +92,7 @@ class BigPuzzlePair(PuzzlePair):
                            grid_width)
 
         font = painter.font()
-        font.setPixelSize(font_size / 2)
+        font.setPixelSize(round(font_size / 2))
         painter.setFont(font)
         painter.rotate(-90)
         frame_start = width - (width - grid_width) / 2
@@ -104,7 +106,7 @@ class BigPuzzlePair(PuzzlePair):
                               is_centred=True)
         painter.rotate(90)
 
-        font.setPixelSize(font_size)
+        font.setPixelSize(round(font_size))
         painter.setFont(font)
         clue_start = grid_rect.bottom() + 2*margin
         clue_width = (width - 4*margin) / 4 - margin
@@ -171,7 +173,7 @@ class BigPuzzlePair(PuzzlePair):
         return limit <= y
 
     def draw_boundary_cuts(self,
-                           painter: QPainter | LineDeduper,
+                           painter: QPainter,
                            nick_radius: int = 0):
         pen = painter.pen()
         pen.setWidth(math.floor(self.square_size / 33))
@@ -206,14 +208,14 @@ class BigPuzzlePair(PuzzlePair):
         block.draw_nicked_line(painter,
                                nick_radius,
                                margin, height - 2*margin,
-                               (width - grid_width)/2, height - 2*margin)
+                               round((width - grid_width)/2), height - 2*margin)
         block.draw_nicked_line(painter,
                                nick_radius,
-                               (width + grid_width)/2, height - 2*margin,
+                               round((width + grid_width)/2), height - 2*margin,
                                width - margin, height - 2*margin)
 
     def draw_boundary_cuts2(self,
-                            painter: QPainter | LineDeduper,
+                            painter: QPainter,
                             nick_radius: int = 0):
         column_count = self.puzzles[0].grid.width
         grid_width = column_count * self.square_size
@@ -239,8 +241,8 @@ class BigPuzzlePair(PuzzlePair):
         block.draw_nicked_line(painter,
                                nick_radius,
                                margin, 2*margin,
-                               (width - grid_width)/2, 2*margin)
+                               round((width - grid_width)/2), 2*margin)
         block.draw_nicked_line(painter,
                                nick_radius,
-                               (width + grid_width)/2, 2*margin,
+                               round((width + grid_width)/2), 2*margin,
                                width - margin, 2*margin)

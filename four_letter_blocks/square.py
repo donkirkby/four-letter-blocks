@@ -13,13 +13,17 @@ class Square:
                      'S': Suit('♠'),
                      None: Suit('')}
 
-    def __init__(self, letter: str, number: int = None, suit: str = None):
+    def __init__(self,
+                 letter: str,
+                 number: int | None = None,
+                 suit: str | None = None):
         self.letter = letter
         self.number = number
         self.suit = suit
         self.x = self.y = 0
         self.size = 1
-        self.across_word = self.down_word = None
+        self.across_word: str | None = None
+        self.down_word: str | None = None
         self.face_colour = QColor('transparent')
 
     def __repr__(self):
@@ -60,16 +64,21 @@ class Square:
             painter.setFont(font)
             old_pen = painter.pen()
             if suit_display.filled != suit_display.display:
+                assert suit_display.filled is not None
                 painter.setPen(suit_fill)
-                painter.drawText(rect, Qt.AlignHCenter, suit_display.filled)
+                painter.drawText(rect,
+                                 Qt.AlignmentFlag.AlignHCenter,
+                                 suit_display.filled)
             painter.setPen(suit_outline)
-            painter.drawText(rect, Qt.AlignHCenter, suit_display.display)
+            painter.drawText(rect,
+                             Qt.AlignmentFlag.AlignHCenter,
+                             suit_display.display)
             painter.setPen(old_pen)
         else:
             x = rect.left() + self.size / 2
             y = rect.top() + self.size * 0.775
             suit_display = self.SUIT_DISPLAYS[self.suit]
-            font.setPixelSize(self.size * 0.82)
+            font.setPixelSize(round(self.size * 0.82))
             painter.setFont(font)
             if suit_display.filled != suit_display.display:
                 painter.setPen(suit_fill)
@@ -89,14 +98,14 @@ class Square:
         if self.number is None:
             pass
         elif not is_packed:
-            font.setPixelSize(self.size * self.NUMBER_SIZE)
+            font.setPixelSize(round(self.size * self.NUMBER_SIZE))
             number_shift = round(self.size / 20)
             painter.setFont(font)
             rect.translate(number_shift, 0)
             painter.drawText(rect, 0, str(self.number))
             rect.translate(-number_shift, 0)
         else:
-            font.setPixelSize(self.size * 0.1875)
+            font.setPixelSize(round(self.size * 0.1875))
             painter.setFont(font)
             draw_text_path(painter,
                            rect.left()+self.size*0.225,
@@ -104,14 +113,14 @@ class Square:
                            str(self.number))
 
         if not is_packed:
-            font.setPixelSize(self.size * self.LETTER_SIZE)
+            font.setPixelSize(round(self.size * self.LETTER_SIZE))
             letter_shift = round(self.size * (1 - self.LETTER_SIZE) / 2)
             painter.setFont(font)
             rect.translate(0, letter_shift)
-            painter.drawText(rect, Qt.AlignHCenter, self.letter)
+            painter.drawText(rect, Qt.AlignmentFlag.AlignHCenter, self.letter)
             rect.translate(0, -letter_shift)
         else:
-            font.setPixelSize(self.size * 0.57)
+            font.setPixelSize(round(self.size * 0.57))
             painter.setFont(font)
             draw_text_path(painter,
                            rect.left()+self.size/2,
@@ -137,10 +146,10 @@ def draw_text_path(painter: QPainter,
         rect = path.boundingRect()
         path.translate(x-(rect.left()+rect.right())/2, 0)
 
-    old_hint = painter.testRenderHint(QPainter.Antialiasing)
-    painter.setRenderHint(QPainter.Antialiasing)
+    old_hint = painter.testRenderHint(QPainter.RenderHint.Antialiasing)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
     painter.fillPath(path, painter.pen().color())
-    painter.setRenderHint(QPainter.Antialiasing, old_hint)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing, old_hint)
 
 
 # noinspection DuplicatedCode
@@ -186,24 +195,24 @@ def draw_gradient_rect(painter: QPainter,
     painter.fillRect(x1, y2, x2 - x1, y3 - y2, gradient)
 
     # top left
-    gradient = QRadialGradient()
-    gradient.setStops(((0, colour), (1, white)))
-    gradient.setRadius(radius)
-    gradient.setCenter(x1, y1)
-    gradient.setFocalPoint(gradient.center())
-    painter.fillRect(x0, y0, x1-x0, y1-y0, gradient)
+    corner = QRadialGradient()
+    corner.setStops(((0, colour), (1, white)))
+    corner.setRadius(radius)
+    corner.setCenter(x1, y1)
+    corner.setFocalPoint(corner.center())
+    painter.fillRect(x0, y0, x1-x0, y1-y0, corner)
 
     # top right
-    gradient.setCenter(x2, y1)
-    gradient.setFocalPoint(gradient.center())
-    painter.fillRect(x2, y0, x3 - x2, y1 - y0, gradient)
+    corner.setCenter(x2, y1)
+    corner.setFocalPoint(corner.center())
+    painter.fillRect(x2, y0, x3 - x2, y1 - y0, corner)
 
     # bottom left
-    gradient.setCenter(x1, y2)
-    gradient.setFocalPoint(gradient.center())
-    painter.fillRect(x0, y2, x1 - x0, y3 - y2, gradient)
+    corner.setCenter(x1, y2)
+    corner.setFocalPoint(corner.center())
+    painter.fillRect(x0, y2, x1 - x0, y3 - y2, corner)
 
     # bottom right
-    gradient.setCenter(x2, y2)
-    gradient.setFocalPoint(gradient.center())
-    painter.fillRect(x2, y2, x3 - x2, y3 - y2, gradient)
+    corner.setCenter(x2, y2)
+    corner.setFocalPoint(corner.center())
+    painter.fillRect(x2, y2, x3 - x2, y3 - y2, corner)

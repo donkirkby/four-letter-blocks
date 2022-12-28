@@ -19,6 +19,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialo
 import four_letter_blocks
 from four_letter_blocks.big_puzzle_pair import BigPuzzlePair
 from four_letter_blocks.block_packer import BlockPacker
+from four_letter_blocks.clue import Clue
 from four_letter_blocks.clue_painter import CluePainter
 from four_letter_blocks.evo_packer import PackingFitnessCalculator
 from four_letter_blocks.fill_thread import FillThread
@@ -32,7 +33,7 @@ from four_letter_blocks import four_letter_blocks_rc
 
 assert four_letter_blocks_rc  # Need to import this module to load resources.
 
-DIAGRAM_TEXT_FORMAT = QTextFormat.UserObject + 1
+DIAGRAM_TEXT_FORMAT = QTextFormat.UserObject + 1  # type:ignore[attr-defined]
 DIAGRAM_DATA = 1
 OBJECT_REPLACEMENT = chr(0xfffc)
 
@@ -59,7 +60,7 @@ def rotate_painter(painter: QPainter | LineDeduper, angle: int = 90):
 
 
 class FourLetterBlocksWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         ui = self.ui = Ui_MainWindow()
         ui.setupUi(self)
@@ -92,7 +93,7 @@ class FourLetterBlocksWindow(QMainWindow):
         sys.excepthook = self.on_error
         self.file_path: typing.Optional[Path] = None
         self.settings = get_settings()
-        self.old_clues = {}
+        self.old_clues: typing.Dict[str, Clue] = {}
         self.old_blocks: typing.List[typing.List[str]] = []
         self.base_title = self.windowTitle()
 
@@ -145,12 +146,14 @@ class FourLetterBlocksWindow(QMainWindow):
         """
         if not self.is_state_dirty():
             return True
+        buttons = QMessageBox.Ok | QMessageBox.Cancel  # type:ignore[attr-defined]
+        ok_button = QMessageBox.Ok  # type:ignore[attr-defined]
         choice = QMessageBox.warning(self,
                                      'Unsaved Changes',
                                      f'Changes have not been saved. Are you '
                                      f'sure you want to {action}?',
-                                     QMessageBox.Ok | QMessageBox.Cancel)
-        return choice == QMessageBox.Ok
+                                     buttons)
+        return choice == ok_button
 
     def build_current_state(self) -> typing.Dict[str, str]:
         state = {}
@@ -191,7 +194,7 @@ class FourLetterBlocksWindow(QMainWindow):
                             str(value))
 
     def keyPressEvent(self, event: QKeyEvent):
-        if event.key() != Qt.Key_Insert:
+        if event.key() != Qt.Key.Key_Insert:
             return
         overwrite_mode = not self.ui.grid_text.overwriteMode()
         for field in (self.ui.grid_text,
@@ -223,7 +226,7 @@ class FourLetterBlocksWindow(QMainWindow):
         self.old_clues.clear()
         self.old_blocks.clear()
 
-    def add_crosswords(self):
+    def add_crosswords(self) -> None:
         save_dir = self.get_save_dir()
         kwargs = get_file_dialog_options()
         file_names: typing.List[str]
@@ -305,10 +308,10 @@ class FourLetterBlocksWindow(QMainWindow):
         self.pair_puzzles[puzzle_index] = puzzle
         self.summarize_crossword_pair()
 
-    def summarize_crossword_pair(self):
+    def summarize_crossword_pair(self) -> None:
         info = '...'
-        front_puzzle: Puzzle
-        back_puzzle: Puzzle
+        front_puzzle: Puzzle | None
+        back_puzzle: Puzzle | None
         front_puzzle, back_puzzle = self.pair_puzzles
         is_export_enabled = False
         if not any(self.pair_puzzles):
@@ -337,10 +340,12 @@ class FourLetterBlocksWindow(QMainWindow):
         self.ui.export_pair_action.setEnabled(is_export_enabled)
         self.statusBar().showMessage(status)
 
-    def calculate_needed_counts(self):
-        front_puzzle: Puzzle
-        back_puzzle: Puzzle
+    def calculate_needed_counts(self) -> typing.Counter[str]:
+        front_puzzle: Puzzle | None
+        back_puzzle: Puzzle | None
         front_puzzle, back_puzzle = self.pair_puzzles
+        assert front_puzzle is not None
+        assert back_puzzle is not None
         needed_counts = back_puzzle.flipped_shape_counts
         needed_counts.subtract(front_puzzle.shape_counts)
         return needed_counts
@@ -363,12 +368,12 @@ class FourLetterBlocksWindow(QMainWindow):
                            puzzle: Puzzle | None,
                            blocks_text: QPlainTextEdit) -> Puzzle | None:
         if self.fill_thread is not None:
-            return
+            return None
         if puzzle is None:
-            return
+            return None
         new_blocks = blocks_text.toPlainText()
         if puzzle.format_blocks() == new_blocks:
-            return
+            return None
         return Puzzle.parse_sections(puzzle.title,
                                      puzzle.format_grid(),
                                      puzzle.format_clues(),
@@ -429,8 +434,8 @@ class FourLetterBlocksWindow(QMainWindow):
     def launch_fill(self,
                     clicked_button: QPushButton,
                     is_packing_back: bool = False,
-                    report_path: Path = None,
-                    fitness_calculator: PackingFitnessCalculator = None):
+                    report_path: Path | None = None,
+                    fitness_calculator: PackingFitnessCalculator | None = None):
         if self.fill_thread is not None:
             self.interrupt_fill()
             return
@@ -441,6 +446,7 @@ class FourLetterBlocksWindow(QMainWindow):
             item = self.ui.crossword_files.item(self.selected_crossword_file)
             back_puzzle = self.crossword_set[item.toolTip()]
             is_packing_back = True
+        assert back_puzzle is not None
         self.fill_thread = FillThread(self,
                                       back_puzzle,
                                       front_puzzle,
@@ -484,11 +490,11 @@ class FourLetterBlocksWindow(QMainWindow):
             self.ui.back_blocks_text.setPlainText(back_puzzle.format_blocks())
             self.ui.front_blocks_text.setPlainText(front_puzzle.format_blocks())
         else:
-            front_puzzle: Puzzle
-            back_puzzle: Puzzle
-            front_puzzle, back_puzzle = self.pair_puzzles
-            self.ui.back_blocks_text.setPlainText(back_puzzle.format_blocks())
-            self.ui.front_blocks_text.setPlainText(front_puzzle.format_blocks())
+            front_puzzle2, back_puzzle2 = self.pair_puzzles
+            assert front_puzzle2 is not None
+            assert back_puzzle2 is not None
+            self.ui.back_blocks_text.setPlainText(back_puzzle2.format_blocks())
+            self.ui.front_blocks_text.setPlainText(front_puzzle2.format_blocks())
         self.reset_fill_buttons()
         self.statusBar().showMessage(summary)
 
@@ -682,16 +688,16 @@ class FourLetterBlocksWindow(QMainWindow):
         svg_buffer = QBuffer()
         generator = create_svg_generator(svg_buffer)
 
-        painter = LineDeduper(QPainter(generator))
+        deduper = LineDeduper(QPainter(generator))
         puzzle_set.square_size = generator.width() / 16
         nick_radius = 5  # DPI is 1000
-        puzzle_set.draw_cuts(painter, nick_radius)
-        painter.end()
+        puzzle_set.draw_cuts(deduper, nick_radius)
+        deduper.end()
 
         front_buffer = QBuffer()
-        front_image = QImage(2475, 3150, QImage.Format_RGB32)
+        front_image = QImage(2475, 3150, QImage.Format.Format_RGB32)
         painter = QPainter(front_image)
-        puzzle_set.square_size = front_image.width() / 16
+        puzzle_set.square_size = round(front_image.width() / 16)
         background_colour = puzzle_set.puzzles[0].face_colour
         tile_size = puzzle_set.square_size / 6
         background_tile = puzzle_set.create_background_tile(round(tile_size),
@@ -703,11 +709,12 @@ class FourLetterBlocksWindow(QMainWindow):
                                            y_offset=puzzle_set.square_size // 2)
         puzzle_set.draw_front(painter)
         painter.end()
-        success = front_image.save(front_buffer, 'PNG')
+        success = front_image.save(front_buffer,
+                                   'PNG')  # type:ignore[call-overload]
         assert success
 
         back_buffer = QBuffer()
-        back_image = QImage(2475, 3150, QImage.Format_RGB32)
+        back_image = QImage(2475, 3150, QImage.Format.Format_RGB32)
         painter = QPainter(back_image)
         painter.setBackground(background_colour)
         puzzle_set.draw_background_pattern(painter,
@@ -716,7 +723,8 @@ class FourLetterBlocksWindow(QMainWindow):
                                            y_offset=puzzle_set.square_size // 2)
         puzzle_set.draw_back(painter)
         painter.end()
-        success = back_image.save(back_buffer, 'PNG')
+        success = back_image.save(back_buffer,
+                                  'PNG')  # type:ignore[call-overload]
         assert success
 
         """ Booklet page images are 1575 x 2475. Safety margin is 75 pixels on
@@ -732,7 +740,7 @@ class FourLetterBlocksWindow(QMainWindow):
             footer_text=puzzle_set.LINK_TEXT,
             background=background_colour,
             background_tile=background_tile)
-        page_image = QImage(1575, 2475, QImage.Format_RGB32)
+        page_image = QImage(1575, 2475, QImage.Format.Format_RGB32)
         while not clue_painter.is_finished:
             painter = QPainter(page_image)
             painter.drawPixmap(0, 0, paper)
@@ -741,22 +749,24 @@ class FourLetterBlocksWindow(QMainWindow):
             clue_painter.draw_page(painter)
             painter.end()
             page_buffer = QBuffer()
-            success = page_image.save(page_buffer, 'PNG')
+            success = page_image.save(page_buffer,
+                                      'PNG')  # type:ignore[call-overload]
             assert success
             page_buffers.append(page_buffer)
 
         with ZipFile(file_name, 'w', compression=ZIP_DEFLATED) as zip_file:
-            zip_file.writestr('cuts.svg', svg_buffer.data())
-            zip_file.writestr('front.png', front_buffer.data())
-            zip_file.writestr('back.png', back_buffer.data())
+            zip_file.writestr('cuts.svg', svg_buffer.data().data())
+            zip_file.writestr('front.png', front_buffer.data().data())
+            zip_file.writestr('back.png', back_buffer.data().data())
             for page_number, page_buffer in enumerate(page_buffers, 1):
-                zip_file.writestr(f'page{page_number}.png', page_buffer.data())
+                zip_file.writestr(f'page{page_number}.png',
+                                  page_buffer.data().data())
 
         self.statusBar().showMessage(f'Exported to {file_name}.')
 
-    def export_pair(self):
-        front_puzzle: Puzzle
-        back_puzzle: Puzzle
+    def export_pair(self) -> None:
+        front_puzzle: Puzzle | None
+        back_puzzle: Puzzle | None
         front_puzzle, back_puzzle = self.pair_puzzles
         assert front_puzzle is not None
         assert back_puzzle is not None
@@ -775,10 +785,12 @@ class FourLetterBlocksWindow(QMainWindow):
         self.settings.setValue('save_path', file_name)
         self.export_pair_file(file_name)
 
-    def export_pair_file(self, file_name):
-        front_puzzle: Puzzle
-        back_puzzle: Puzzle
+    def export_pair_file(self, file_name) -> None:
+        front_puzzle: Puzzle | None
+        back_puzzle: Puzzle | None
         front_puzzle, back_puzzle = self.pair_puzzles
+        assert front_puzzle is not None
+        assert back_puzzle is not None
         try:
             with ZipFile(file_name) as zip_file:
                 packing = ZipPath(zip_file, 'packing.txt').read_text()
@@ -815,7 +827,7 @@ class FourLetterBlocksWindow(QMainWindow):
         zip_contents = {}  # {file_name: data}
         for puzzle_pair.slug_index in range(puzzle_pair.slug_count):
             front_buffer = QBuffer()
-            front_image = QImage(2475, 3150, QImage.Format_RGB32)
+            front_image = QImage(2475, 3150, QImage.Format.Format_RGB32)
             painter = QPainter(front_image)
             try:
                 rotate_painter(painter)
@@ -825,50 +837,54 @@ class FourLetterBlocksWindow(QMainWindow):
                 grid_rect = puzzle_pair.draw_front(painter, font_size)
                 header_fraction = grid_rect.top() / front_image.width()
                 painter.setBackground(front_bg)
-                puzzle_pair.draw_background_pattern(painter,
-                                                    puzzle_pair.square_size / 6,
-                                                    x_offset=grid_rect.top(),
-                                                    y_offset=grid_rect.left())
+                puzzle_pair.draw_background_pattern(
+                    painter,
+                    puzzle_pair.square_size / 6,
+                    x_offset=round(grid_rect.top()),
+                    y_offset=round(grid_rect.left()))
                 # painter.eraseRect(painter.window())
                 puzzle_pair.draw_front(painter, font_size)
                 # puzzle_pair.draw_cuts(painter, header_fraction=header_fraction)
             finally:
                 painter.end()
-            success = front_image.save(front_buffer, 'PNG')
+            success = front_image.save(front_buffer,
+                                       'PNG')  # type:ignore[call-overload]
             assert success
 
             back_buffer = QBuffer()
-            back_image = QImage(2475, 3150, QImage.Format_RGB32)
+            back_image = QImage(2475, 3150, QImage.Format.Format_RGB32)
             painter = QPainter(back_image)
             try:
                 painter.setBackground(back_bg)
-                puzzle_pair.draw_background_pattern(painter,
-                                                    puzzle_pair.square_size / 6,
-                                                    x_offset=grid_rect.top(),
-                                                    y_offset=grid_rect.left())
+                puzzle_pair.draw_background_pattern(
+                    painter,
+                    puzzle_pair.square_size / 6,
+                    x_offset=round(grid_rect.top()),
+                    y_offset=round(grid_rect.left()))
                 # painter.eraseRect(painter.window())
                 rotate_painter(painter, -90)
                 puzzle_pair.draw_back(painter, font_size)
             finally:
                 painter.end()
-            success = back_image.save(back_buffer, 'PNG')
+            success = back_image.save(back_buffer,
+                                      'PNG')  # type:ignore[call-overload]
             assert success
 
             svg_buffer = QBuffer()
             generator = create_svg_generator(svg_buffer)
-            painter = LineDeduper(QPainter(generator))
+            deduper: QPainter = LineDeduper(QPainter(generator))  # type:ignore[assignment]
             try:
-                rotate_painter(painter)
+                rotate_painter(deduper)
                 puzzle_pair.square_size = int(generator.width() *
                                               square_coefficient)
                 nick_radius = 5  # DPI is 1000
-                puzzle_pair.draw_cuts(painter, nick_radius, header_fraction)
+                puzzle_pair.draw_cuts(deduper, nick_radius, header_fraction)
             finally:
-                painter.end()
+                deduper.end()
             slug_index = puzzle_pair.slug_index
-            zip_contents[f'cuts{slug_index}.svg'] = svg_buffer.data()
-            zip_contents[f'front{slug_index}.png'] = front_buffer.data()
-            zip_contents[f'back{slug_index}.png'] = back_buffer.data()
+            zip_contents[f'cuts{slug_index}.svg'] = svg_buffer.data().data()
+            zip_contents[f'front{slug_index}.png'] = front_buffer.data().data()
+            zip_contents[f'back{slug_index}.png'] = back_buffer.data().data()
 
         with ZipFile(file_name, 'w', compression=ZIP_DEFLATED) as zip_file:
             for name, data in zip_contents.items():
@@ -880,7 +896,7 @@ class FourLetterBlocksWindow(QMainWindow):
     def export_pdf(self, file_path: Path):
         file_name = str(file_path)
         pdf = QPdfWriter(file_name)
-        pdf.setPageSize(QPageSize.Letter)
+        pdf.setPageSize(QPageSize.PageSizeId.Letter)
 
         puzzle = self.parse_puzzle()
 
@@ -896,7 +912,7 @@ class FourLetterBlocksWindow(QMainWindow):
         doc_layout.registerHandler(DIAGRAM_TEXT_FORMAT, diagram_handler)
 
         cursor = QTextCursor(document)
-        cursor.movePosition(QTextCursor.End)
+        cursor.movePosition(QTextCursor.MoveOperation.End)
         cursor.insertText('\n')
 
         diagram_format = QTextCharFormat()
@@ -920,7 +936,8 @@ class FourLetterBlocksWindow(QMainWindow):
         height = puzzle.draw_blocks(painter)
         painter.end()
         cropped = pixmap.copy(0, 0, width, height)
-        cropped.toImage().save(str(file_path), 'png')
+        cropped.toImage().save(str(file_path),
+                               'png')  # type:ignore[call-overload]
 
     def export_md(self, file_path: Path):
         puzzle = self.parse_puzzle()
@@ -983,7 +1000,10 @@ class FourLetterBlocksWindow(QMainWindow):
         if self.fill_thread is not None:
             return
         self.old_puzzle_set_blocks = blocks_text
-        file_name = self.ui.crossword_files.currentItem().toolTip()
+        current_item = self.ui.crossword_files.currentItem()
+        if current_item is None:
+            return
+        file_name = current_item.toolTip()
         old_puzzle = self.crossword_set[file_name]
         new_puzzle = Puzzle.parse_sections(old_puzzle.title,
                                            old_puzzle.format_grid(),
@@ -1065,8 +1085,8 @@ class FourLetterBlocksWindow(QMainWindow):
 
 class BlockDiagram(QPyTextObject):
     def __init__(self, puzzle: Puzzle,
-                 position_map: typing.Dict = None,
-                 parent: QObject = None):
+                 position_map: typing.Dict | None = None,
+                 parent: QObject | None = None):
         super().__init__(parent)
         self.puzzle = puzzle
         self.position_map = position_map
@@ -1077,22 +1097,22 @@ class BlockDiagram(QPyTextObject):
                       posInDocument: int,
                       format: QTextFormat) -> QSizeF:
         row_index = format.property(DIAGRAM_DATA)
-        row_heights = self.puzzle.row_heights(doc.textWidth())
+        row_heights = self.puzzle.row_heights(round(doc.textWidth()))
         row_height = row_heights[row_index]
         return QSizeF(doc.textWidth(), row_height)
 
     # noinspection PyPep8Naming,PyShadowingBuiltins
     def drawObject(self,
                    painter: QPainter,
-                   rect: QRectF,
+                   rect: QRectF | QRect,
                    doc: QTextDocument,
                    posInDocument: int,
                    format: QTextFormat):
         row_index = format.property(DIAGRAM_DATA)
         self.puzzle.draw_blocks(painter,
                                 row_index=row_index,
-                                x=rect.x(),
-                                y=rect.y())
+                                x=round(rect.x()),
+                                y=round(rect.y()))
 
 
 def get_settings():

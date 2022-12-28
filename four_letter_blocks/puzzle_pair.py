@@ -9,7 +9,6 @@ from PySide6.QtGui import QPainter, QColor, QPainterPath, QBrush, \
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.clue_painter import CluePainter
-from four_letter_blocks.line_deduper import LineDeduper
 from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
 from four_letter_blocks.puzzle_set import PuzzleSet
 from four_letter_blocks.square import Square
@@ -89,9 +88,11 @@ class PuzzlePair(PuzzleSet):
 
     # noinspection DuplicatedCode
     def draw_front(self,
-                   painter: typing.Union[QPainter, LineDeduper],
+                   painter: QPainter,
                    font_size: float | None = None) -> QRectF:
         front_puzzle, back_puzzle = self.puzzles
+        if font_size is None:
+            font_size = painter.font().pixelSize()
         grid_rect = self.draw_header(painter, front_puzzle, font_size)
         self.draw_clues(painter, grid_rect, front_puzzle, font_size)
         offset = self.square_size / 2
@@ -117,7 +118,7 @@ class PuzzlePair(PuzzleSet):
         grid_rect.moveLeft((window.width() - grid_rect.width()) / 2)
         return grid_rect
 
-    def draw_front_blocks(self, painter: typing.Union[QPainter, LineDeduper]):
+    def draw_front_blocks(self, painter: QPainter):
         super().draw_front(painter)
         block = Block(Square(' '))
         block.squares[0].size = self.square_size
@@ -131,7 +132,7 @@ class PuzzlePair(PuzzleSet):
 
     # noinspection DuplicatedCode
     def draw_back(self,
-                  painter: typing.Union[QPainter, LineDeduper],
+                  painter: QPainter,
                   font_size: float | None = None):
         front_puzzle, back_puzzle = self.puzzles
         grid_rect = self.draw_header(painter, back_puzzle, font_size)
@@ -141,7 +142,7 @@ class PuzzlePair(PuzzleSet):
                           grid_rect.top() - offset)
         self.draw_back_blocks(painter)
 
-    def draw_back_blocks(self, painter: typing.Union[QPainter, LineDeduper]):
+    def draw_back_blocks(self, painter: QPainter):
         super().draw_back(painter)
         grid_size = self.puzzles[0].grid.width
         block = Block(Square(' '))
@@ -155,7 +156,7 @@ class PuzzlePair(PuzzleSet):
                 block.draw(painter, is_packed=True)
 
     def draw_cuts(self,
-                  painter: QPainter | LineDeduper,
+                  painter: QPainter,
                   nick_radius: int = 0,
                   header_fraction: float = 0.1):
         front_puzzle, back_puzzle = self.puzzles
@@ -186,7 +187,7 @@ class PuzzlePair(PuzzleSet):
         self.draw_boundary_cuts(painter, nick_radius)
     
     def draw_boundary_cuts(self,
-                           painter: QPainter | LineDeduper,
+                           painter: QPainter,
                            nick_radius: int = 0):
         pen = painter.pen()
         pen.setWidth(math.floor(self.square_size / 33))
@@ -231,7 +232,7 @@ class PuzzlePair(PuzzleSet):
         grid_rect.moveTop(margin)
 
         font = painter.font()
-        font.setPixelSize(font_size * 1.5)
+        font.setPixelSize(round(font_size * 1.5))
         painter.setFont(font)
         CluePainter.draw_text(grid_rect,
                               puzzle.title,
@@ -239,7 +240,7 @@ class PuzzlePair(PuzzleSet):
                               is_centred=True,
                               is_dry_run=is_dry_run)
 
-        font.setPixelSize(font_size)
+        font.setPixelSize(round(font_size))
         painter.setFont(font)
         hints = puzzle.build_hints()
         CluePainter.draw_text(grid_rect,
@@ -247,7 +248,7 @@ class PuzzlePair(PuzzleSet):
                               painter,
                               is_dry_run=is_dry_run)
 
-        font.setPixelSize(font_size/2)
+        font.setPixelSize(round(font_size/2))
         painter.setFont(font)
         CluePainter.draw_text(grid_rect,
                               self.LINK_TEXT,
@@ -266,12 +267,12 @@ class PuzzlePair(PuzzleSet):
         window = painter.window()
         if font_size is None:
             font_size = window.height() / 16
-        margin = window.width() / 55
+        margin = round(window.width() / 55)
         clue_painter = CluePainter(puzzle,
                                    font_size=font_size,
                                    margin=margin)
         font = painter.font()
-        font.setPixelSize(font_size)
+        font.setPixelSize(round(font_size))
         painter.setFont(font)
         clue_rects = [QRectF(margin,
                              margin,
@@ -325,10 +326,10 @@ class PuzzlePair(PuzzleSet):
         dark, light = self.get_target_colours(background, shift=0.75)
         window = painter.window()
         size = window.width()
-        target = window.adjusted(0, 0, -size/2, -size/2)
-        target.translate(size/2, size/2)
-        x0 = window.left() + window.width()/2
-        y0 = window.top() + window.height()/2
+        target = window.adjusted(0, 0, round(-size/2), round(-size/2))
+        target.translate(round(size/2), round(size/2))
+        x0 = round(window.left() + window.width()/2)
+        y0 = round(window.top() + window.height()/2)
         path = QPainterPath(QPoint(x0, y0))
         path.arcTo(x0-size/4, y0-size/2, size/2, size/2, -90, 180)
         PuzzlePair.draw_background_tail(painter, light, background)
@@ -354,8 +355,8 @@ class PuzzlePair(PuzzleSet):
         for step in range(-step_count, step_count):
             progress = step/step_count
             size = painter.window().width()
-            x0 = window.left() + window.width()/2
-            gap = size/4*(1 + progress)
+            x0 = round(window.left() + window.width()/2)
+            gap = round(size/4*(1 + progress))
             y0 = window.top() + window.height()/2 + gap
             path = QPainterPath(QPoint(x0, gap))
             path.arcTo(gap/2, gap, size-gap, size-gap, 90, 180)
@@ -363,6 +364,6 @@ class PuzzlePair(PuzzleSet):
             step_value = ridge_value + (edge_value - ridge_value) * abs(progress)
             step_colour = QColor.fromHsv(edge.hsvHue(),
                                          edge.hsvSaturation(),
-                                         step_value)
+                                         round(step_value))
             gradient.setStops(((0, step_colour), (1, edge)))
             painter.fillPath(path, QBrush(gradient))

@@ -6,11 +6,10 @@ from collections.abc import Iterable
 from PySide6.QtCore import QPoint
 from PySide6.QtGui import QPainter, QColor, QPixmap, QPainterPath, \
     QBrush, QLinearGradient
-from colorspacious import cspace_convert
+from colorspacious import cspace_convert  # type:ignore[import]
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
-from four_letter_blocks.line_deduper import LineDeduper
 from four_letter_blocks.puzzle import Puzzle, draw_rotated_tiles
 
 
@@ -19,7 +18,7 @@ class PuzzleSet:
 
     def __init__(self,
                  *puzzles: Puzzle,
-                 block_packer: BlockPacker = None,
+                 block_packer: BlockPacker | None = None,
                  start_hue: int = 0):
         self.puzzles = puzzles
         self.shape_counts: typing.Counter[str] = Counter()
@@ -30,23 +29,25 @@ class PuzzleSet:
                                             tries=10_000)
         self.front_blocks: typing.Dict[
             str,
-            typing.List[typing.Optional[Block]]] = defaultdict(list)
+            typing.List[Block | None]] = defaultdict(list)
         self.back_blocks: typing.Dict[
             str,
-            typing.List[typing.Optional[Block]]] = defaultdict(list)
+            typing.List[Block | None]] = defaultdict(list)
 
         self.block_summary = ''
         self.combos = {'J': 'JL', 'L': 'JL', 'S': 'SZ', 'Z': 'SZ'}
         self.pairs = {}
         for pair in self.combos.values():
-            first, last = pair
+            first: str
+            last: str
+            first, last = pair  # type:ignore[misc]
             self.pairs[first] = last
             self.pairs[last] = first
         self.start_hue = start_hue
-        self.count_parities = {}
-        self.count_diffs = {}
-        self.count_min = {}
-        self.count_max = {}
+        self.count_parities: typing.Dict[str, int] = {}
+        self.count_diffs: typing.Dict[str, int] = {}
+        self.count_min: typing.Dict[str, int] = {}
+        self.count_max: typing.Dict[str, int] = {}
         self.pack_puzzles()
 
     def pack_puzzles(self):
@@ -171,6 +172,9 @@ class PuzzleSet:
         self.set_face_colours()
 
     def set_face_colours(self):
+        if not self.puzzles:
+            return
+
         size_pairs = [(puzzle.grid.width, i)
                       for i, puzzle in enumerate(self.puzzles)]
         size_pairs.sort()
@@ -206,7 +210,7 @@ class PuzzleSet:
     def display_blocks(
             self,
             block_packer: BlockPacker,
-            blocks: typing.Dict[str, typing.List[Block]]) -> Iterable[Block]:
+            blocks: typing.Dict[str, typing.List[Block | None]]) -> Iterable[Block]:
         square_size = self.square_size
         can_rotate = all(len(shape) == 1 for shape in blocks)
         if can_rotate:
@@ -245,7 +249,7 @@ class PuzzleSet:
             if self.can_draw_block(block):
                 block.draw_outline(painter, nick_radius)
 
-    def draw_front(self, painter: typing.Union[QPainter, LineDeduper]):
+    def draw_front(self, painter: QPainter):
         for block in self.display_blocks(self.block_packer,
                                          self.front_blocks):
             if self.can_draw_block(block):
@@ -255,7 +259,7 @@ class PuzzleSet:
     def can_draw_block(self, block: Block) -> bool:
         return True
 
-    def draw_back(self, painter: typing.Union[QPainter, LineDeduper]):
+    def draw_back(self, painter: QPainter):
         block_packer = self.block_packer.flip()
         for block in self.display_blocks(block_packer, self.back_blocks):
             if self.can_draw_block(block):
@@ -267,7 +271,7 @@ class PuzzleSet:
             for x in range(0, painter.window().width(), tile.width()):
                 painter.drawPixmap(x, y, tile)
 
-    def draw_background_tile(self, painter):
+    def draw_background_tile(self, painter) -> None:
         background: QColor = painter.background().color()
         dark, light = self.get_target_colours(background, shift=0.75)
         window = painter.window()
@@ -317,7 +321,8 @@ class PuzzleSet:
                                 size: float,
                                 x_offset: int = 0,
                                 y_offset: int = 0):
-        tile = self.create_background_tile(round(size), painter.background())
+        tile = self.create_background_tile(round(size),
+                                           painter.background().color())
         draw_rotated_tiles(tile, painter, size, x_offset, y_offset)
 
     def create_background_tile(self, tile_size: int,

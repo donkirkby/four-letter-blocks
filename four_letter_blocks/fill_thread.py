@@ -5,7 +5,7 @@ from pathlib import Path
 from PySide6.QtCore import QThread, Signal, QObject
 
 from four_letter_blocks.block import Block
-from four_letter_blocks.evo_packer import EvoPacker, PackingFitnessCalculator
+from four_letter_blocks.evo_packer import EvoPacker, PackingFitnessCalculator, FitnessScore
 from four_letter_blocks.puzzle import Puzzle
 
 
@@ -16,10 +16,10 @@ class FillThread(QThread):
     def __init__(self,
                  parent: QObject | None,
                  back_puzzle: Puzzle,
-                 front_puzzle: Puzzle,
+                 front_puzzle: Puzzle | None,
                  is_packing_back: bool,
                  report_path: Path | None = None,
-                 fitness_calculator: PackingFitnessCalculator = None):
+                 fitness_calculator: PackingFitnessCalculator | None = None):
         super().__init__(parent)
         # copy puzzles, so we don't access them from two threads.
         self.back_puzzle = Puzzle.parse_sections(back_puzzle.title,
@@ -41,7 +41,10 @@ class FillThread(QThread):
         else:
             self.fitness_calculator = fitness_calculator
         self.attempt_count = 0
-        self.solutions = []
+        self.top_fitness = FitnessScore(-100, -1)
+
+        # [(back, front, fitness)]
+        self.solutions: typing.List[typing.Tuple[str, str, FitnessScore]] = []
 
     def run(self):
         if self.report_path is not None:
@@ -102,9 +105,12 @@ class FillThread(QThread):
                 continue
 
             self.solutions.append((self.back_puzzle.format_blocks(),
-                                   self.front_puzzle.format_blocks()))
+                                   self.front_puzzle.format_blocks(),
+                                   self.top_fitness))
             with open(self.report_path, 'w') as f:
-                for i, (back_blocks, front_blocks) in enumerate(self.solutions):
+                for i, (back_blocks,
+                        front_blocks,
+                        fitness) in enumerate(self.solutions):
                     if i > 0:
                         print(file=f)
                         print('===', file=f)
@@ -112,6 +118,7 @@ class FillThread(QThread):
                     print(back_blocks, file=f)
                     print(file=f)
                     print(self.front_puzzle.title, file=f)
+                    print(fitness, file=f)
                     print(front_blocks, file=f)
 
     def pack_back_puzzle(self) -> bool:
@@ -135,6 +142,7 @@ class FillThread(QThread):
     def pack_front_puzzle(self) -> bool:
         packed_back_puzzle = self.back_puzzle
         front_puzzle = self.front_puzzle
+        assert front_puzzle is not None
         needed_counts = packed_back_puzzle.flipped_shape_counts
         needed_counts.subtract(front_puzzle.shape_counts)
         min_count = min(needed_counts.values())
@@ -159,11 +167,11 @@ class FillThread(QThread):
         start_text = puzzle.format_blocks().replace('?', '.')
 
         packer = EvoPacker(start_text=start_text)
-        packer.setup(shape_counts)
+        packer.setup(shape_counts, self.fitness_calculator)
         while packer.current_epoch < 1000:
             is_found = packer.run_epoch()
             if self.isInterruptionRequested():
-                return
+                return None
             if front_blocks is None:
                 side = 'front'
                 new_back = back_blocks
@@ -181,11 +189,12 @@ class FillThread(QThread):
 
             # noinspection PyUnresolvedReferences
             self.status_update.emit(status, new_back, new_front)
+            self.top_fitness = packer.top_fitness
             if is_found:
                 break
         else:
             if not packer.find_usable_packing():
-                return
+                return None
 
         return Puzzle.parse_sections(puzzle.title,
                                      puzzle.format_grid(),

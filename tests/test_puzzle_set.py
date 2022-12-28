@@ -56,6 +56,12 @@ def parse_puzzle_set(block_packer: BlockPacker = None):
     return puzzle_set
 
 
+def test_empty_set():
+    puzzle_set = PuzzleSet()
+
+    assert puzzle_set.block_summary == '0 blocks'
+
+
 def test_summary():
     puzzle_set = parse_puzzle_set()
     puzzle1, puzzle2 = puzzle_set.puzzles

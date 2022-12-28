@@ -187,7 +187,7 @@ def test_draw_clues(pixmap_differ: PixmapDiffer):
         padded_width = CluePainter.find_text_width('10. ', expected)
         font.setBold(True)
         expected.setFont(font)
-        margin = 9.09
+        margin = 9
         clues_rect = QRectF(margin, margin, 150, 260)
         CluePainter.draw_text(clues_rect, 'Across', expected)
         font.setBold(False)

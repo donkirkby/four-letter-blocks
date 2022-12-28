@@ -39,7 +39,8 @@ setup(name='four_letter_blocks',
       install_requires=['PySide6', 'numpy', 'colorspacious'],
       extras_require={'dev': ['pytest',
                               'coverage',
-                              'space-tracer']},
+                              'space-tracer',
+                              'mypy']},
       entry_points={
           'gui_scripts': [
               'four_letter_blocks=four_letter_blocks.__main__:main']},

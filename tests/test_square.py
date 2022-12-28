@@ -193,7 +193,7 @@ def test_paint_with_face_colour(pixmap_differ: PixmapDiffer):
         expected.setFont(font)
         draw_text_path(expected, 38, 49, '12')
 
-        font.setPixelSize(45)
+        font.setPixelSize(46)
         expected.setFont(font)
         draw_text_path(expected, 60, 82, 'W', is_centred=True)
 
@@ -222,7 +222,7 @@ def test_paint_packed_with_suit(pixmap_differ: PixmapDiffer):
     expected: QPainter
     with pixmap_differ.create_painters(180, 180) as (actual, expected):
         font = expected.font()
-        font.setPixelSize(65)
+        font.setPixelSize(66)
         expected.setFont(font)
         gray1 = 227
         gray2 = 140
@@ -235,7 +235,7 @@ def test_paint_packed_with_suit(pixmap_differ: PixmapDiffer):
         expected.setFont(font)
         draw_text_path(expected, 38, 49, '12')
 
-        font.setPixelSize(45)
+        font.setPixelSize(46)
         expected.setFont(font)
         draw_text_path(expected, 60, 82, 'W', is_centred=True)
 
@@ -271,7 +271,7 @@ def test_paint_packed_with_suit_and_face_colour(pixmap_differ: PixmapDiffer):
                            face_colour,
                            25, 25, 70, 70, 25)
         font = expected.font()
-        font.setPixelSize(65)
+        font.setPixelSize(66)
         expected.setFont(font)
         gray2 = 140
         expected.setPen(QPen(QColor(gray2, gray2, gray2)))
@@ -281,7 +281,7 @@ def test_paint_packed_with_suit_and_face_colour(pixmap_differ: PixmapDiffer):
         expected.setFont(font)
         draw_text_path(expected, 38, 49, '12')
 
-        font.setPixelSize(45)
+        font.setPixelSize(46)
         expected.setFont(font)
         draw_text_path(expected, 60, 82, 'W', is_centred=True)
 

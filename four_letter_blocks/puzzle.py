@@ -43,8 +43,8 @@ class Puzzle:
 
     @staticmethod
     def parse(source_file: typing.IO) -> 'Puzzle':
-        sections = split_sections(source_file)
-        return Puzzle.parse_sections(*sections)
+        title, grid_text, clues_text, blocks_text = split_sections(source_file)
+        return Puzzle.parse_sections(title, grid_text, clues_text, blocks_text)
 
     @staticmethod
     def parse_sections(
@@ -52,8 +52,8 @@ class Puzzle:
             grid_text: str,
             clues_text: str,
             blocks_text: str,
-            old_clues: typing.Dict[str, Clue] = None,
-            old_blocks: typing.List[typing.List[str]] = None) -> 'Puzzle':
+            old_clues: typing.Dict[str, Clue] | None = None,
+            old_blocks: typing.List[typing.List[str]] | None = None) -> 'Puzzle':
         if old_clues is None:
             old_clues = {}
         grid = Grid(grid_text)
@@ -66,12 +66,12 @@ class Puzzle:
             for square in block.squares:
                 if square.number is None:
                     continue
-                for word in (square.across_word, square.down_word):
-                    if word is None:
+                for new_word in (square.across_word, square.down_word):
+                    if new_word is None:
                         continue
-                    old_clue = old_clues.get(word, Clue(''))
-                    clue = parsed_clues.get(word, old_clue)
-                    all_clues[word] = clue
+                    old_clue = old_clues.get(new_word, Clue(''))
+                    clue = parsed_clues.get(new_word, old_clue)
+                    all_clues[new_word] = clue
         return Puzzle(title, grid, all_clues, blocks)
 
     def __post_init__(self):
@@ -149,6 +149,7 @@ class Puzzle:
             for square in row:
                 if square is not None:
                     return square.size
+        return 1  # No squares found, return default.
 
     @square_size.setter
     def square_size(self, value: int):
@@ -161,9 +162,9 @@ class Puzzle:
                              for square in row))
         for square in all_squares:
             if square is not None:
-                square.size = value
-                square.x *= ratio
-                square.y *= ratio
+                square.size = round(value)
+                square.x = round(square.x * ratio)
+                square.y = round(square.y * ratio)
 
     @property
     def extras(self):
@@ -184,8 +185,8 @@ class Puzzle:
 
     def draw_blocks(self,
                     painter: QPainter,
-                    square_size: int = None,
-                    row_index: int = None,
+                    square_size: int | None = None,
+                    row_index: int | None = None,
                     x: int = 0,
                     y: int = 0) -> int:
         """ Draw all blocks on a painter. Return the height of the image. """
@@ -193,7 +194,7 @@ class Puzzle:
         if square_size is None:
             square_size = window_width // self.DEFAULT_ROW_LENGTH
         self.square_size = square_size
-        gap = square_size / 2
+        gap = round(square_size / 2)
         x_start = x
         x += self.square_size
         if row_index is None:
@@ -229,8 +230,8 @@ class Puzzle:
         return sorted(self.blocks, key=lambda b: b.height)
 
     def row_heights(self,
-                    window_width: int = None,
-                    square_size: int = None) -> typing.List[int]:
+                    window_width: int | None = None,
+                    square_size: int | None = None) -> typing.List[int]:
         """ Height needed to draw each row of blocks. """
         row_heights = []
         if square_size is None and window_width is not None:
@@ -240,8 +241,9 @@ class Puzzle:
         elif window_width is None:
             square_size = self.square_size
             window_width = square_size * self.DEFAULT_ROW_LENGTH
+        assert square_size is not None
         self.square_size = square_size
-        gap = self.square_size / 2
+        gap = round(self.square_size / 2)
         x = self.square_size
         line_height = 0
         x_limit = window_width - square_size
@@ -379,7 +381,7 @@ class Puzzle:
             return Counter(block.shape
                            for block in self.blocks
                            if block.shape is not None)
-        counter = Counter()
+        counter: typing.Counter[str] = Counter()
         for block in self.blocks:
             shape = block.shape
             rotation = block.shape_rotation
@@ -458,7 +460,7 @@ class Puzzle:
 
     def build_clues(self, document: QTextDocument, show_link=True):
         cursor = QTextCursor(document)
-        cursor.movePosition(QTextCursor.End)
+        cursor.movePosition(QTextCursor.MoveOperation.End)
 
         font_size = document.defaultFont().pixelSize()
         padding = font_size // 5
@@ -494,7 +496,7 @@ a {{color: black}}
                 <p></p>
             """)
         cursor.insertHtml(html)
-        cursor.movePosition(QTextCursor.End)
+        cursor.movePosition(QTextCursor.MoveOperation.End)
 
     def build_hints(self):
         hints = self.HINT
@@ -513,7 +515,7 @@ def build_clue_table(clues: typing.Sequence[Clue]) -> str:
     return f'<table>{"".join(rows)}</table>'
 
 
-def split_sections(source_file):
+def split_sections(source_file) -> typing.List[str]:
     sections: typing.List[str] = []
     lines: typing.List[str] = []
     for line in chain(source_file, '\n'):
@@ -551,7 +553,7 @@ def draw_rotated_tiles(tile: QPixmap,
                        size: float,
                        x_offset: float = 0,
                        y_offset: float = 0,
-                       bounds: QRectF = None):
+                       bounds: QRectF | None = None):
     """ Draw a tile, converted to four-fold rotational symmetry.
 
     Tile will be drawn throughout bounds, repeated every size pixels.
@@ -566,7 +568,7 @@ def draw_rotated_tiles(tile: QPixmap,
     :param bounds: area to draw tiles within. Defaults to painter.window().
     """
     if bounds is None:
-        bounds = painter.window()
+        bounds = QRectF(painter.window())
         bounds.setRight(bounds.right() + 1)
     painter.eraseRect(bounds)
     tiles = []
@@ -588,7 +590,7 @@ def draw_rotated_tiles(tile: QPixmap,
         if x >= bounds.left():
             source_x = 0
         else:
-            source_x = bounds.left() - x + 1
+            source_x = round(bounds.left() - x + 1)
             source_width -= source_x - 1
             x = bounds.left()
         for i in range(y_steps):
@@ -600,7 +602,7 @@ def draw_rotated_tiles(tile: QPixmap,
             if y >= bounds.top():
                 source_y = 0
             else:
-                source_y = bounds.top() - y + 1
+                source_y = round(bounds.top() - y + 1)
                 source_height -= source_y - 1
                 y = bounds.top()
             if i % 2 == 0:
