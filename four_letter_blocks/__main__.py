@@ -20,6 +20,7 @@ import four_letter_blocks
 from four_letter_blocks.big_puzzle_pair import BigPuzzlePair
 from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.clue import Clue
+from four_letter_blocks.clue_overflow import ClueOverflow
 from four_letter_blocks.clue_painter import CluePainter
 from four_letter_blocks.evo_packer import PackingFitnessCalculator
 from four_letter_blocks.fill_thread import FillThread
@@ -785,7 +786,20 @@ class FourLetterBlocksWindow(QMainWindow):
         self.settings.setValue('save_path', file_name)
         self.export_pair_file(file_name)
 
-    def export_pair_file(self, file_name) -> None:
+    def export_pair_file(self, file_name: str) -> None:
+        max_font = 2000
+        min_font = 2
+        self.export_sized_pair_file(file_name, min_font)  # Save packing.
+
+        while min_font < max_font:
+            font_size = (min_font + max_font + 1) // 2
+            try:
+                self.export_sized_pair_file(file_name, font_size)
+                min_font = font_size
+            except ClueOverflow:
+                max_font = font_size - 1
+
+    def export_sized_pair_file(self, file_name: str, font_size: int) -> None:
         front_puzzle: Puzzle | None
         back_puzzle: Puzzle | None
         front_puzzle, back_puzzle = self.pair_puzzles
@@ -809,7 +823,6 @@ class FourLetterBlocksWindow(QMainWindow):
                                      packer,
                                      start_hue=start_hue)
             square_coefficient = 1 / (grid_size + 3)
-            font_coefficient = 1 / 39
         else:
             packer.split_row = grid_size // 2
             puzzle_pair = BigPuzzlePair(front_puzzle,
@@ -817,7 +830,6 @@ class FourLetterBlocksWindow(QMainWindow):
                                         packer,
                                         start_hue=start_hue)
             square_coefficient = 1 / (grid_size - 1)
-            font_coefficient = 1 / 34
         puzzle_pair.tab_count = 2
         front_bg = puzzle_pair.puzzles[0].face_colour
         puzzle_pair.puzzles[0].face_colour = QColor('transparent')
@@ -833,7 +845,6 @@ class FourLetterBlocksWindow(QMainWindow):
                 rotate_painter(painter)
                 puzzle_pair.square_size = int(front_image.width() *
                                               square_coefficient)
-                font_size = int(front_image.width() * font_coefficient)
                 grid_rect = puzzle_pair.draw_front(painter, font_size)
                 header_fraction = grid_rect.top() / front_image.width()
                 painter.setBackground(front_bg)

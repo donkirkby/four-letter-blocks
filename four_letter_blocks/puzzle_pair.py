@@ -8,6 +8,7 @@ from PySide6.QtGui import QPainter, QColor, QPainterPath, QBrush, \
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
+from four_letter_blocks.clue_overflow import ClueOverflow
 from four_letter_blocks.clue_painter import CluePainter
 from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
 from four_letter_blocks.puzzle_set import PuzzleSet
@@ -319,7 +320,8 @@ class PuzzlePair(PuzzleSet):
                 clue_count += clue_painter.draw_clues(painter,
                                                       clues[clue_count:],
                                                       clue_rect)
-            print(f"{group_name}: {clue_count} of {len(clues)} clues.")
+            if clue_count < len(clues):
+                raise ClueOverflow(clue_count, len(clues))
 
     def draw_background_tile(self, painter: QPainter):
         background: QColor = painter.background().color()

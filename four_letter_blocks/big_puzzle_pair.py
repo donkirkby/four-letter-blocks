@@ -5,8 +5,8 @@ from PySide6.QtGui import QPainter, Qt
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
+from four_letter_blocks.clue_overflow import ClueOverflow
 from four_letter_blocks.clue_painter import CluePainter
-from four_letter_blocks.line_deduper import LineDeduper
 from four_letter_blocks.puzzle import Puzzle
 from four_letter_blocks.puzzle_pair import PuzzlePair
 from four_letter_blocks.square import Square
@@ -151,7 +151,8 @@ class BigPuzzlePair(PuzzlePair):
         clue_count += clue_painter.draw_clues(painter,
                                               clues[clue_count:],
                                               clue_rect)
-        print(f'{section_name}: {clue_count} of {len(clues)} clues.')
+        if clue_count < len(clues):
+            raise ClueOverflow(clue_count, len(clues))
 
     def draw_clues(self,
                    painter: QPainter,
