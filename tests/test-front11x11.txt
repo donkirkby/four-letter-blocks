@@ -22,7 +22,7 @@ CONTINUE - Keep going
 DENUDE - Remove all the trees
 DEON - Clue for Deon
 EDAMS - Cheeses
-EDDIE - Little Mr. Munster
+EDDIE - Swirl
 EELS - Eels clue
 ESAU - Clue for Esau
 GAIN - Gain a clue, why don't you!
@@ -33,18 +33,18 @@ LAD - About a boy
 LIMIT - Top speed
 LOSE - Can't win
 LUAU - Clue for Luau
-MASERU - Who is Maseru?
+MASERU - Maseru clue
 MEH - Shrug
 MOLL - ___ of King Tyre
 ORAL - Clue for oral
 PALS - Friends indeed
-PROS - Paid performers
+PROS - They're paid
 RABIES - Frothy dog
-RACEME - Clue for raceme
+RACEME - Raceme clue
 REDID - Started over
 REORGS - Corporate moves
 RIP - Tear apart
-SEAT - Wear you sit
+SEAT - Sat on
 SLOGS - Long boring walks
 SPILL - Dump the contents
 TOUSLE - Mess up a kid's hair
