@@ -1,7 +1,10 @@
 from collections import Counter
+from datetime import datetime
 from io import StringIO
+from itertools import count
 from pathlib import Path
 from textwrap import dedent
+from unittest import skip
 
 import pytest
 from PySide6.QtGui import QPainter, QPixmap, QImage, QColor
@@ -9,6 +12,7 @@ from colorspacious import cspace_convert
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
+from four_letter_blocks.evo_packer import EvoPacker
 from four_letter_blocks.puzzle import Puzzle
 from four_letter_blocks.puzzle_set import PuzzleSet
 from four_letter_blocks import four_letter_blocks_rc
@@ -207,6 +211,108 @@ def test_shape_counts_z_only():
                       for block in blocks
                       if block is not None)
     assert block_count == 12
+
+
+def test_blocks_fit():
+    blocks1 = dedent("""\
+        FFFDA
+        BFDDA
+        BC#DA
+        BCCEA
+        BCEEE
+    """)
+    puzzle1 = Puzzle.parse_sections('', blocks1, '', blocks1)
+    blocks2 = dedent("""\
+        DJJJGGG
+        DJKBHHG
+        DDKBBHH
+        AAK#BCL
+        AAKEFCL
+        IIEEFCL
+        IIEFFCL
+    """)
+    puzzle2 = Puzzle.parse_sections('', blocks2, '', blocks2)
+    blocks3 = dedent("""\
+        BBBSSGEEE
+        AABSSGRRE
+        AAOJJGRRP
+        QOOJJGIIP
+        QOTD#IIPP
+        QTTDFFFFL
+        QTDDMMCCL
+        NNHMMCCLL
+        NNHHHKKKK
+    """)
+    puzzle3 = Puzzle.parse_sections('', blocks3, '', blocks3)
+
+    assert puzzle1.shape_counts == {'I': 2, 'T': 4}
+    assert puzzle2.shape_counts == {'I': 3, 'O': 2, 'S': 1, 'Z': 2, 'J': 2, 'L': 2}
+    assert puzzle3.shape_counts == {'I': 4, 'O': 5, 'S': 3, 'Z': 2, 'J': 6}
+    puzzle_set = PuzzleSet(puzzle1, puzzle2, puzzle3)
+
+    assert puzzle_set.shape_counts == {'I': 5, 'O': 5, 'S': 5, 'J': 8, 'T': 4}
+
+
+@skip
+def test_blocks_fit_loop():
+    """ Search for problem cases in set packing. """
+    grid1 = dedent("""\
+        XXXXX
+        XXXXX
+        XX#XX
+        XXXXX
+        XXXXX
+    """)
+    puzzle1 = Puzzle.parse_sections('', grid1, '', '')
+    grid2 = dedent("""\
+        XXXXXXX
+        XXXXXXX
+        XXXXXXX
+        XXX#XXX
+        XXXXXXX
+        XXXXXXX
+        XXXXXXX
+    """)
+    puzzle2 = Puzzle.parse_sections('', grid2, '', '')
+    grid3 = dedent("""\
+        XXXXXXXXX
+        XXXXXXXXX
+        XXXXXXXXX
+        XXXXXXXXX
+        XXXX#XXXX
+        XXXXXXXXX
+        XXXXXXXXX
+        XXXXXXXXX
+        XXXXXXXXX
+    """)
+    puzzle3 = Puzzle.parse_sections('', grid3, '', '')
+    for i in count():
+        t = datetime.now()
+        print(f'{t}: {i}')
+        packed1 = pack_puzzle(puzzle1)
+        packed2 = pack_puzzle(puzzle2)
+        packed3 = pack_puzzle(puzzle3)
+        try:
+            PuzzleSet(packed1, packed2, packed3)
+        except RuntimeError:
+            print(packed1.format_blocks())
+            print(packed2.format_blocks())
+            print(packed3.format_blocks())
+            raise
+
+
+def pack_puzzle(puzzle: Puzzle):
+    block_count = puzzle.grid.letter_count // 4
+    shape_counts = Counter({shape_name: block_count
+                            for shape_name in Block.shape_names()})
+    start_text = puzzle.format_blocks().replace('?', '.')
+    packer = EvoPacker(start_text=start_text, tries=100)
+    packer.fill(shape_counts)
+    blocks = packer.display()
+    return Puzzle.parse_sections(puzzle.title,
+                                 puzzle.format_grid(),
+                                 puzzle.format_clues(),
+                                 blocks)
 
 
 def test_draw_background(pixmap_differ: PixmapDiffer):

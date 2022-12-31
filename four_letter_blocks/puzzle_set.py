@@ -139,11 +139,19 @@ class PuzzleSet:
                     back_source = front_source
                 else:
                     back_source = puzzle.shape_blocks[back_shape]
+                targets = list(range(block_count))
                 if is_top:
-                    targets = range(block_count)
-                else:
-                    targets = range(block_count - 1, -1, -1)
-                for target in targets:
+                    targets.reverse()
+                while targets:
+                    front_room = sum(1
+                                     for target in targets
+                                     if front_shape_blocks[target] is None)
+                    back_room = sum(1
+                                    for target in targets
+                                    if back_shape_blocks[target] is None)
+                    front_extra = front_room - len(front_source)
+                    back_extra = back_room - len(back_source)
+                    target = targets.pop()
                     front = front_shape_blocks[target]
                     back = back_shape_blocks[target]
                     side = None
@@ -152,6 +160,10 @@ class PuzzleSet:
                             side = 'B'
                     elif back is not None:
                         side = 'F'
+                    elif front_source and front_extra == 0:
+                        side = 'F'
+                    elif back_source and back_extra == 0:
+                        side = 'B'
                     elif len(front_source) >= len(back_source):
                         side = 'F'
                     else:
