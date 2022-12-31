@@ -253,54 +253,6 @@ def test_blocks_fit():
     assert puzzle_set.shape_counts == {'I': 5, 'O': 5, 'S': 5, 'J': 8, 'T': 4}
 
 
-@skip
-def test_blocks_fit_loop():
-    """ Search for problem cases in set packing. """
-    grid1 = dedent("""\
-        XXXXX
-        XXXXX
-        XX#XX
-        XXXXX
-        XXXXX
-    """)
-    puzzle1 = Puzzle.parse_sections('', grid1, '', '')
-    grid2 = dedent("""\
-        XXXXXXX
-        XXXXXXX
-        XXXXXXX
-        XXX#XXX
-        XXXXXXX
-        XXXXXXX
-        XXXXXXX
-    """)
-    puzzle2 = Puzzle.parse_sections('', grid2, '', '')
-    grid3 = dedent("""\
-        XXXXXXXXX
-        XXXXXXXXX
-        XXXXXXXXX
-        XXXXXXXXX
-        XXXX#XXXX
-        XXXXXXXXX
-        XXXXXXXXX
-        XXXXXXXXX
-        XXXXXXXXX
-    """)
-    puzzle3 = Puzzle.parse_sections('', grid3, '', '')
-    for i in count():
-        t = datetime.now()
-        print(f'{t}: {i}')
-        packed1 = pack_puzzle(puzzle1)
-        packed2 = pack_puzzle(puzzle2)
-        packed3 = pack_puzzle(puzzle3)
-        try:
-            PuzzleSet(packed1, packed2, packed3)
-        except RuntimeError:
-            print(packed1.format_blocks())
-            print(packed2.format_blocks())
-            print(packed3.format_blocks())
-            raise
-
-
 def pack_puzzle(puzzle: Puzzle):
     block_count = puzzle.grid.letter_count // 4
     shape_counts = Counter({shape_name: block_count
