@@ -193,8 +193,8 @@ class PuzzleSet:
         angle = 360 / len(self.puzzles)
         for i, (width, puzzle_index) in enumerate(size_pairs):
             puzzle = self.puzzles[puzzle_index]
-            lightness = 60
-            chroma = 30
+            lightness = 77
+            chroma = 20
             hue = (self.start_hue + i * angle) % 360
             rgb = cspace_convert((lightness, chroma, hue), "JCh", "sRGB255")
             colour = QColor.fromRgb(*rgb)
@@ -285,7 +285,7 @@ class PuzzleSet:
 
     def draw_background_tile(self, painter) -> None:
         background: QColor = painter.background().color()
-        dark, light = self.get_target_colours(background, shift=0.75)
+        dark, light = self.get_target_colours(background, shift=4)
         window = painter.window()
         size = window.width()
         for i in range(2):
@@ -319,9 +319,8 @@ class PuzzleSet:
     def get_target_colours(start, shift):
         rgb = start.toRgb().toTuple()[:3]
         lightness, chroma, hue = cspace_convert(rgb, 'sRGB255', 'JCh')
-        lightness_diff = (75 - lightness) * shift
-        light_jch = [lightness + lightness_diff, chroma, hue]
-        dark_jch = [lightness - lightness_diff, chroma, hue]
+        light_jch = [lightness+shift, chroma, hue]
+        dark_jch = [lightness-shift, chroma, hue]
         light_rgb = cspace_convert(light_jch, 'JCh', 'sRGB255')
         dark_rgb = cspace_convert(dark_jch, 'JCh', 'sRGB255')
         light = QColor.fromRgb(*light_rgb)

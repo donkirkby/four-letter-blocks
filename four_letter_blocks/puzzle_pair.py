@@ -3,8 +3,7 @@ import typing
 from collections import Counter
 
 from PySide6.QtCore import QPoint, QRectF
-from PySide6.QtGui import QPainter, QColor, QPainterPath, QBrush, \
-    QRadialGradient, QConicalGradient, Qt
+from PySide6.QtGui import QPainter, QColor, QPainterPath, Qt
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
@@ -324,48 +323,64 @@ class PuzzlePair(PuzzleSet):
                 raise ClueOverflow(clue_count, len(clues))
 
     def draw_background_tile(self, painter: QPainter):
-        background: QColor = painter.background().color()
-        dark, light = self.get_target_colours(background, shift=0.75)
         window = painter.window()
-        size = window.width()
-        target = window.adjusted(0, 0, round(-size/2), round(-size/2))
-        target.translate(round(size/2), round(size/2))
+
+        total_shift = 4
+        self.draw_background_tail(painter, total_shift, is_dark=True)
+
+        painter.rotate(180)
+        painter.translate(-window.width(), -window.height())
+        self.draw_background_head(painter, total_shift, is_dark=False)
+        self.draw_background_tail(painter, total_shift, is_dark=False)
+
+        painter.rotate(180)
+        painter.translate(-window.width(), -window.height())
+        self.draw_background_head(painter, total_shift, is_dark=True)
+
+    def draw_background_head(self,
+                             painter: QPainter,
+                             total_shift: float,
+                             is_dark: bool):
+        window = painter.window()
         x0 = round(window.left() + window.width()/2)
         y0 = round(window.top() + window.height()/2)
-        path = QPainterPath(QPoint(x0, y0))
-        path.arcTo(x0-size/4, y0-size/2, size/2, size/2, -90, 180)
-        PuzzlePair.draw_background_tail(painter, light, background)
+        size = window.width()
+        background = painter.background().color()
+        step_count = 100
+        for step in range(step_count):
+            progress = step/step_count
+            dark, light = self.get_target_colours(
+                background,
+                shift=total_shift * progress)
+            step_colour = dark if is_dark else light
+            path = QPainterPath(QPoint(x0, round(y0-size/4)))
+            path.arcTo(x0 - size / 4 * (1 - progress),
+                       y0 - size / 4 * (2 - progress),
+                       size / 2 * (1 - progress),
+                       size / 2 * (1 - progress),
+                       -90,
+                       180)
+            painter.fillPath(path, step_colour)
 
-        painter.rotate(180)
-        painter.translate(-window.width(), -window.height())
-        PuzzlePair.draw_background_tail(painter, dark, background)
-        gradient = QRadialGradient(x0, y0-size/4, size/4)
-        gradient.setStops(((0, dark), (1, background)))
-        painter.fillPath(path, QBrush(gradient))
-
-        painter.rotate(180)
-        painter.translate(-window.width(), -window.height())
-        gradient.setStops(((0, light), (1, background)))
-        painter.fillPath(path, QBrush(gradient))
-
-    @staticmethod
-    def draw_background_tail(painter: QPainter, ridge: QColor, edge: QColor):
+    def draw_background_tail(self,
+                             painter: QPainter,
+                             total_shift: float,
+                             is_dark: bool):
         window = painter.window()
-        edge_value = edge.value()
-        ridge_value = ridge.value()
+        background = painter.background().color()
+        x0 = round(window.left() + window.width()/2)
         step_count = 100
         for step in range(-step_count, step_count):
             progress = step/step_count
+            dark, light = self.get_target_colours(
+                background,
+                shift=total_shift * (1-abs(progress)))
+            step_colour = dark if is_dark else light
             size = painter.window().width()
-            x0 = round(window.left() + window.width()/2)
+
+            # Gap from edge of window to outer edge of gradient.
             gap = round(size/4*(1 + progress))
-            y0 = window.top() + window.height()/2 + gap
+
             path = QPainterPath(QPoint(x0, gap))
             path.arcTo(gap/2, gap, size-gap, size-gap, 90, 180)
-            gradient = QConicalGradient(x0, y0, 90)
-            step_value = ridge_value + (edge_value - ridge_value) * abs(progress)
-            step_colour = QColor.fromHsv(edge.hsvHue(),
-                                         edge.hsvSaturation(),
-                                         round(step_value))
-            gradient.setStops(((0, step_colour), (1, edge)))
-            painter.fillPath(path, QBrush(gradient))
+            painter.fillPath(path, step_colour)

@@ -2,6 +2,7 @@ from textwrap import dedent
 
 from PySide6.QtCore import QPoint
 from PySide6.QtGui import QPen, Qt, QColor, QPainter, QPainterPath
+from colorspacious import cspace_convert
 
 from four_letter_blocks.grid import Grid
 from four_letter_blocks.block import Block
@@ -214,7 +215,7 @@ def test_draw(pixmap_differ: PixmapDiffer):
 
         pen = QPen('blue')
         pen.setWidth(3)
-        pen.setCapStyle(Qt.RoundCap)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         expected.setPen(pen)
         expected.drawLine(0, 50, 300, 50)
         expected.drawLine(100, 150, 300, 150)
@@ -245,7 +246,7 @@ def test_draw_with_tabs(pixmap_differ: PixmapDiffer):
         expected.drawLine(100, 75, 100, 125)
         expected.drawLine(200, 75, 200, 125)
 
-        pen.setCapStyle(Qt.RoundCap)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         expected.setPen(pen)
         path = QPainterPath(QPoint(-50, 0))
         path.lineTo(-37.5, 0)
@@ -305,7 +306,7 @@ def test_double_tabs(pixmap_differ: PixmapDiffer):
         expected.drawLine(100, 75, 100, 125)
         expected.drawLine(200, 75, 200, 125)
 
-        pen.setCapStyle(Qt.RoundCap)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         expected.setPen(pen)
         path = QPainterPath(QPoint(-50, 0))
         path.lineTo(-15, 0)
@@ -356,7 +357,7 @@ def test_double_tabs_short(pixmap_differ: PixmapDiffer):
         pen.setWidth(3)
         expected.setPen(pen)
 
-        pen.setCapStyle(Qt.RoundCap)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         expected.setPen(pen)
         path = QPainterPath(QPoint(-30, 0))
         path.lineTo(-15, 0)
@@ -386,7 +387,7 @@ def test_double_tabs_too_short(pixmap_differ: PixmapDiffer):
         pen.setWidth(3)
         expected.setPen(pen)
 
-        pen.setCapStyle(Qt.RoundCap)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         expected.setPen(pen)
         expected.drawLine(26, 50, 74, 50)
 
@@ -405,7 +406,7 @@ def test_draw_nicked_line(pixmap_differ: PixmapDiffer):
         pen.setWidth(3)
         expected.setPen(pen)
 
-        pen.setCapStyle(Qt.RoundCap)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         expected.setPen(pen)
         expected.drawLine(20, 50, 60, 50)
         expected.drawLine(70, 50, 150, 50)
@@ -438,25 +439,34 @@ def test_draw_packed(pixmap_differ: PixmapDiffer):
 def test_draw_face_colour(pixmap_differ: PixmapDiffer):
     actual: QPainter
     expected: QPainter
-    with pixmap_differ.create_painters(310, 260) as (actual, expected):
-        expected.fillRect(0, 0, 310, 260, 'cornsilk')
+    with pixmap_differ.create_painters(370, 260) as (actual, expected):
+        lightness = 81
+        chroma = 20
+        bg_hue = 0
+        face_hue = 180
+        bg_rgb = cspace_convert((lightness, chroma, bg_hue), "JCh", "sRGB255")
+        face_rgb = cspace_convert((lightness, chroma, face_hue), "JCh", "sRGB255")
+        bg_colour = QColor.fromRgb(*bg_rgb)
+        face_colour = QColor.fromRgb(*face_rgb)
+        expected.fillRect(expected.window(), bg_colour)
+
         draw_gradient_rect(expected,
-                           QColor.fromHsv(120, 30, 255),
+                           face_colour,
                            106.25, 56.25,
                            87.5, 87.5,
                            31.25)
         draw_gradient_rect(expected,
-                           QColor.fromHsv(120, 30, 255),
+                           face_colour,
                            6.25, 56.25,
                            87.5, 87.5,
                            31.25)
         draw_gradient_rect(expected,
-                           QColor.fromHsv(120, 30, 255),
+                           face_colour,
                            206.25, 56.25,
                            87.5, 87.5,
                            31.25)
         draw_gradient_rect(expected,
-                           QColor.fromHsv(120, 30, 255),
+                           face_colour,
                            6.25, 156.25,
                            87.5, 87.5,
                            31.25)
@@ -469,8 +479,8 @@ def test_draw_face_colour(pixmap_differ: PixmapDiffer):
         block.face_colour = QColor.fromHsv(0, 0, 0, 0)
         block.draw(expected, is_packed=True)
 
-        actual.fillRect(0, 0, 310, 260, 'cornsilk')
-        block.face_colour = QColor.fromHsv(120, 30, 255)
+        actual.fillRect(actual.window(), bg_colour)
+        block.face_colour = face_colour
         block.draw(actual, is_packed=True)
 
 

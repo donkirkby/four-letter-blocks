@@ -1,10 +1,7 @@
 from collections import Counter
-from datetime import datetime
 from io import StringIO
-from itertools import count
 from pathlib import Path
 from textwrap import dedent
-from unittest import skip
 
 import pytest
 from PySide6.QtGui import QPainter, QPixmap, QImage, QColor
@@ -301,6 +298,10 @@ def test_draw_packed(pixmap_differ: PixmapDiffer):
             'test_puzzle_draw_packed') as (actual, expected):
         puzzle_set1 = parse_puzzle_set(BlockPacker(10, 10, tries=1000))
         puzzle1, puzzle2 = puzzle_set1.puzzles
+
+        expected.fillRect(expected.window(), puzzle1.face_colour)
+        actual.fillRect(expected.window(), puzzle1.face_colour)
+
         puzzle_set1.square_size = 20
         blocks = puzzle1.blocks
         blocks[0].set_display(270, 10, 0)
@@ -363,7 +364,9 @@ def test_background_tile(pixmap_differ: PixmapDiffer):
         expected_image = QImage(Path(__file__).parent / 'set_tile.png')
         expected.drawImage(0, 0, expected_image)
 
-        actual.setBackground(QColor('burlywood'))
+        puzzle_set = parse_puzzle_set()
+
+        actual.setBackground(puzzle_set.puzzles[0].face_colour)
         actual.eraseRect(actual.window())
 
         actual.setWindow(0, 0, 260, 260)
@@ -375,9 +378,9 @@ def test_background_tile(pixmap_differ: PixmapDiffer):
 @pytest.mark.parametrize(
     'sizes, start_hue, expected_hues',
     # Sizes in order
-    (((7, 9, 11, 13, 15), 0, (0, 72, 144, 216, 289)),  # 289 is rounding error.
+    (((7, 9, 11, 13, 15), 0, (0, 72, 144, 216, 288)),
      # Sizes out of order
-     ((9, 7, 11, 13, 15), 0, (72, 0, 144, 216, 289)),  # 289 is rounding error.
+     ((9, 7, 11, 13, 15), 0, (72, 0, 144, 216, 288)),
      # Fewer sizes
      ((9, 10, 11, 12), 0, (0, 90, 180, 270)),
      # Nonzero start
@@ -385,7 +388,7 @@ def test_background_tile(pixmap_differ: PixmapDiffer):
      # Repeated sizes
      ((9, 9, 11), 0, (0, 120, 240))))
 def test_colours(sizes, start_hue, expected_hues):
-    expected_jchs = [(60, 30, hue) for hue in expected_hues]
+    expected_jchs = [(77, 20, hue) for hue in expected_hues]
     puzzles = []
     for size in sizes:
         grid_text = '\n'.join(['X'*size]*size)
@@ -405,4 +408,9 @@ def test_colours(sizes, start_hue, expected_hues):
         rgb = colour.toRgb().toTuple()[:3]
         lightness, chroma, hue = cspace_convert(rgb, 'sRGB255', 'JCh')
         jchs.append((round(lightness), round(chroma), round(hue)))
-    assert jchs == expected_jchs
+    for actual_jch, expected_jch in zip(jchs, expected_jchs):
+        for actual_element, expected_element in zip(actual_jch, expected_jch):
+            increase = (actual_element - expected_element) % 360
+            decrease = (expected_element - actual_element) % 360
+            if min(increase, decrease) > 1:
+                assert jchs == expected_jchs

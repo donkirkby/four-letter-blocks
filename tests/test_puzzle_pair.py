@@ -445,12 +445,13 @@ def test_background_tile(pixmap_differ: PixmapDiffer):
         expected_image = QImage(Path(__file__).parent / 'pair_tile.png')
         expected.drawImage(0, 0, expected_image)
 
-        actual.setBackground(QColor('burlywood'))
+        puzzle_pair = PuzzlePair(*parse_puzzle_pair().puzzles)
+
+        actual.setBackground(puzzle_pair.puzzles[0].face_colour)
         actual.eraseRect(actual.window())
 
         actual.setWindow(0, 0, 260, 260)
         actual.setViewport(actual.window().translated(120, 0))
-        puzzle_pair = parse_puzzle_pair()
         puzzle_pair.draw_background_tile(actual)
 
 
