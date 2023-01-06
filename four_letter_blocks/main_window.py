@@ -16,12 +16,13 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
     QIcon, QImage, QKeySequence, QLinearGradient,
     QPainter, QPalette, QPixmap, QRadialGradient,
     QTransform)
-from PySide6.QtWidgets import (QApplication, QComboBox, QGridLayout, QLabel,
-    QLineEdit, QListWidget, QListWidgetItem, QMainWindow,
-    QMenu, QMenuBar, QPlainTextEdit, QPushButton,
-    QSizePolicy, QSpacerItem, QSpinBox, QStatusBar,
-    QTabWidget, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QAbstractItemView, QApplication, QComboBox, QGridLayout,
+    QLabel, QLineEdit, QListWidget, QListWidgetItem,
+    QMainWindow, QMenu, QMenuBar, QPlainTextEdit,
+    QPushButton, QSizePolicy, QSpacerItem, QSpinBox,
+    QStatusBar, QTabWidget, QVBoxLayout, QWidget)
 
+from four_letter_blocks.draggable_list import DraggableList
 from four_letter_blocks.focused_plain_text_edit import FocusedPlainTextEdit
 
 class Ui_MainWindow(object):
@@ -309,8 +310,10 @@ class Ui_MainWindow(object):
 
         self.gridLayout_3.addWidget(self.font_remove_button, 1, 1, 1, 1)
 
-        self.font_list = QListWidget(self.fonts_tab)
+        self.font_list = DraggableList(self.fonts_tab)
         self.font_list.setObjectName(u"font_list")
+        self.font_list.setDragDropMode(QAbstractItemView.InternalMove)
+        self.font_list.setDefaultDropAction(Qt.MoveAction)
 
         self.gridLayout_3.addWidget(self.font_list, 0, 0, 1, 2)
 
@@ -378,7 +381,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-        self.main_tabs.setCurrentIndex(2)
+        self.main_tabs.setCurrentIndex(3)
 
 
         QMetaObject.connectSlotsByName(MainWindow)

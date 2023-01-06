@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="main_tabs">
       <property name="currentIndex">
-       <number>2</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="single_tab">
        <attribute name="title">
@@ -368,7 +368,14 @@
          </widget>
         </item>
         <item row="0" column="0" colspan="2">
-         <widget class="QListWidget" name="font_list"/>
+         <widget class="DraggableList" name="font_list">
+          <property name="dragDropMode">
+           <enum>QAbstractItemView::InternalMove</enum>
+          </property>
+          <property name="defaultDropAction">
+           <enum>Qt::MoveAction</enum>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -521,6 +528,11 @@
    <class>FocusedPlainTextEdit</class>
    <extends>QPlainTextEdit</extends>
    <header>four_letter_blocks.focused_plain_text_edit</header>
+  </customwidget>
+  <customwidget>
+   <class>DraggableList</class>
+   <extends>QListWidget</extends>
+   <header>four_letter_blocks.draggable_list</header>
   </customwidget>
  </customwidgets>
  <tabstops>

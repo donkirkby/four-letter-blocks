@@ -304,8 +304,9 @@ def test_draw_page_with_background(pixmap_differ: PixmapDiffer):
         actual = pixmap_differ.actual.painter
         expected = pixmap_differ.expected.painter
         font = QFont('NotoSansCJK')
-        font.setPixelSize(40)
-        expected.setFont(font)
+        puzzle_font = QFont('Courier')
+        puzzle_font.setPixelSize(40)
+        expected.setFont(puzzle_font)
         header_rect = QRectF(margin, margin,
                              width-2*margin, height-2*margin)
         header_rect2 = QRectF(header_rect)
@@ -361,6 +362,7 @@ def test_draw_page_with_background(pixmap_differ: PixmapDiffer):
                               'One at a time',
                               expected)
 
+        puzzle.font = puzzle_font
         clue_painter = CluePainter(puzzle,
                                    font_size=20,
                                    margin=margin,

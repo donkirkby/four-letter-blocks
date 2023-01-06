@@ -12,7 +12,7 @@ from textwrap import dedent
 
 from PySide6.QtCore import QRectF
 from PySide6.QtGui import QPainter, QTextDocument, QTextCursor, QPixmap, \
-    QTransform
+    QTransform, QFont
 
 from four_letter_blocks.clue import Clue
 from four_letter_blocks.grid import Grid
@@ -459,11 +459,11 @@ class Puzzle:
             block.face_colour = face_colour
 
     @property
-    def font(self):
+    def font(self) -> QFont | None:
         return self.blocks[0].font
 
     @font.setter
-    def font(self, font):
+    def font(self, font: QFont | None):
         for block in self.blocks:
             block.font = font
 

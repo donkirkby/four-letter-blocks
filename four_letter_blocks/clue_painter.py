@@ -55,6 +55,10 @@ class CluePainter:
 
         while not self.is_finished:
             puzzle = self.puzzles[self.puzzle_index]
+            puzzle_font: QFont | None = puzzle.font
+            if puzzle_font is not None:
+                puzzle_font.setPixelSize(title_font.pixelSize())
+                title_font = puzzle_font
             painter.setFont(font)
 
             if self.across_index == 0 and self.down_index == 0:

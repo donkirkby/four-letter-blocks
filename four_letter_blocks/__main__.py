@@ -96,6 +96,7 @@ class FourLetterBlocksWindow(QMainWindow):
 
         ui.font_add_button.clicked.connect(self.add_font)
         ui.font_remove_button.clicked.connect(self.remove_font)
+        ui.font_list.dropped.connect(self.font_list_changed)
 
         sys.excepthook = self.on_error
         self.file_path: typing.Optional[Path] = None
@@ -295,7 +296,7 @@ class FourLetterBlocksWindow(QMainWindow):
 
         self.summarize_crossword_set()
 
-    def add_font(self):
+    def add_font(self) -> None:
         font: QFont
         is_ok, font = QFontDialog.getFont()
         if not is_ok:
@@ -313,6 +314,9 @@ class FourLetterBlocksWindow(QMainWindow):
         if i < 0:
             return
         font_list.takeItem(i)
+        self.update_font_combo()
+
+    def font_list_changed(self):
         self.update_font_combo()
 
     def update_font_combo(self):
