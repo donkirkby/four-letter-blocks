@@ -458,6 +458,15 @@ class Puzzle:
         for block in self.blocks:
             block.face_colour = face_colour
 
+    @property
+    def font(self):
+        return self.blocks[0].font
+
+    @font.setter
+    def font(self, font):
+        for block in self.blocks:
+            block.font = font
+
     def build_clues(self, document: QTextDocument, show_link=True):
         cursor = QTextCursor(document)
         cursor.movePosition(QTextCursor.MoveOperation.End)

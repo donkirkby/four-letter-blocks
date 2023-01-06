@@ -1,7 +1,7 @@
 from textwrap import dedent
 
 from PySide6.QtCore import QPoint
-from PySide6.QtGui import QPen, Qt, QColor, QPainter, QPainterPath
+from PySide6.QtGui import QPen, Qt, QColor, QPainter, QPainterPath, QFont
 from colorspacious import cspace_convert
 
 from four_letter_blocks.grid import Grid
@@ -195,6 +195,7 @@ def test_shape():
     assert blocks['H'].shape_rotation == 0
 
 
+# noinspection DuplicatedCode
 def test_draw(pixmap_differ: PixmapDiffer):
     actual: QPainter
     expected: QPainter
@@ -224,6 +225,42 @@ def test_draw(pixmap_differ: PixmapDiffer):
         expected.drawLine(100, 150, 100, 250)
         expected.drawLine(300, 50, 300, 150)
 
+        block.draw(actual)
+
+
+# noinspection DuplicatedCode
+def test_draw_font(pixmap_differ: PixmapDiffer):
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(310, 260) as (actual, expected):
+        font = QFont('Courier')
+        block = create_basic_block()
+        block.border_colour = 'blue'
+        block.divider_colour = 'magenta'
+
+        expected.setFont(font)
+        for square in block.squares:
+            square.draw(expected)
+
+        pen = QPen('magenta')
+        pen.setWidth(3)
+        expected.setPen(pen)
+        expected.drawLine(0, 150, 100, 150)
+        expected.drawLine(100, 50, 100, 150)
+        expected.drawLine(200, 50, 200, 150)
+
+        pen = QPen('blue')
+        pen.setWidth(3)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        expected.setPen(pen)
+        expected.drawLine(0, 50, 300, 50)
+        expected.drawLine(100, 150, 300, 150)
+        expected.drawLine(0, 250, 100, 250)
+        expected.drawLine(0, 50, 0, 250)
+        expected.drawLine(100, 150, 100, 250)
+        expected.drawLine(300, 50, 300, 150)
+
+        block.font = font
         block.draw(actual)
 
 

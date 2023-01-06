@@ -14,7 +14,7 @@ from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, \
     QTextCharFormat, QPyTextObject, QImage
 from PySide6.QtSvg import QSvgGenerator
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog, QInputDialog, QToolTip, \
-    QListWidgetItem, QPlainTextEdit, QPushButton
+    QListWidgetItem, QPlainTextEdit, QPushButton, QFontDialog
 
 import four_letter_blocks
 from four_letter_blocks.big_puzzle_pair import BigPuzzlePair
@@ -24,6 +24,7 @@ from four_letter_blocks.clue_overflow import ClueOverflow
 from four_letter_blocks.clue_painter import CluePainter
 from four_letter_blocks.evo_packer import PackingFitnessCalculator
 from four_letter_blocks.fill_thread import FillThread
+from four_letter_blocks.font_list_item import FontListItem
 from four_letter_blocks.line_deduper import LineDeduper
 from four_letter_blocks.main_window import Ui_MainWindow
 from four_letter_blocks.puzzle import Puzzle
@@ -66,6 +67,8 @@ class FourLetterBlocksWindow(QMainWindow):
         ui = self.ui = Ui_MainWindow()
         ui.setupUi(self)
 
+        ui.main_tabs.setCurrentIndex(0)
+
         ui.about_action.triggered.connect(self.about)
         ui.exit_action.triggered.connect(self.close)
 
@@ -91,12 +94,22 @@ class FourLetterBlocksWindow(QMainWindow):
         ui.puzzle_set_fill_button.clicked.connect(self.fill_puzzle_set_blocks)
         ui.puzzle_set_clear_button.clicked.connect(self.clear_puzzle_set_blocks)
 
+        ui.font_add_button.clicked.connect(self.add_font)
+        ui.font_remove_button.clicked.connect(self.remove_font)
+
         sys.excepthook = self.on_error
         self.file_path: typing.Optional[Path] = None
         self.settings = get_settings()
         self.old_clues: typing.Dict[str, Clue] = {}
         self.old_blocks: typing.List[typing.List[str]] = []
         self.base_title = self.windowTitle()
+
+        for font_string in self.settings.value('font_list', '').splitlines():
+            font = QFont()
+            font.fromString(font_string)
+            item = FontListItem(font)
+            ui.font_list.addItem(item)
+        self.update_font_combo()
 
         ui.title_text.textChanged.connect(self.title_changed)
         ui.grid_text.textChanged.connect(self.grid_changed)
@@ -281,6 +294,43 @@ class FourLetterBlocksWindow(QMainWindow):
                 i += 1
 
         self.summarize_crossword_set()
+
+    def add_font(self):
+        font: QFont
+        is_ok, font = QFontDialog.getFont()
+        if not is_ok:
+            return
+
+        font_size = self.settings.value('font_size', 11, int)
+        font.setPointSize(font_size)
+        item = FontListItem(font)
+        self.ui.font_list.addItem(item)
+        self.update_font_combo()
+
+    def remove_font(self):
+        font_list = self.ui.font_list
+        i = font_list.currentRow()
+        if i < 0:
+            return
+        font_list.takeItem(i)
+        self.update_font_combo()
+
+    def update_font_combo(self):
+        font_strings = []
+        for i in range(self.ui.font_list.count()):
+            item = self.ui.font_list.item(i)
+            font_strings.append(item.font().toString())
+
+        font_text = '\n'.join(font_strings)
+        self.settings.setValue('font_list', font_text)
+
+        font_combo = self.ui.puzzle_set_font_list
+        font_combo.clear()
+        font_list = self.ui.font_list
+        for i in range(font_list.count()):
+            item = font_list.item(i)
+            _, description = item.text().split(' - ', 1)
+            font_combo.addItem(description, userData=item.font())
 
     def open_pair(self, puzzle_index: int):
         side = ('front', 'back')[puzzle_index]
@@ -686,6 +736,11 @@ class FourLetterBlocksWindow(QMainWindow):
         puzzle_set = PuzzleSet(*puzzles,
                                block_packer=packer,
                                start_hue=start_hue)
+        font_combo = self.ui.puzzle_set_font_list
+        first_font = font_combo.currentIndex()
+        for i, puzzle in enumerate(puzzle_set.puzzles):
+            font = font_combo.itemData((i+first_font) % font_combo.count())
+            puzzle.font = font
         svg_buffer = QBuffer()
         generator = create_svg_generator(svg_buffer)
 
@@ -1152,6 +1207,10 @@ def parse_args():
                         type=int,
                         default=0,
                         help='Background hue.')
+    parser.add_argument('--font',
+                        type=int,
+                        default=0,
+                        help='First font.')
     parser.add_argument('-o', '--output',
                         help='Output file to export to.')
     args = parser.parse_args()
@@ -1167,6 +1226,8 @@ def main():
     done = False
     window.ui.background_hue.setValue(args.hue)
     window.ui.front_hue.setValue(args.hue)
+    if args.font:
+        window.ui.puzzle_set_font_list.setCurrentIndex(args.font)
 
     if args.pair is not None:
         back_file, front_file = args.pair

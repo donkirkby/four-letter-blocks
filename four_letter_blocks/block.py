@@ -7,7 +7,7 @@ from operator import attrgetter
 from textwrap import dedent
 
 from PySide6.QtCore import QPoint
-from PySide6.QtGui import QPainter, QPen, Qt, QPainterPath
+from PySide6.QtGui import QPainter, QPen, Qt, QPainterPath, QFont
 
 from four_letter_blocks.grid import Grid
 from four_letter_blocks.square import Square
@@ -93,6 +93,7 @@ class Block:
         self.display_y: typing.Optional[int] = None
         self.display_rotation: typing.Optional[int] = None
         self.tab_count = 0
+        self.font: QFont | None = None
 
     def __repr__(self):
         squares = ', '.join(repr(square) for square in self.squares)
@@ -190,6 +191,9 @@ class Block:
         return bottom - self.y
 
     def draw(self, painter: QPainter, is_packed=False):
+        old_font = painter.font()
+        if self.font is not None:
+            painter.setFont(self.font)
         self.transform_painter(painter, 1)
         square_positions = self.square_positions
         size = self.squares[0].size
@@ -216,6 +220,7 @@ class Block:
 
         if not is_packed:
             self.draw_outline(painter)
+        painter.setFont(old_font)
 
     def draw_outline(self, painter, nick_radius=0):
         self.transform_painter(painter, 1)
@@ -225,9 +230,9 @@ class Block:
         outer_pen = QPen(self.border_colour)
         outer_pen.setWidth(math.floor(size / 33))
         if nick_radius:
-            outer_pen.setCapStyle(Qt.FlatCap)
+            outer_pen.setCapStyle(Qt.PenCapStyle.FlatCap)
         else:
-            outer_pen.setCapStyle(Qt.RoundCap)
+            outer_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         for square in self.squares:
             painter.setPen(outer_pen)
             x = square.x
