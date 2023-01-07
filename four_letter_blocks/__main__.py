@@ -741,10 +741,11 @@ class FourLetterBlocksWindow(QMainWindow):
                                block_packer=packer,
                                start_hue=start_hue)
         font_combo = self.ui.puzzle_set_font_list
-        first_font = font_combo.currentIndex()
-        for i, puzzle in enumerate(puzzle_set.puzzles):
-            font = font_combo.itemData((i+first_font) % font_combo.count())
-            puzzle.font = font
+        if font_combo.count() >= len(puzzle_set.puzzles):
+            first_font = font_combo.currentIndex()
+            for i, puzzle in enumerate(puzzle_set.puzzles):
+                font = font_combo.itemData((i+first_font) % font_combo.count())
+                puzzle.font = font
         svg_buffer = QBuffer()
         generator = create_svg_generator(svg_buffer)
 
