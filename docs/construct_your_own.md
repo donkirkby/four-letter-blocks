@@ -190,9 +190,16 @@ larger puzzles in a set, because it's easier to adjust the shape counts in the
 larger puzzles.
 
 The background hue sets the background colour for all the blocks. It's the hue
-angle from HSV colours, between 0 and 360. The smallest puzzle will highlight
-its letters in white, the second smallest will use the hue you enter, and the
-remaining puzzles will be evenly spaced around the colour wheel.
+angle from JCh colours, between 0 and 360. The smallest puzzle will highlight
+its letters in the background colour, and the remaining puzzles will be evenly
+spaced around the colour wheel.
+
+In addition to a different highlight colour for each puzzle, you can also choose
+a different font for each puzzle. Add all the fonts you want to use on the Fonts
+tab, and drag them into the order you want from the smallest puzzle to the
+largest. Then choose the font to use for the smallest puzzle on the Set tab.
+You can add extra fonts to the list, and choose a different starting font for
+each puzzle set you construct.
 
 ### Puzzle Pairs
 More complex than a set of puzzles, is a pair of puzzles. The two puzzles have

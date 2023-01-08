@@ -453,6 +453,7 @@ def test_draw_nicked_line(pixmap_differ: PixmapDiffer):
         block.draw_nicked_line(actual, 5, 20, 50, 200, 50)
 
 
+# noinspection DuplicatedCode
 def test_draw_packed(pixmap_differ: PixmapDiffer):
     actual: QPainter
     expected: QPainter
@@ -469,6 +470,29 @@ def test_draw_packed(pixmap_differ: PixmapDiffer):
         expected.drawLine(25, 150, 75, 150)
         expected.drawLine(100, 75, 100, 125)
         expected.drawLine(200, 75, 200, 125)
+
+        block.draw(actual, is_packed=True)
+
+
+# noinspection DuplicatedCode
+def test_draw_packed_with_rounding(pixmap_differ: PixmapDiffer):
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(310, 260) as (actual, expected):
+        block = create_basic_block()
+        block.border_colour = 'blue'
+        block.divider_colour = 'magenta'
+        block.squares[1].y += 1
+        block.squares[3].x += 1
+
+        for square in block.squares:
+            square.draw(expected, is_packed=True)
+
+        pen = QPen(QColor('magenta'), 3)
+        expected.setPen(pen)
+        expected.drawLine(25, 151, 75, 151)
+        expected.drawLine(100, 75, 100, 125)
+        expected.drawLine(201, 75, 201, 125)
 
         block.draw(actual, is_packed=True)
 

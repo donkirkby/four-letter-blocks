@@ -195,8 +195,11 @@ class Block:
         if self.font is not None:
             painter.setFont(self.font)
         self.transform_painter(painter, 1)
-        square_positions = self.square_positions
         size = self.squares[0].size
+        x0 = self.squares[0].x
+        y0 = self.squares[0].y
+        scaled_positions = {(round((x-x0)/size), round((y-y0)/size))
+                            for x, y in self.square_positions}
         old_pen = painter.pen()
         divider_pen = QPen(self.divider_colour)
         divider_pen.setWidth(size // 33)
@@ -204,13 +207,15 @@ class Block:
             square.draw(painter, is_packed=is_packed)
             x = square.x
             y = square.y
+            scaled_x = round((x-x0)/size)
+            scaled_y = round((y-y0)/size)
             painter.setPen(divider_pen)
-            if (round(x), round(y-size)) in square_positions:
+            if (scaled_x, scaled_y-1) in scaled_positions:
                 if is_packed or self.tab_count:
                     painter.drawLine(round(x+size/4), y, round(x+size*3/4), y)
                 else:
                     painter.drawLine(x, y, x + size, y)
-            if (round(x-size), round(y)) in square_positions:
+            if (scaled_x-1, scaled_y) in scaled_positions:
                 if is_packed or self.tab_count:
                     painter.drawLine(x, round(y+size/4), x, round(y+size*3/4))
                 else:
