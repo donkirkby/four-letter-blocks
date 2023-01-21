@@ -5,6 +5,8 @@ subtitle: Crossword puzzles to assemble
 
 [starter]: images/starter.png
 [PDF]: images/starter.pdf
+[journal]: journal.md
+[prototypes]: images/prototypes.jpg
 [Construct Your Own]: construct_your_own.md
 
 This is a program for building a new type of puzzle I designed: a crossword
@@ -55,6 +57,13 @@ to put the blocks together. Here are a few ideas for how to make the blocks:
 Whatever technique you use, glue sticks are easier to work with than white glue.
 If you don't want to print it out, you can also download the image and move the
 pieces around in a paint program.
+
+## Buying Puzzles
+I'm planning to sell them soon, for people who don't want to print and solve,
+and the prototypes are looking better and better. I'm keeping a [journal] of my
+progress so far, and here's a peek:
+
+[![prototypes]][prototypes]
 
 ## Constructing Your Own
 To construct your own puzzle, you have to construct the crossword puzzle, split

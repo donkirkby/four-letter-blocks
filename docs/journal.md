@@ -13,6 +13,10 @@ Add suits for larger grids.
 Start working on a laser-cut version. The first attempt in wood didn't turn out
 well.
 
+![[Prototypes]](images/prototypes.jpg)
+
+[Prototypes]: images/prototypes.jpg
+
 ### June 2022
 Second laser-cut attempt with Game Crafter. Proof of concept is a set of
 tetrominoes for the Donimoes project.
@@ -43,5 +47,22 @@ restrictions. Mutating by removing the blocks closest to one of the gaps
 averages 224 +/- 119 epochs over 204 trials. Bizarrely, adding pairing made it
 worse! Not only did it increase to 481 +/- 216 epochs over 29 trials, but each
 epoch was noticeably slower.
+
+### Nov 2022
+Switch from background wood texture to shaded pattern. Distribute background
+colours around the colour wheel. Expand to two-part frame for 11x11 pair.
+
+### Dec 2022
+Switch from HSV to JCh colour model, now lightness looks consistent across
+different hues. Dark suits are still hard to see against the background, though.
+First prototype of a puzzle pair arrives. Trim the outside of the 9x9 pair's
+frame, since the background doesn't bleed all the way to the edge.
+
+Start talking to a manufacturer about bigger production runs.
+
+### Jan 2023
+First double frame prototype arrives, as well as JCh colour model. Dark suits
+are better, but still hard to see. Use a different font for each puzzle in a
+set. Rewrite the musical set to avoid one blank piece.
 
 [first puzzle]: https://puzzling.stackexchange.com/q/111376/38
