@@ -17,6 +17,9 @@
 [journal]: docs/journal.md
 [prototypes]: docs/images/prototypes.jpg
 [Construct Your Own]: docs/construct_your_own.md
+[logo]: docs/images/logo.png
+
+![logo]
 
 This is a program for building a new type of puzzle I designed: a crossword
 puzzle cut up into blocks of four letters. The solver gets the blocks plus a

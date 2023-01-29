@@ -154,10 +154,11 @@ class PixmapDiffer(LiveImageDiffer):
 class LiveQPainter(LivePainter):
     WHITE = QColor('white')
 
-    def __init__(self, pixmap: QPixmap):
+    def __init__(self, pixmap: QPixmap, fill: QColor | None = WHITE):
         self.pixmap = pixmap
         self.painter = QPainter(self.pixmap)
-        self.pixmap.fill(self.WHITE)
+        if fill is not None:
+            self.pixmap.fill(fill)
 
     def set_pixel(self, position: LiveImage.Position, fill: LiveImage.Fill):
         self.painter.setPen(QColor(*fill))

@@ -8,6 +8,9 @@ subtitle: Crossword puzzles to assemble
 [journal]: journal.md
 [prototypes]: images/prototypes.jpg
 [Construct Your Own]: construct_your_own.md
+[logo]: images/logo.png
+
+![logo]
 
 This is a program for building a new type of puzzle I designed: a crossword
 puzzle cut up into blocks of four letters. The solver gets the blocks plus a
