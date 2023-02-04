@@ -150,7 +150,7 @@
    d="M30.564,35.415V24.95c0-3.111,2.633-5.633,5.882-5.633l0,0c3.248,0,5.882,2.522,5.882,5.633v10.465"
    id="path1735" />
 <rect
-   style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.78992128;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:0.78992128, 1.57984257000000006;stroke-dashoffset:0;stroke-opacity:1"
+   style="fill:#ffffff;fill-opacity:0;stroke:none;stroke-width:0.78992128;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:0.78992128, 1.57984257000000006;stroke-dashoffset:0;stroke-opacity:1"
    id="rect2294"
    width="9.4358978"
    height="20.923077"
@@ -158,11 +158,12 @@
    y="46.153847" /><text
    xml:space="preserve"
    style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:40px;line-height:1.25;font-family:'Fredoka One';-inkscape-font-specification:'Fredoka One, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none"
-   x="94"
+   x="77"
    y="48.25"
    id="text2298"><tspan
      sodipodi:role="line"
      id="tspan2296"
-     x="94"
-     y="48.25">1</tspan></text>
+     x="77"
+     y="48.25">1-6</tspan></text>
+
 </svg>
