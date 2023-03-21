@@ -367,7 +367,7 @@ def test_draw_back(pixmap_differ: PixmapDiffer):
         pair2.draw_back(actual, font_size=10)
 
 
-def test_packing(pixmap_differ: PixmapDiffer):
+def test_packing():
     expected_packing = dedent("""\
         AABBB
         AA#B#
@@ -381,7 +381,7 @@ def test_packing(pixmap_differ: PixmapDiffer):
     assert packing == expected_packing
 
 
-def test_prepacking(pixmap_differ: PixmapDiffer):
+def test_prepacking():
     expected_packing = dedent("""\
         #CCC#
         DDCEE
@@ -396,7 +396,7 @@ def test_prepacking(pixmap_differ: PixmapDiffer):
     assert packing == expected_packing
 
 
-def test_prepacking_flipped(pixmap_differ: PixmapDiffer):
+def test_prepacking_flipped():
     start_text = dedent("""\
         #CCC#
         EECDD
@@ -417,7 +417,7 @@ def test_prepacking_flipped(pixmap_differ: PixmapDiffer):
     assert packing == expected_packing
 
 
-def test_prepacking_useless(pixmap_differ: PixmapDiffer):
+def test_prepacking_useless():
     start_text = dedent("""\
         AAAA
         BBBB
