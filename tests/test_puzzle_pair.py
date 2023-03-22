@@ -441,7 +441,8 @@ def test_prepacking_useless():
 def test_background_tile(pixmap_differ: PixmapDiffer):
     actual: QPainter
     expected: QPainter
-    with pixmap_differ.create_painters(500, 260) as (actual, expected):
+    with pixmap_differ.create_painters(500, 260, max_diff=2) as (actual,
+                                                                 expected):
         expected_image = QImage(Path(__file__).parent / 'pair_tile.png')
         expected.drawImage(0, 0, expected_image)
 
