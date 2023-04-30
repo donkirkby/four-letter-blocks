@@ -10,6 +10,7 @@ subtitle: Crossword puzzles to assemble
 [Construct Your Own]: construct_your_own.md
 [logo]: images/logo.png
 [buy sets of puzzles]: https://www.thegamecrafter.com/designers/don-kirkby-s-games
+[Cross Jig Publishing Co.]: https://www.oldpuzzles.com/buy-puzzles/sale-list/crossword-puzzle-1
 
 ![logo]
 
@@ -22,6 +23,9 @@ top left. The good news is that every word has at least the first letter given.
 Here's a small starter puzzle to see how they work. You can also print out the
 [PDF]. Find more challenging puzzles I've published on [Puzzling Stack Exchange].
 If you don't want to print and cut out your own, you can [buy sets of puzzles].
+
+I recently learned that I was not the first to build a crossword puzzle out of
+tetrominoes. The [Cross Jig Publishing Co.] published one in 1932.
 
 ## Greetings (7x7)
 Clue numbers are shuffled: 1 Across might not be the top left. 10 pieces.
