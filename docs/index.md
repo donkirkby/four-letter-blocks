@@ -9,6 +9,7 @@ subtitle: Crossword puzzles to assemble
 [prototypes]: images/prototypes.jpg
 [Construct Your Own]: construct_your_own.md
 [logo]: images/logo.png
+[buy sets of puzzles]: https://www.thegamecrafter.com/designers/don-kirkby-s-games
 
 ![logo]
 
@@ -20,6 +21,7 @@ top left. The good news is that every word has at least the first letter given.
 
 Here's a small starter puzzle to see how they work. You can also print out the
 [PDF]. Find more challenging puzzles I've published on [Puzzling Stack Exchange].
+If you don't want to print and cut out your own, you can [buy sets of puzzles].
 
 ## Greetings (7x7)
 Clue numbers are shuffled: 1 Across might not be the top left. 10 pieces.
