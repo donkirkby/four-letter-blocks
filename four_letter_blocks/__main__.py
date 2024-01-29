@@ -27,7 +27,7 @@ from four_letter_blocks.fill_thread import FillThread
 from four_letter_blocks.font_list_item import FontListItem
 from four_letter_blocks.line_deduper import LineDeduper
 from four_letter_blocks.main_window import Ui_MainWindow
-from four_letter_blocks.puzzle import Puzzle
+from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
 from four_letter_blocks.puzzle_pair import PuzzlePair
 from four_letter_blocks.puzzle_set import PuzzleSet
 
@@ -401,7 +401,9 @@ class FourLetterBlocksWindow(QMainWindow):
         front_puzzle, back_puzzle = self.pair_puzzles
         assert front_puzzle is not None
         assert back_puzzle is not None
-        needed_counts = back_puzzle.flipped_shape_counts
+        front_puzzle.rotations_display = RotationsDisplay.FRONT
+        back_puzzle.rotations_display = RotationsDisplay.BACK
+        needed_counts = back_puzzle.shape_counts
         needed_counts.subtract(front_puzzle.shape_counts)
         return needed_counts
 

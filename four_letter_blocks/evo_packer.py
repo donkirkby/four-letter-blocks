@@ -279,6 +279,7 @@ class EvoPacker(BlockPacker):
                            shape_counts=shape_counts)
         if fitness_calculator is None:
             fitness_calculator = PackingFitnessCalculator()
+        fitness_calculator.summaries.clear()
 
         self.evo = Evolution(
             pool_size=1000,
