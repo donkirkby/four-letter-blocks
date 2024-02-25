@@ -4,6 +4,7 @@ from functools import cache
 from random import shuffle
 
 import numpy as np
+from scipy.ndimage import label  # type: ignore
 
 from four_letter_blocks.block import shape_rotations, normalize_coordinates, Block
 from four_letter_blocks.square import Square
@@ -21,6 +22,18 @@ class BlockPacker:
                  start_text: str | None = None,
                  start_state: np.ndarray | None = None,
                  split_row=0):
+        """ Initialize a BlockPacker instance.
+        :param width: number of letters across the packed grid
+        :param height: number of letters down the packed grid
+        :param tries: maximum number of times to try finding a packing before
+            giving up. -1 means never give up.
+        :param min_tries: minimum number of times to try finding a packing
+            before accepting the best so far. -1 means use maximum tries.
+        :param start_text: grid with partial packing filled in
+        :param start_state: numpy array with partial packing filled in
+        :param split_row: row number that can evenly split the grid into two
+            pages. split_row is the bottom row of the first page.
+        """
         self.state: np.ndarray | None
         if start_state is not None:
             self.height, self.width = start_state.shape
@@ -44,6 +57,7 @@ class BlockPacker:
         self.stop_tries = 0
         if 0 <= min_tries < tries:
             self.stop_tries = tries - min_tries
+        self.slots: dict[str, list[int]] = {}
 
     @property
     def positions(self):
@@ -87,6 +101,31 @@ class BlockPacker:
                     for c in row)
             for row in state)
 
+    def find_slots(self) -> dict[str, list[int]]:
+        for squares, (shape, rotation) in shape_rotations().items():
+            shape_slots = []
+            if shape == 'O':
+                name = shape
+            else:
+                name = f'{shape}{rotation}'
+            for i in range(self.height):
+                for j in range(self.width):
+                    for new_state in self.place_block(name, i, j, 2):
+                        gaps = new_state == self.UNUSED
+                        grouped, group_count = label(gaps)
+                        bin_counts = np.bincount(grouped.flatten())
+                        unused_group_sizes = bin_counts[1:]
+                        has_uneven_group = False
+                        for group_size in unused_group_sizes:
+                            if group_size % 4 != 0:
+                                has_uneven_group = True
+                                break
+                        if not has_uneven_group:
+                            slot = i*self.width + j
+                            shape_slots.append(slot)
+            self.slots[name] = shape_slots
+        return self.slots
+
     def sort_blocks(self):
         state = np.zeros(self.state.shape, np.uint8)
         gap_spaces = self.state == 1
@@ -102,6 +141,7 @@ class BlockPacker:
                 if old_block <= 1:
                     # gap or space
                     continue
+                # noinspection PyUnresolvedReferences
                 block_spaces = (self.state == old_block).astype(np.uint8)
                 state += next_block * block_spaces
                 next_block += 1
@@ -165,8 +205,10 @@ class BlockPacker:
             # No empty spaces left, fail.
             self.state = None
             return False
-        target_row = empty[0][0]
-        target_col = empty[1][0]
+        # noinspection PyTypeChecker
+        target_row: int = empty[0][0]
+        # noinspection PyTypeChecker
+        target_col: int = empty[1][0]
         next_block = np.amax(start_state) + 1
         if next_block == self.GAP:
             next_block += 1
@@ -278,6 +320,7 @@ class BlockPacker:
         empty = np.argwhere(self.state == 0)
         np.random.shuffle(empty)
         used_blocks = np.unique(self.state)
+        block: int
         for i, block in enumerate(used_blocks[:-1]):
             if block >= self.GAP and used_blocks[i+1] != block+1:
                 next_block = block + 1

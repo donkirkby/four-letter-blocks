@@ -356,3 +356,19 @@ def test_fill_fail():
     is_filled = packer.fill(shape_counts)
 
     assert not is_filled
+
+
+def test_find_slots():
+    packer = BlockPacker(start_text=dedent("""\
+        #..#.#####
+        .....#####
+        ..#..#####
+        .....#####
+        .#..######"""))
+    # Not at 13 or 20, because they cut off something.
+    expected_o_slots = [1, 10, 23, 32]
+
+    o_slots = packer.find_slots()['O']
+
+    assert o_slots == expected_o_slots
+

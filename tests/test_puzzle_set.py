@@ -10,7 +10,7 @@ from colorspacious import cspace_convert
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.evo_packer import EvoPacker
-from four_letter_blocks.puzzle import Puzzle
+from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
 from four_letter_blocks.puzzle_set import PuzzleSet
 from four_letter_blocks import four_letter_blocks_rc
 from tests.pixmap_differ import PixmapDiffer
@@ -67,6 +67,7 @@ def test_summary():
     puzzle_set = parse_puzzle_set()
     puzzle1, puzzle2 = puzzle_set.puzzles
 
+    assert puzzle1.rotations_display == RotationsDisplay.FRONT
     summary1 = puzzle1.display_block_summary()
     assert summary1 == 'Block sizes: 5x4, Shapes: J: 2, L: 2, O: 1'
     summary2 = puzzle2.display_block_summary()

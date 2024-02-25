@@ -10,7 +10,7 @@ from colorspacious import cspace_convert  # type:ignore[import]
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
-from four_letter_blocks.puzzle import Puzzle, draw_rotated_tiles
+from four_letter_blocks.puzzle import Puzzle, draw_rotated_tiles, RotationsDisplay
 
 
 class PuzzleSet:
@@ -51,6 +51,8 @@ class PuzzleSet:
         self.pack_puzzles()
 
     def pack_puzzles(self):
+        for i, puzzle in enumerate(self.puzzles):
+            puzzle.rotations_display = RotationsDisplay.FRONT
         combos = self.combos
         pairs = self.pairs
         total_counts = Counter()
