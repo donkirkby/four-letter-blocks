@@ -356,3 +356,37 @@ def test_fill_fail():
     is_filled = packer.fill(shape_counts)
 
     assert not is_filled
+
+
+def test_find_slots():
+    packer = BlockPacker(start_text=dedent("""\
+        #..#.
+        .....
+        ..#..
+        .....
+        .#..#"""))
+    # Not at (1, 3) or (2, 0), because they cut off something.
+    expected_o_slots = np.array(object=[[0, 1, 0, 0, 0],
+                                        [1, 0, 0, 0, 0],
+                                        [0, 0, 0, 1, 0],
+                                        [0, 0, 1, 0, 0],
+                                        [0, 0, 0, 0, 0]],
+                                dtype=bool)
+
+    o_slots = packer.find_slots()['O']
+
+    assert np.array_equal(o_slots, expected_o_slots)
+
+
+def test_find_slots_after_fail():
+    packer = BlockPacker(start_text=dedent("""\
+        #..#.
+        .....
+        ..#..
+        .....
+        .#..#"""))
+    packer.fill(Counter({'O': 20}))  # fails
+
+    with pytest.raises(RuntimeError,
+                       match='Cannot find slots with invalid state.'):
+        packer.find_slots()
