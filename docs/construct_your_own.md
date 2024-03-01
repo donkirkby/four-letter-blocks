@@ -109,6 +109,15 @@ it by installing those dependencies like this:
 
     sudo apt-get install freeglut3 freeglut3-dev
 
+Another known bug on Ubuntu 22.04:
+
+>"qt.qpa.plugin: Could not load the Qt platform plugin "xcb" in "" even though
+> it was found."
+
+Work around it by installing a dependency like this:
+
+    sudo apt install libxcb-cursor0
+
 ### Splitting Up the Grid
 Start by filling in the title
 and grid. Use the `#` character for black squares. As you type, the bottom of
