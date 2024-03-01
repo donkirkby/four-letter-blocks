@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y -q freeglut3-dev xvfb libxkbcommon-x11-0 xserver-xephyr libxcb-xinerama0
+          sudo apt-get install -y -q freeglut3-dev xvfb libxkbcommon-x11-0 xserver-xephyr libxcb-xinerama0 libxcb-cursor0
           python -m pip install --upgrade pip
           pip install pipenv
           pipenv install --dev
@@ -39,7 +39,7 @@ jobs:
           pipenv install codecov
           pipenv run codecov
       - name: Upload image diffs
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         if: ${{ always() && steps.test.outcome == 'failure' }}
         with:
           name: image-diffs
