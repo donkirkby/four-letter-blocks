@@ -74,7 +74,7 @@ class BlockPacker:
                 rotated_positions[rotated_shape].append((x, y))
         return rotated_positions
 
-    def find_slots(self) -> dict[str, np.ndarray]:
+    def find_slots(self, is_rotation_allowed=False) -> dict[str, np.ndarray]:
         if self.state is None:
             raise RuntimeError('Cannot find slots with invalid state.')
 
@@ -100,7 +100,14 @@ class BlockPacker:
             has_even = np.logical_not(np.any(is_uneven, axis=(2, 3)))
 
             usable_slots = np.logical_and(open_slots, has_even)
-            slots[shape] = usable_slots
+            if not is_rotation_allowed or len(shape) == 1:
+                slots[shape] = usable_slots
+            else:
+                reported_shape = shape[0]
+                already_usable = slots.get(reported_shape)
+                if already_usable is not None:
+                    usable_slots = np.logical_or(usable_slots, already_usable)
+                slots[reported_shape] = usable_slots
         return slots
 
     def display(self, state: np.ndarray | None = None) -> str:
@@ -355,6 +362,13 @@ def shape_coordinates() -> typing.Dict[str, typing.List[np.ndarray]]:
 
 @cache
 def build_masks(width: int, height: int) -> dict[str, np.ndarray]:
+    """ Build the masks for each shape in each position.
+
+    :return: {shape_name: mask_array}, where mask_array is a four-dimensional
+        array of occupied spaces with index (start_row, start_col, row, col). In
+        other words, if the shape starts at (start_row, start_col), is
+        (row, col) filled?
+    """
     all_coordinates = shape_coordinates()
     all_masks = {}
     for shape, coordinate_list in all_coordinates.items():

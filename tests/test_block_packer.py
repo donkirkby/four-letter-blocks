@@ -358,6 +358,7 @@ def test_fill_fail():
     assert not is_filled
 
 
+# noinspection DuplicatedCode
 def test_find_slots():
     packer = BlockPacker(start_text=dedent("""\
         #..#.
@@ -376,6 +377,45 @@ def test_find_slots():
     o_slots = packer.find_slots()['O']
 
     assert np.array_equal(o_slots, expected_o_slots)
+
+
+# noinspection DuplicatedCode
+def test_find_slots_rotation_allowed():
+    packer = BlockPacker(start_text=dedent("""\
+        #..#.
+        .....
+        ..#..
+        .....
+        .#..#"""))
+    # Not at (1, 3) or (2, 0), because they cut off something.
+    expected_s0_slots = np.array(object=[[1, 0, 0, 0, 0],
+                                         [0, 0, 0, 0, 0],
+                                         [0, 0, 0, 0, 0],
+                                         [0, 0, 1, 0, 0],
+                                         [0, 0, 0, 0, 0]],
+                                 dtype=bool)
+    expected_s1_slots = np.array(object=[[0, 0, 1, 0, 0],
+                                         [0, 0, 0, 0, 0],
+                                         [0, 1, 0, 0, 0],
+                                         [0, 0, 0, 0, 0],
+                                         [0, 0, 0, 0, 0]],
+                                 dtype=bool)
+    expected_s_slots = np.array(object=[[1, 0, 1, 0, 0],
+                                        [0, 0, 0, 0, 0],
+                                        [0, 1, 0, 0, 0],
+                                        [0, 0, 1, 0, 0],
+                                        [0, 0, 0, 0, 0]],
+                                dtype=bool)
+
+    is_rotation_allowed = False
+    s0_slots = packer.find_slots(is_rotation_allowed)['S0']
+    s1_slots = packer.find_slots()['S1']
+    is_rotation_allowed = True
+    s_slots = packer.find_slots(is_rotation_allowed)['S']
+
+    assert np.array_equal(s0_slots, expected_s0_slots)
+    assert np.array_equal(s1_slots, expected_s1_slots)
+    assert np.array_equal(s_slots, expected_s_slots)
 
 
 def test_find_slots_after_fail():
