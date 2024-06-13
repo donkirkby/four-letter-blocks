@@ -1,7 +1,7 @@
 import typing
-from collections import defaultdict
+from collections import defaultdict, Counter
 from functools import cache
-from random import shuffle
+from random import randrange
 
 import numpy as np
 from scipy.ndimage import label  # type: ignore
@@ -41,6 +41,7 @@ class BlockPacker:
                                             else 1 if char == '#'
                                             else ord(char) - 63)
         self.split_row = split_row
+        self.force_fours = False
         self.tries = tries
         self.stop_tries = 0
         if 0 <= min_tries < tries:
@@ -79,27 +80,39 @@ class BlockPacker:
             raise RuntimeError('Cannot find slots with invalid state.')
 
         all_masks = build_masks(self.width, self.height)
+        shape_heights = get_shape_heights()
         slots = {}
         padded = np.pad(self.state.astype(bool), (0, 3), constant_values=1)
         for shape, masks in all_masks.items():
             collisions = np.logical_and(masks, padded)
             colliding_positions = np.any(collisions, axis=(2, 3))
-            open_slots = np.logical_not(colliding_positions)
 
-            gaps = np.logical_not(np.logical_or(masks, padded))
-            structure = np.zeros((3, 3, 3, 3), bool)
-            structure[1, 1, :, :] = [[0, 1, 0],
-                                     [1, 1, 1],
-                                     [0, 1, 0]]
-            gap_groups, group_count = label(gaps, structure=structure)
-            bin_counts = np.bincount(gap_groups.flatten())
-            uneven_groups, = np.nonzero(bin_counts % 4)
-            if uneven_groups[0] == 0:
-                uneven_groups = uneven_groups[1:]
-            is_uneven = np.isin(gap_groups, uneven_groups)
-            has_even = np.logical_not(np.any(is_uneven, axis=(2, 3)))
+            # Check for rows that cross the split row.
+            shape_height = shape_heights[shape]
+            crossing_positions = np.zeros_like(colliding_positions)
+            crossing_positions[
+                self.split_row-shape_height+1:self.split_row, :] = True
 
-            usable_slots = np.logical_and(open_slots, has_even)
+            open_slots = np.logical_not(np.logical_or(colliding_positions,
+                                                      crossing_positions))
+
+            if not self.force_fours:
+                usable_slots = open_slots
+            else:
+                gaps = np.logical_not(np.logical_or(masks, padded))
+                structure = np.zeros((3, 3, 3, 3), bool)
+                structure[1, 1, :, :] = [[0, 1, 0],
+                                         [1, 1, 1],
+                                         [0, 1, 0]]
+                gap_groups, group_count = label(gaps, structure=structure)
+                bin_counts = np.bincount(gap_groups.flatten())
+                uneven_groups, = np.nonzero(bin_counts % 4)
+                if uneven_groups[0] == 0:
+                    uneven_groups = uneven_groups[1:]
+                is_uneven = np.isin(gap_groups, uneven_groups)
+                has_even = np.logical_not(np.any(is_uneven, axis=(2, 3)))
+
+                usable_slots = np.logical_and(open_slots, has_even)
             if not is_rotation_allowed or len(shape) == 1:
                 slots[shape] = usable_slots
             else:
@@ -179,7 +192,10 @@ class BlockPacker:
         block = Block(*squares)
         return block
 
-    def fill(self, shape_counts: typing.Counter[str]) -> bool:
+    def fill(self,
+             shape_counts: typing.Counter[str],
+             are_slots_shuffled: bool = False,
+             are_partials_saved: bool = False) -> bool:
         """ Fill in the current state with the given shapes.
 
         Cycles through the available shapes in shape_counts, and tries them in
@@ -188,6 +204,10 @@ class BlockPacker:
 
         :param shape_counts: number of blocks of each shape, disables rotation
             if any of the shapes contain a letter and rotation number
+        :param are_slots_shuffled: True if slots should be filled in random
+            order, otherwise False if slots should be filled from top to bottom.
+        :param are_partials_saved: True if self.state should be set, even with
+            a partial filling
         :return: True, if successful, otherwise False.
         """
         if self.tries == 0:
@@ -198,41 +218,62 @@ class BlockPacker:
         best_state = None
         assert self.state is not None
         start_state = self.state
-        empty = np.nonzero(self.state == 0)
-        if len(empty[0]) == 0:
-            # No empty spaces left, fail.
-            self.state = None
-            return False
-        # noinspection PyTypeChecker
-        target_row: int = empty[0][0]
-        # noinspection PyTypeChecker
-        target_col: int = empty[1][0]
-        next_block = np.amax(start_state) + 1
-        if next_block == self.GAP:
-            next_block += 1
-        elif next_block > 255:
-            raise ValueError('Maximum 254 blocks in packer.')
-
+        used_blocks = np.unique(self.state)
+        block: int
+        for i, block in enumerate(used_blocks[:-1]):
+            if block >= self.GAP and used_blocks[i+1] != block+1:
+                next_block = block + 1
+                break
+        else:
+            next_block = used_blocks[-1] + 1
+            if next_block == self.GAP:
+                next_block += 1
+            elif next_block > 255:
+                raise ValueError('Maximum 254 blocks in packer.')
         has_shapes = False
-        is_rotation_allowed = True
         fewest_rows = start_state.shape[0]+1
-        for shape_name, _ in shape_counts.most_common():
-            old_count = shape_counts[shape_name]
-            if old_count == 0:
+
+        is_rotation_allowed = all(len(shape) == 1 for shape in shape_counts)
+        slots = self.find_slots(is_rotation_allowed)
+        shape_scores: typing.Counter[str] = Counter()
+        for shape, shape_slots in slots.items():
+            target_count = shape_counts[shape]
+            if target_count == 0:
                 continue
+            slot_count = slots[shape].sum()
+            if slot_count == 0 and are_partials_saved:
+                # Don't try shape with no slots, but don't give up, either.
+                continue
+            shape_scores[shape] = -slot_count / target_count
+        for shape, _score in shape_scores.most_common():
+            slot_rows, slot_cols = np.nonzero(slots[shape])
+            if len(slot_rows) == 0:
+                # No empty spaces left, fail.
+                if not are_partials_saved:
+                    self.state = None
+                return False
+            if are_slots_shuffled:
+                slot_index = randrange(len(slot_rows))
+            else:
+                slot_index = 0
+            # noinspection PyTypeChecker
+            target_row: int = slot_rows[slot_index]
+            # noinspection PyTypeChecker
+            target_col: int = slot_cols[slot_index]
+
+            old_count = shape_counts[shape]
             has_shapes = True
-            shape_counts[shape_name] = old_count - 1
-            if len(shape_name) > 1:
-                is_rotation_allowed = False
+            shape_counts[shape] = old_count - 1
             self.state = start_state
-            for new_state in self.place_block(shape_name,
+            for new_state in self.place_block(shape,
                                               target_row,
                                               target_col,
                                               next_block):
                 self.state = new_state
                 if sum(shape_counts.values()):
-                    self.fill(shape_counts)
-                    if self.state is None:
+                    if not self.fill(shape_counts,
+                                     are_slots_shuffled,
+                                     are_partials_saved):
                         continue
                 used_rows = self.count_filled_rows()
                 if used_rows < fewest_rows:
@@ -240,23 +281,30 @@ class BlockPacker:
                     fewest_rows = used_rows
                 if 0 <= self.tries <= self.stop_tries and best_state is not None:
                     break
-            shape_counts[shape_name] = old_count
+                if are_partials_saved:
+                    break
             if 0 <= self.tries <= self.stop_tries and best_state is not None:
                 break
+            if are_partials_saved:
+                break
+            shape_counts[shape] = old_count
         if not has_shapes:
             return True
-        if not is_rotation_allowed or best_state is None:
+        if ((not is_rotation_allowed or best_state is None) and
+                not are_partials_saved):
             new_state = start_state.copy()
+            # noinspection PyUnboundLocalVariable
             new_state[target_row, target_col] = 1  # gap
             self.state = new_state
-            if self.fill(shape_counts):
+            if self.fill(shape_counts, are_slots_shuffled, are_partials_saved):
                 used_rows = self.count_filled_rows()
                 if used_rows < fewest_rows:
                     best_state = self.state
         if best_state is not None:
             self.state = best_state
             return True
-        self.state = None
+        if not are_partials_saved:
+            self.state = None
         return False
 
     def place_block(self,
@@ -270,7 +318,7 @@ class BlockPacker:
         try all possible rotations. If it's a letter and number, only use
         the rotation given by the number
         :param target_row: row to try placing the block at
-        :param target_col: column to try placing the block at
+        :param target_col: column to try placing the block at (top-left)
         :param block_num: block value to place in the state
         :return: an iterator of states for each successful placement
         """
@@ -284,13 +332,9 @@ class BlockPacker:
             rotation = int(shape_name[1])
             allowed_blocks = blocks[shape_name[0]][rotation:rotation + 1]
         for block in allowed_blocks:
-            first_square_index = np.where(block[0])[0][0]
             new_state = start_state.copy()
             start_col = target_col
             end_col = target_col + block.shape[1]
-            if start_col >= first_square_index:
-                start_col -= first_square_index
-                end_col -= first_square_index
             end_row = target_row + block.shape[0]
             if target_row < self.split_row < end_row:
                 continue
@@ -305,7 +349,7 @@ class BlockPacker:
             yield new_state
 
     def count_filled_rows(self):
-        filled = np.nonzero(self.state != 0)
+        filled = np.nonzero(self.state > self.GAP)
         if not filled[0].size:
             used_rows = 0
         else:
@@ -314,32 +358,9 @@ class BlockPacker:
 
     def random_fill(self, shape_counts: typing.Counter[str]):
         """ Randomly place pieces from shape_counts on empty spaces. """
-        assert self.state is not None
-        empty = np.argwhere(self.state == 0)
-        np.random.shuffle(empty)
-        used_blocks = np.unique(self.state)
-        block: int
-        for i, block in enumerate(used_blocks[:-1]):
-            if block >= self.GAP and used_blocks[i+1] != block+1:
-                next_block = block + 1
-                break
-        else:
-            next_block = used_blocks[-1] + 1
-            if next_block == self.GAP:
-                next_block += 1
-        shape_items = list((shape, count)
-                           for shape, count in shape_counts.items()
-                           if count > 0)
-        if not shape_items:
-            return
-        shuffle(shape_items)
-        for shape, count in shape_items:
-            for row, col in empty:
-                for new_state in self.place_block(shape, row, col, next_block):
-                    shape_counts[shape] -= 1
-                    self.state = new_state
-                    self.random_fill(shape_counts)
-                    return
+        self.fill(shape_counts,
+                  are_slots_shuffled=True,
+                  are_partials_saved=True)
 
     def flip(self) -> 'BlockPacker':
         assert self.state is not None
@@ -367,7 +388,8 @@ def build_masks(width: int, height: int) -> dict[str, np.ndarray]:
     :return: {shape_name: mask_array}, where mask_array is a four-dimensional
         array of occupied spaces with index (start_row, start_col, row, col). In
         other words, if the shape starts at (start_row, start_col), is
-        (row, col) filled?
+        (row, col) filled? (start_row, start_col) is the top-left corner of
+        the shape, not the first occupied space in the top row.
     """
     all_coordinates = shape_coordinates()
     all_masks = {}
@@ -389,3 +411,17 @@ def build_masks(width: int, height: int) -> dict[str, np.ndarray]:
             all_masks[name] = masks
 
     return all_masks
+
+
+@cache
+def get_shape_heights() -> dict[str, int]:
+    shape_heights = {}
+    all_coordinates = shape_coordinates()
+    for shape_name, coordinate_list in all_coordinates.items():
+        for rotation, shape in enumerate(coordinate_list):
+            if len(coordinate_list) == 1:
+                full_name = shape_name
+            else:
+                full_name = f'{shape_name}{rotation}'
+            shape_heights[full_name] = shape.shape[0]
+    return shape_heights

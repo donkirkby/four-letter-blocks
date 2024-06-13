@@ -81,13 +81,17 @@ def test_draw_front_slug1(pixmap_differ: PixmapDiffer):
         black_block.face_colour = QColor('black')
         black_block.border_colour = Block.CUT_COLOUR
         black_block.tab_count = 2
-        black_positions = ((37.5, 37.5),
-                           (112.5, 37.5),
-                           (187.5, 37.5),
-                           (262.5, 62.5),
-                           (12.5, 87.5),
-                           (162.5, 87.5),
-                           (87.5, 112.5))
+        black_positions = ((37.5, 12.5),
+                           (137.5, 12.5),
+                           (37.5, 37.5),
+                           (87.5, 37.5),
+                           (187.5, 12.5),
+                           (237.5, 37.5),
+                           (212.5, 112.5),
+                           (237.5, 112.5),
+                           (12.5, 112.5),
+                           (137.5, 87.5),
+                           (87.5, 87.5))
         for black_block.x, black_block.y in black_positions:
             black_block.draw(expected, is_packed=True)
 
@@ -192,24 +196,20 @@ def test_draw_front_slug2(pixmap_differ: PixmapDiffer):
         black_block.squares[0].size = pair.square_size
         black_block.face_colour = QColor('black')
         black_block.tab_count = 2
-        black_positions = ((12.5, 162.5),
-                           (187.5, 162.5),
-                           (237.5, 162.5),
-                           (237.5, 187.5),
-                           (12.5, 212.5),
-                           (62.5, 237.5),
-                           (87.5, 237.5),
-                           (137.5, 237.5),
-                           (237.5, 237.5),
+        black_positions = ((62.5, 137.5),
+                           (212.5, 137.5),
+                           (237.5, 137.5),
+                           (212.5, 187.5),
+                           (12.5, 237.5),
+                           (37.5, 237.5),
+                           (62.5, 162.5),
+                           (112.5, 162.5),
+                           (137.5, 162.5),
                            (262.5, 237.5),
                            (12.5, 262.5),
-                           (87.5, 262.5),
-                           (137.5, 262.5),
-                           (162.5, 262.5),
-                           (187.5, 262.5),
-                           (212.5, 262.5),
-                           (237.5, 262.5),
-                           (262.5, 262.5))
+                           (262.5, 187.5),
+                           (237.5, 212.5),
+                           (262.5, 212.5))
         for black_block.x, black_block.y in black_positions:
             black_block.draw(expected, is_packed=True)
 

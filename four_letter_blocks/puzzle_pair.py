@@ -55,7 +55,7 @@ class PuzzlePair(PuzzleSet):
                 grid_size,
                 self.block_packer.tries,
                 split_row=self.block_packer.split_row)
-            is_filled = self.block_packer.fill(self.shape_counts)
+            is_filled = self.block_packer.fill(Counter(self.shape_counts))
             if not is_filled:
                 raise RuntimeError("Blocks didn't fit.")
         for block in front_puzzle.blocks:

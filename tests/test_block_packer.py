@@ -100,15 +100,29 @@ def test_fill_one_block():
 
 
 def test_fill_two_blocks():
-    width = height = 5
+    width, height = 5, 4
     shape_counts = Counter('LO')
     expected_display = dedent("""\
-        ##ABB
+        ..ABB
         AAABB
-        .....
         .....
         .....""")
     packer = BlockPacker(width, height)
+    packer.fill(shape_counts)
+
+    assert packer.display() == expected_display
+
+
+def test_fill_two_blocks_force_fours():
+    width, height = 5, 4
+    shape_counts = Counter('LO')
+    expected_display = dedent("""\
+        AAABB
+        A..BB
+        .....
+        .....""")
+    packer = BlockPacker(width, height)
+    packer.force_fours = True
     packer.fill(shape_counts)
 
     assert packer.display() == expected_display
@@ -134,7 +148,7 @@ def test_fill_three_blocks():
     width = height = 5
     shape_counts = Counter('OLO')
     expected_display = dedent("""\
-        AABB#
+        AABB.
         AABBC
         ..CCC
         .....
@@ -149,10 +163,10 @@ def test_no_rotations():
     width = height = 5
     shape_counts = Counter(('O', 'I0', 'O'))
     expected_display = dedent("""\
-        AABBC
-        AABBC
-        ....C
-        ....C
+        AABCC
+        AABCC
+        ..B..
+        ..B..
         .....""")
     packer = BlockPacker(width, height)
     packer.fill(shape_counts)
@@ -164,9 +178,9 @@ def test_no_rotations_needs_gap():
     width = height = 5
     shape_counts = Counter(('O', 'J3', 'O'))
     expected_display = dedent("""\
-        AA#BB
-        AACBB
-        ..CCC
+        AA#CC
+        AABCC
+        ..BBB
         .....
         .....""")
     packer = BlockPacker(width, height)
@@ -306,11 +320,11 @@ def test_fill_with_underhang():
     width, height = 3, 5
     shape_counts = Counter('OOJ')
     expected_display = dedent("""\
-        AAB
-        AAB
-        #BB
-        CC.
-        CC.""")
+        AA.
+        AA.
+        BBC
+        BBC
+        .CC""")
     packer = BlockPacker(width, height, tries=100)
     packer.fill(shape_counts)
 
@@ -321,13 +335,13 @@ def test_fill_with_split_row():
     width, height = 3, 7
     shape_counts = Counter('OOT')
     expected_display = dedent("""\
-        AA#
-        AA#
-        ###
-        BB#
-        BBC
-        .CC
-        ..C""")
+        AA.
+        AA.
+        ...
+        BBB
+        .B.
+        CC.
+        CC.""")
     packer = BlockPacker(width, height, split_row=3, tries=100)
     packer.fill(shape_counts)
 
@@ -366,6 +380,7 @@ def test_find_slots():
         ..#..
         .....
         .#..#"""))
+    packer.force_fours = True
     # Not at (1, 3) or (2, 0), because they cut off something.
     expected_o_slots = np.array(object=[[0, 1, 0, 0, 0],
                                         [1, 0, 0, 0, 0],
@@ -387,6 +402,7 @@ def test_find_slots_rotation_allowed():
         ..#..
         .....
         .#..#"""))
+    packer.force_fours = True
     # Not at (1, 3) or (2, 0), because they cut off something.
     expected_s0_slots = np.array(object=[[1, 0, 0, 0, 0],
                                          [0, 0, 0, 0, 0],
@@ -430,3 +446,24 @@ def test_find_slots_after_fail():
     with pytest.raises(RuntimeError,
                        match='Cannot find slots with invalid state.'):
         packer.find_slots()
+
+
+def test_find_slots_split_row():
+    packer = BlockPacker(start_text=dedent("""\
+        #..#.
+        .....
+        ..#..
+        .....
+        .#..#"""))
+    packer.split_row = 2
+    # Not in row 1, because it overlaps the split row.
+    expected_o_slots = np.array(object=[[0, 1, 0, 0, 0],
+                                        [0, 0, 0, 0, 0],
+                                        [1, 0, 0, 1, 0],
+                                        [0, 0, 1, 0, 0],
+                                        [0, 0, 0, 0, 0]],
+                                dtype=bool)
+
+    o_slots = packer.find_slots()['O']
+
+    assert str(o_slots) == str(expected_o_slots)

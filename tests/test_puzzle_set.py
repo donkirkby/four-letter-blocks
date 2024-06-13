@@ -305,17 +305,17 @@ def test_draw_packed(pixmap_differ: PixmapDiffer):
         puzzle_set1.square_size = 20
         blocks = puzzle1.blocks
         blocks[0].set_display(270, 10, 0)
-        blocks[1].set_display(170, 10, 2)
-        blocks[2].set_display(50, 10, 1)
+        blocks[1].set_display(170, 30, 0)
+        blocks[2].set_display(50, 10, 0)
         blocks[3].set_display(10, 70, 0)
-        blocks[4].set_display(50, 70, 3)
+        blocks[4].set_display(30, 70, 0)
 
         blocks = puzzle2.blocks
-        blocks[0].set_display(90, 50, 1)
-        blocks[1].set_display(130, 30, 0)
-        blocks[2].set_display(230, 30, 1)
-        blocks[3].set_display(210, 70, 1)
-        blocks[4].set_display(210, 10, 3)
+        blocks[0].set_display(70, 50, 0)
+        blocks[1].set_display(70, 90, 1)
+        blocks[2].set_display(170, 10, 0)
+        blocks[3].set_display(250, 70, 0)
+        blocks[4].set_display(230, 10, 0)
 
         for block in puzzle1.blocks + puzzle2.blocks:
             block.draw(expected, is_packed=True)
@@ -334,11 +334,11 @@ def test_draw_cuts(pixmap_differ: PixmapDiffer):
             180,
             'test_puzzle_draw_cuts') as (actual, expected):
         block_text = dedent("""\
-            #ABBBCC
-            #AD#BCE
-            AADDFCE
-            GGHDFFE
-            GGHHHFE
+            #ABCCCC
+            #ABBBDD
+            AAEEDDE
+            F#EEGGE
+            FFFGGEE
         """)
         puzzle3 = Puzzle.parse_sections('',
                                         block_text,
@@ -351,7 +351,7 @@ def test_draw_cuts(pixmap_differ: PixmapDiffer):
             block.border_colour = Block.CUT_COLOUR
             block.draw_outline(expected)
 
-        puzzle_set = parse_puzzle_set(BlockPacker(7, 8, tries=1000))
+        puzzle_set = parse_puzzle_set(BlockPacker(7, 8, tries=4000))
         puzzle_set.square_size = 20
         puzzle_set.draw_cuts(actual)
 

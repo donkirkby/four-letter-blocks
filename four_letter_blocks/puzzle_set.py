@@ -178,7 +178,7 @@ class PuzzleSet:
         self.block_summary = f'{total_block_count} blocks'
         if extras:
             self.block_summary += ' with extras: ' + ', '.join(extras)
-        is_filled = self.block_packer.fill(self.shape_counts)
+        is_filled = self.block_packer.fill(Counter(self.shape_counts))
         if not is_filled:
             raise RuntimeError("Blocks wouldn't fit.")
         self.set_face_colours()

@@ -90,14 +90,14 @@ def test_draw_blocks(pixmap_differ: PixmapDiffer):
 
         black = QColor('black')
         draw_gradient_rect(expected, black, 51.25, 31.25, 17.5, 17.5, 6.25)
-        draw_gradient_rect(expected, black, 91.25, 31.25, 17.5, 17.5, 6.25)
+        draw_gradient_rect(expected, black, 11.25, 31.25, 17.5, 17.5, 6.25)
         draw_gradient_rect(expected, black, 91.25, 51.25, 17.5, 17.5, 6.25)
         draw_gradient_rect(expected, black, 11.25, 51.25, 17.5, 17.5, 6.25)
         draw_gradient_rect(expected, black, 11.25, 91.25, 17.5, 17.5, 6.25)
         draw_gradient_rect(expected, black, 211.25, 91.25, 17.5, 17.5, 6.25)
         draw_gradient_rect(expected, black, 211.25, 51.25, 17.5, 17.5, 6.25)
         draw_gradient_rect(expected, black, 131.25, 51.25, 17.5, 17.5, 6.25)
-        draw_gradient_rect(expected, black, 131.25, 31.25, 17.5, 17.5, 6.25)
+        draw_gradient_rect(expected, black, 211.25, 31.25, 17.5, 17.5, 6.25)
         draw_gradient_rect(expected, black, 171.25, 31.25, 17.5, 17.5, 6.25)
         front.face_colour = QColor('transparent')
         back.face_colour = QColor('transparent')
@@ -105,16 +105,16 @@ def test_draw_blocks(pixmap_differ: PixmapDiffer):
         blocks = front.blocks
         blocks[0].set_display(70, 70, 0)
         blocks[1].set_display(30, 50, 0)
-        blocks[2].set_display(10, 10, 0)
-        blocks[3].set_display(50, 10, 0)
+        blocks[2].set_display(70, 10, 0)
+        blocks[3].set_display(10, 10, 0)
         blocks[4].set_display(10, 70, 0)
 
         blocks = back.blocks
         blocks[0].set_display(130, 70, 0)
         blocks[1].set_display(170, 70, 0)
-        blocks[2].set_display(190, 10, 0)
+        blocks[2].set_display(130, 10, 0)
         blocks[3].set_display(150, 50, 0)
-        blocks[4].set_display(130, 10, 0)
+        blocks[4].set_display(170, 10, 0)
 
         for block in front.blocks + back.blocks:
             block.draw(expected, is_packed=True)
@@ -306,8 +306,8 @@ def test_draw_front(pixmap_differ: PixmapDiffer):
 
 def test_draw_cuts(pixmap_differ: PixmapDiffer):
     block_text = dedent("""\
-        AABBB
-        AA#B#
+        AAABB
+        #A#BB
         #CCC#
         DDCEE
         #DDEE
@@ -340,7 +340,7 @@ def test_draw_cuts(pixmap_differ: PixmapDiffer):
         block.squares[0].size = puzzle.square_size
         block.tab_count = 2
         block.border_colour = block.CUT_COLOUR
-        for block.x, block.y in ((120, 30), (0, 60), (120, 60), (0, 120)):
+        for block.x, block.y in ((0, 30), (0, 60), (120, 60), (0, 120)):
             block.draw_outline(expected)
 
         pair2 = parse_puzzle_pair()
@@ -369,9 +369,9 @@ def test_draw_back(pixmap_differ: PixmapDiffer):
 
 def test_packing():
     expected_packing = dedent("""\
-        AABBB
-        AA#B#
-        #CCC#
+        AAABB
+        .A.BB
+        #CCC.
         DDCEE
         .DDEE""")
     puzzle_pair = parse_puzzle_pair(BlockPacker(5, 5, tries=1000))
@@ -424,9 +424,9 @@ def test_prepacking_useless():
         CCCC
         DDDD""")
     expected_packing = dedent("""\
-        AABBB
-        AA#B#
-        #CCC#
+        AAABB
+        .A.BB
+        #CCC.
         DDCEE
         .DDEE""")
     puzzle_pair = parse_puzzle_pair(BlockPacker(start_text=start_text,

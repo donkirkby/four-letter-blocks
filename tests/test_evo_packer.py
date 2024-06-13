@@ -64,7 +64,9 @@ def test_mutate():
 
 
 @patch('four_letter_blocks.evo_packer.randrange')
-def test_pair(mock_randrange):
+@patch('four_letter_blocks.evo_packer.choices')
+def test_pair(mock_choices, mock_randrange):
+    mock_choices.side_effect = [['mix']]
     mock_randrange.side_effect = [0, 0, 4, 4]
 
     shape_counts1 = Counter({'I0': 4})
@@ -104,7 +106,9 @@ def test_pair(mock_randrange):
 
 
 @patch('four_letter_blocks.evo_packer.randrange')
-def test_pair_with_fill(mock_randrange):
+@patch('four_letter_blocks.evo_packer.choices')
+def test_pair_with_fill(mock_choices, mock_randrange):
+    mock_choices.side_effect = [['mix']]
     mock_randrange.side_effect = [0, 0, 4, 4]
 
     shape_counts1 = Counter({'L1': 1})

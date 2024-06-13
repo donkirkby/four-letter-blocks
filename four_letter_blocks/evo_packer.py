@@ -74,7 +74,7 @@ class Packing(Individual):
 
     def pair(self, other, pair_params):
         scenario = choices(('mother', 'father', 'mix'),
-                           weights=(5, 5, 1))
+                           weights=(5, 5, 1))[0]
         if scenario == 'mother':
             return Packing(self.value)
         if scenario == 'father':
@@ -292,7 +292,10 @@ class EvoPacker(BlockPacker):
             pool_count=2)
         self.shape_counts = shape_counts
 
-    def fill(self, shape_counts: typing.Counter[str]) -> bool:
+    def fill(self,
+             shape_counts: typing.Counter[str],
+             are_slots_shuffled: bool = False,
+             are_partials_saved: bool = False) -> bool:
         self.setup(shape_counts)
         while self.current_epoch < self.epochs:
             if self.run_epoch():
