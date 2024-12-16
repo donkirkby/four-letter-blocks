@@ -82,6 +82,24 @@ def test_start_text():
     assert display == start
 
 
+def test_is_full_true():
+    start = dedent("""\
+        BBACCC
+        BBAAAC""")
+    packer = BlockPacker(start_text=start)
+
+    assert packer.is_full
+
+
+def test_is_full_false():
+    start = dedent("""\
+        BBA...
+        BBAAA.""")
+    packer = BlockPacker(start_text=start)
+
+    assert not packer.is_full
+
+
 def test_fill_one_block():
     width = height = 6
     shape_counts = Counter('I')
@@ -394,46 +412,6 @@ def test_find_slots():
     assert np.array_equal(o_slots, expected_o_slots)
 
 
-# noinspection DuplicatedCode
-def test_find_slots_rotation_allowed():
-    packer = BlockPacker(start_text=dedent("""\
-        #..#.
-        .....
-        ..#..
-        .....
-        .#..#"""))
-    packer.force_fours = True
-    # Not at (1, 3) or (2, 0), because they cut off something.
-    expected_s0_slots = np.array(object=[[1, 0, 0, 0, 0],
-                                         [0, 0, 0, 0, 0],
-                                         [0, 0, 0, 0, 0],
-                                         [0, 0, 1, 0, 0],
-                                         [0, 0, 0, 0, 0]],
-                                 dtype=bool)
-    expected_s1_slots = np.array(object=[[0, 0, 1, 0, 0],
-                                         [0, 0, 0, 0, 0],
-                                         [0, 1, 0, 0, 0],
-                                         [0, 0, 0, 0, 0],
-                                         [0, 0, 0, 0, 0]],
-                                 dtype=bool)
-    expected_s_slots = np.array(object=[[1, 0, 1, 0, 0],
-                                        [0, 0, 0, 0, 0],
-                                        [0, 1, 0, 0, 0],
-                                        [0, 0, 1, 0, 0],
-                                        [0, 0, 0, 0, 0]],
-                                dtype=bool)
-
-    is_rotation_allowed = False
-    s0_slots = packer.find_slots(is_rotation_allowed)['S0']
-    s1_slots = packer.find_slots()['S1']
-    is_rotation_allowed = True
-    s_slots = packer.find_slots(is_rotation_allowed)['S']
-
-    assert np.array_equal(s0_slots, expected_s0_slots)
-    assert np.array_equal(s1_slots, expected_s1_slots)
-    assert np.array_equal(s_slots, expected_s_slots)
-
-
 def test_find_slots_after_fail():
     packer = BlockPacker(start_text=dedent("""\
         #..#.
@@ -467,3 +445,76 @@ def test_find_slots_split_row():
     o_slots = packer.find_slots()['O']
 
     assert str(o_slots) == str(expected_o_slots)
+
+
+# noinspection DuplicatedCode
+def test_has_slot_coverage():
+    packer = BlockPacker(start_text=dedent("""\
+        #AA...#
+        .AA#.CC
+        .....CC
+        .#.#.#A
+        .....AA
+        ..E#BBA
+        #EEEBB#"""))
+    packer.force_fours = True
+
+    slots = packer.find_slots()
+
+    assert slots
+
+
+# noinspection DuplicatedCode
+def test_has_slot_coverage_fails():
+    packer = BlockPacker(start_text=dedent("""\
+        #.....#
+        .AA#.CC
+        .AA..CC
+        .#.#.#A
+        .....AA
+        ..E#BBA
+        #EEEBB#"""))
+    packer.force_fours = True
+
+    slots = packer.find_slots()
+
+    assert not slots
+
+
+def test_shape_counts_7x7():
+    packer = BlockPacker(start_text=dedent("""\
+        #.....#
+        ...#...
+        .......
+        .#.#.#.
+        .......
+        ...#...
+        #.....#"""))
+    expected_shape_counts = {name: 1 for name in Block.shape_names()}
+    expected_shape_counts['O'] = 2
+
+    shape_counts = packer.calculate_max_shape_counts()
+
+    assert shape_counts == expected_shape_counts
+
+
+def test_shape_counts_9x9():
+    packer = BlockPacker(start_text=dedent("""\
+        .....#...
+        .....#...
+        .........
+        .###....#
+        ....#....
+        #....###.
+        .........
+        ...#.....
+        ...#....."""))
+    expected_shape_counts = {name: 1 for name in Block.shape_names()}
+    expected_shape_counts['O'] = 3
+    for name in expected_shape_counts:
+        if name[0] in 'ISZ':
+            expected_shape_counts[name] = 2
+
+    shape_counts = packer.calculate_max_shape_counts()
+
+    assert shape_counts == expected_shape_counts

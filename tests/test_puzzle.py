@@ -521,6 +521,42 @@ CCCA
     assert counts == Counter({'L': 2, 'S': 1})
 
 
+def test_flipped_shape_counts_no_rotation():
+    source_file = StringIO("""\
+Title
+
+XX#XXX
+#XXXXX
+X#XXX#
+XXXXXX
+#####X
+######
+
+-
+
+BB#DEE
+#BBDEE
+C#DDF#
+CCCAFF
+#####F
+######
+""")
+    x = """\
+EED#BB
+EEDBB#
+#FDD#C
+FFACCC
+F#####
+######
+"""
+    puzzle = Puzzle.parse(source_file)
+    puzzle.rotations_display = RotationsDisplay.FRONT
+
+    counts = puzzle.flipped_shape_counts
+
+    assert counts == Counter({'L0': 1, 'L1': 1, 'S0': 1, 'O': 1, 'Z1': 1})
+
+
 def test_display_block_sizes_all_correct():
     source_file = StringIO("""\
 Title

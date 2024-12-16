@@ -400,7 +400,7 @@ class Puzzle:
                 case None:
                     continue
                 case 'I' | 'S' | 'Z':
-                    shape = f'{shape}{rotation%2}'
+                    shape = f'{shape}{rotation % 2}'
                 case 'J' | 'L' | 'T':
                     shape = f'{shape}{rotation}'
             counter[shape] += 1
@@ -408,15 +408,31 @@ class Puzzle:
 
     @property
     def flipped_shape_counts(self):
-        if self.rotations_display != RotationsDisplay.OFF:
-            raise RuntimeError(
-                ' flipped_shape_counts is incompatible with rotations display.')
         shape_counts = self.shape_counts
-        shape_counts['J'], shape_counts['L'] = (shape_counts['L'],
-                                                shape_counts['J'])
-        shape_counts['S'], shape_counts['Z'] = (shape_counts['Z'],
-                                                shape_counts['S'])
-        return shape_counts
+        if self.rotations_display == RotationsDisplay.OFF:
+            shape_counts['J'], shape_counts['L'] = (shape_counts['L'],
+                                                    shape_counts['J'])
+            shape_counts['S'], shape_counts['Z'] = (shape_counts['Z'],
+                                                    shape_counts['S'])
+            return shape_counts
+
+        flipped_shapes = {'J': 'L',
+                          'L': 'J',
+                          'Z': 'S',
+                          'S': 'Z'}
+        flipped_shape_counts = Counter()
+        for name, count in shape_counts.items():
+            if len(name) == 1:
+                flipped_shape_counts[name] = count
+                continue
+            shape_name, rotation = name
+            flipped_shape = flipped_shapes.get(shape_name, shape_name)
+            flipped_rotation = -int(rotation) % 4
+            if flipped_shape in 'SZI':
+                flipped_rotation = flipped_rotation % 2
+            flipped_name = f'{flipped_shape}{flipped_rotation}'
+            flipped_shape_counts[flipped_name] = count
+        return flipped_shape_counts
 
     @property
     def shape_blocks(self):

@@ -41,7 +41,8 @@ class BlockMover:
             return
         if not 0 <= col < grid_size:
             return
-        block_num = self.source[row, col]
+        # noinspection PyTypeChecker
+        block_num: int = self.source[row, col]
         if block_num == 1:
             self.target[row, col] = 1
             return
@@ -58,6 +59,7 @@ class BlockMover:
         for square in block.squares:
             if self.target[square.y, square.x] != 0:
                 return
+        # noinspection PyUnresolvedReferences
         if (self.target == block_num).any():
             used_nums = set(np.unique(self.target))
             for block_num in count(2):
@@ -99,6 +101,7 @@ class Packing(Individual):
             mover1.move(i1, j1)
             mover2.move(i2, j2)
         packer = BlockPacker(start_state=new_state)
+        packer.force_fours = True
         packer.random_fill(mover1.shape_counts)
         return Packing(dict(state=packer.state,
                             shape_counts=mover1.shape_counts,
@@ -113,6 +116,7 @@ class Packing(Individual):
         shape_counts = Counter(self.value['shape_counts'])
         can_rotate: bool = self.value['can_rotate']
         block_packer = BlockPacker(start_state=state)
+        block_packer.force_fours = True
         grid_size = state.shape[0]
         gaps = np.argwhere(state == 0)
         if gaps.size > 0:
@@ -156,6 +160,7 @@ class Packing(Individual):
         shape_counts = Counter(init_params['shape_counts'])
         can_rotate = all(len(shape) == 1 for shape in shape_counts)
         block_packer = BlockPacker(start_state=start_state)
+        block_packer.force_fours = True
         block_packer.random_fill(shape_counts)
         return dict(state=block_packer.state,
                     shape_counts=shape_counts,
@@ -326,6 +331,7 @@ class EvoPacker(BlockPacker):
             print(self.top_blocks)
         self.top_fitness = top_fitness
         packer = BlockPacker(start_state=top_individual.value['state'])
+        packer.force_fours = True
         packer.sort_blocks()
         self.top_blocks = packer.display()
         if (top_fitness.empty_spaces == 0 and
@@ -386,6 +392,7 @@ def ranked_offsets(grid_size: int) -> np.ndarray:
     expanded_size = grid_size * 2 - 1
     rankings = distance_ranking(expanded_size)
     positions = rankings.argsort(axis=None)
+    # noinspection PyTypeChecker
     position_pairs = np.column_stack(divmod(positions, expanded_size))
     position_pairs -= [grid_size-1, grid_size-1]
     position_pairs.setflags(write=False)

@@ -8,7 +8,7 @@ from PySide6.QtGui import QPainter, QColor, QImage, QFont, Qt
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.clue_painter import CluePainter
-from four_letter_blocks.puzzle import Puzzle, draw_rotated_tiles
+from four_letter_blocks.puzzle import Puzzle, draw_rotated_tiles, RotationsDisplay
 from four_letter_blocks.puzzle_pair import PuzzlePair
 from four_letter_blocks.square import draw_gradient_rect, Square
 from tests.pixmap_differ import PixmapDiffer
@@ -435,6 +435,109 @@ def test_prepacking_useless():
     packing = puzzle_pair.block_packer.display()
 
     assert packing == expected_packing
+
+
+def test_pack_greetings():
+    start_text1 = dedent("""\
+        #?????#
+        ???#???
+        ???????
+        ?#?#?#?
+        ???????
+        ???#???
+        #?????#""")
+    start_text2 = dedent("""\
+        ??????#
+        ?#?#???
+        ???????
+        ?#?#?#?
+        ???????
+        ???#?#?
+        #??????""")
+    found_packings1 = [
+        dedent("""\
+            AAAABC#
+            D#E#BCC
+            DDEEBBC
+            D#E#F#G
+            HHHFFFG
+            IIH#J#G
+            #IIJJJG"""),
+        dedent("""\
+            ABBBCC#
+            A#B#DCC
+            AEEEDDD
+            A#E#F#G
+            HIIFFGG
+            HHI#F#G
+            #HIJJJJ""")]
+    found_packings2 = [
+        dedent("""\
+            #ABBBC#
+            AAB#CCC
+            DAEEEEF
+            D#G#H#F
+            DGGHHFF
+            DGI#HJJ
+            #IIIJJ#"""),
+        dedent("""\
+            #AABBB#
+            AAC#BDE
+            FFCCDDE
+            F#C#D#E
+            FGGGGHE
+            III#JHH
+            #IJJJH#""")]
+
+
+    packer2 = None
+    for _ in range(1):  # ~ 50min per 1000
+        packer = BlockPacker(start_text=start_text2,
+                             tries=1000,
+                             min_tries=1)
+        back_shapes = packer.calculate_max_shape_counts()
+        packer.force_fours = True
+        packer.fill(back_shapes,
+                    are_slots_shuffled=True,
+                    are_partials_saved=False)
+        if not packer.is_full:
+            print('First packer failed.')
+            continue
+
+        packed_puzzle1 = Puzzle.parse_sections('Title',
+                                               start_text2,
+                                               '',
+                                               packer.display())
+        packed_puzzle1.rotations_display = RotationsDisplay.FRONT
+        target_shapes = packed_puzzle1.flipped_shape_counts
+
+        packer2 = BlockPacker(start_text=start_text1,
+                              tries=1000,
+                              min_tries=1)
+        packer2.force_fours = True
+        packer2.fill(target_shapes,
+                     are_partials_saved=False,
+                     are_slots_shuffled=True)
+        packer.sort_blocks()
+        packer2.sort_blocks()
+        display1 = packer.display()
+        display2 = packer2.display()
+        try:
+            display_index1 = found_packings1.index(display1)
+            display_index2 = found_packings2.index(display2)
+            print(f'Duplicate ({display_index1}, {display_index2}).')
+            continue
+        except ValueError:
+            pass
+        if packer2.is_full:
+            print(display1)
+            print()
+            print(display2)
+            break
+        print(f'Second packer failed with {packer2.fewest_unused} unused.')
+    assert packer2
+    assert packer2.is_full
+    assert False
 
 
 # noinspection DuplicatedCode

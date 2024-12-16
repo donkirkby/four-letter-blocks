@@ -1,7 +1,8 @@
+import math
 import typing
 from collections import defaultdict, Counter
 from functools import cache
-from random import randrange
+from random import shuffle
 
 import numpy as np
 from scipy.ndimage import label  # type: ignore
@@ -11,6 +12,12 @@ from four_letter_blocks.square import Square
 
 
 class BlockPacker:
+    """ Scenarios we use this for:
+    * Packing a set of two different size puzzles, shape counts are given,
+      black squares can be freely placed.
+    * Packing a puzzle with max shape counts.
+    * Packing a puzzle grid with exact shape counts (sum of max counts = space).
+    """
     UNUSED = 0
     GAP = 1
 
@@ -46,6 +53,8 @@ class BlockPacker:
         self.stop_tries = 0
         if 0 <= min_tries < tries:
             self.stop_tries = tries - min_tries
+        self.is_tracing = False
+        self.fewest_unused: int | None = None
 
     @property
     def positions(self):
@@ -75,10 +84,33 @@ class BlockPacker:
                 rotated_positions[rotated_shape].append((x, y))
         return rotated_positions
 
-    def find_slots(self, is_rotation_allowed=False) -> dict[str, np.ndarray]:
+    @property
+    def is_full(self):
+        if self.state is None:
+            return False
+        # noinspection PyUnresolvedReferences
+        return not (self.state == 0).any()
+
+    def calculate_max_shape_counts(self):
+        # noinspection PyUnresolvedReferences
+        block_count = (self.state == 0).sum() // 4
+        block_count += 5*7  # Add flexibility to make packing easier.
+        multiplier = {'O': 4, 'S': 2, 'Z': 2, 'I': 2}
+        shape_names = Block.shape_rotation_names()
+        return {shape: math.ceil(multiplier.get(shape[0], 1) * block_count / 28)
+                for shape in shape_names}
+
+    def find_slots(self) -> dict[str, np.ndarray]:
+        """ Find slots where each shape rotation can fit.
+
+        If you allow rotations, you have to combine the slots for each rotation.
+        :return: {shape: bitmap}
+        """
         if self.state is None:
             raise RuntimeError('Cannot find slots with invalid state.')
 
+        # Track spaces that are already filled, or how many slots cover them.
+        slot_coverage = self.state.copy()
         all_masks = build_masks(self.width, self.height)
         shape_heights = get_shape_heights()
         slots = {}
@@ -107,21 +139,22 @@ class BlockPacker:
                 gap_groups, group_count = label(gaps, structure=structure)
                 bin_counts = np.bincount(gap_groups.flatten())
                 uneven_groups, = np.nonzero(bin_counts % 4)
-                if uneven_groups[0] == 0:
+                if uneven_groups.size and uneven_groups[0] == 0:
                     uneven_groups = uneven_groups[1:]
                 is_uneven = np.isin(gap_groups, uneven_groups)
                 has_even = np.logical_not(np.any(is_uneven, axis=(2, 3)))
 
                 usable_slots = np.logical_and(open_slots, has_even)
-            if not is_rotation_allowed or len(shape) == 1:
-                slots[shape] = usable_slots
-            else:
-                reported_shape = shape[0]
-                already_usable = slots.get(reported_shape)
-                if already_usable is not None:
-                    usable_slots = np.logical_or(usable_slots, already_usable)
-                slots[reported_shape] = usable_slots
-        return slots
+            usable_masks = masks[usable_slots]
+            shape_coverage = usable_masks[:, :self.height, :self.width].sum(
+                axis=0)
+            slot_coverage += shape_coverage
+            slots[shape] = usable_slots
+        if slot_coverage.all():
+            return slots
+
+        # Some unfilled spaces weren't covered by any usable slots, return empty.
+        return {}
 
     def display(self, state: np.ndarray | None = None) -> str:
         if state is None:
@@ -230,55 +263,88 @@ class BlockPacker:
                 next_block += 1
             elif next_block > 255:
                 raise ValueError('Maximum 254 blocks in packer.')
-        has_shapes = False
         fewest_rows = start_state.shape[0]+1
 
+        slots = self.find_slots()
         is_rotation_allowed = all(len(shape) == 1 for shape in shape_counts)
-        slots = self.find_slots(is_rotation_allowed)
+        raw_slot_counts = {shape: shape_slots.sum()
+                           for shape, shape_slots in slots.items()}
+        if not is_rotation_allowed:
+            slot_counts = raw_slot_counts
+        else:
+            slot_counts = Counter()
+            for shape, slot_count in raw_slot_counts.items():
+                slot_counts[shape[0]] += slot_count
+
         shape_scores: typing.Counter[str] = Counter()
-        for shape, shape_slots in slots.items():
+        for shape, slot_count in slot_counts.items():
             target_count = shape_counts[shape]
             if target_count == 0:
                 continue
-            slot_count = slots[shape].sum()
             if slot_count == 0 and are_partials_saved:
                 # Don't try shape with no slots, but don't give up, either.
                 continue
+            # noinspection PyTypeChecker
             shape_scores[shape] = -slot_count / target_count
+        is_filled = False
         for shape, _score in shape_scores.most_common():
-            slot_rows, slot_cols = np.nonzero(slots[shape])
-            if len(slot_rows) == 0:
-                # No empty spaces left, fail.
-                if not are_partials_saved:
-                    self.state = None
-                return False
-            if are_slots_shuffled:
-                slot_index = randrange(len(slot_rows))
+            if not is_rotation_allowed:
+                slot_shapes = [shape]
             else:
-                slot_index = 0
-            # noinspection PyTypeChecker
-            target_row: int = slot_rows[slot_index]
-            # noinspection PyTypeChecker
-            target_col: int = slot_cols[slot_index]
-
+                slot_shapes = [slot_shape
+                               for slot_shape in slots.keys()
+                               if slot_shape.startswith(shape)]
             old_count = shape_counts[shape]
-            has_shapes = True
             shape_counts[shape] = old_count - 1
-            self.state = start_state
-            for new_state in self.place_block(shape,
-                                              target_row,
-                                              target_col,
-                                              next_block):
-                self.state = new_state
-                if sum(shape_counts.values()):
-                    if not self.fill(shape_counts,
-                                     are_slots_shuffled,
-                                     are_partials_saved):
-                        continue
-                used_rows = self.count_filled_rows()
-                if used_rows < fewest_rows:
-                    best_state = self.state
-                    fewest_rows = used_rows
+            for rotated_shape in slot_shapes:
+                slot_rows, slot_cols = np.nonzero(slots[rotated_shape])
+                if len(slot_rows) == 0:
+                    continue
+                slot_indexes = list(range(len(slot_rows)))
+                if are_slots_shuffled:
+                    shuffle(slot_indexes)
+                for slot_index in slot_indexes:
+                    # noinspection PyTypeChecker
+                    target_row: int = slot_rows[slot_index]
+                    # noinspection PyTypeChecker
+                    target_col: int = slot_cols[slot_index]
+
+                    self.state = start_state
+                    for new_state in self.place_block(rotated_shape,
+                                                      target_row,
+                                                      target_col,
+                                                      next_block):
+                        self.state = new_state
+                        unused_count = np.count_nonzero(self.state == self.UNUSED)
+                        if (self.fewest_unused is None or
+                                unused_count < self.fewest_unused):
+                            self.fewest_unused = unused_count
+                        is_filled = unused_count == 0
+                        remaining_pieces_count = sum(shape_counts.values())
+                        is_finished = is_filled or remaining_pieces_count == 0
+                        if self.is_tracing:
+                            print(f'{unused_count} unused '
+                                  f'with {self.tries} tries left, '
+                                  f'finished? {is_finished}')
+                            print(self.display())
+                        if not is_finished and self.tries != 0:
+                            is_filled = self.fill(shape_counts,
+                                             are_slots_shuffled,
+                                             are_partials_saved)
+                            if not is_filled:
+                                continue
+                        used_rows = self.count_filled_rows()
+                        if used_rows < fewest_rows:
+                            best_state = self.state
+                            fewest_rows = used_rows
+                        if 0 <= self.tries <= self.stop_tries and best_state is not None:
+                            break
+                        if are_partials_saved:
+                            break
+                    if 0 <= self.tries <= self.stop_tries and best_state is not None:
+                        break
+                    if are_partials_saved:
+                        break
                 if 0 <= self.tries <= self.stop_tries and best_state is not None:
                     break
                 if are_partials_saved:
@@ -288,18 +354,19 @@ class BlockPacker:
             if are_partials_saved:
                 break
             shape_counts[shape] = old_count
-        if not has_shapes:
+        if is_filled:
             return True
         if ((not is_rotation_allowed or best_state is None) and
                 not are_partials_saved):
-            new_state = start_state.copy()
-            # noinspection PyUnboundLocalVariable
-            new_state[target_row, target_col] = 1  # gap
-            self.state = new_state
-            if self.fill(shape_counts, are_slots_shuffled, are_partials_saved):
-                used_rows = self.count_filled_rows()
-                if used_rows < fewest_rows:
-                    best_state = self.state
+            return False
+            # new_state = start_state.copy()
+            # # noinspection PyUnboundLocalVariable
+            # new_state[target_row, target_col] = 1  # gap
+            # self.state = new_state
+            # if self.fill(shape_counts, are_slots_shuffled, are_partials_saved):
+            #     used_rows = self.count_filled_rows()
+            #     if used_rows < fewest_rows:
+            #         best_state = self.state
         if best_state is not None:
             self.state = best_state
             return True
@@ -360,7 +427,7 @@ class BlockPacker:
         """ Randomly place pieces from shape_counts on empty spaces. """
         self.fill(shape_counts,
                   are_slots_shuffled=True,
-                  are_partials_saved=True)
+                  are_partials_saved=False)
 
     def flip(self) -> 'BlockPacker':
         assert self.state is not None

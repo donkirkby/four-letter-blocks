@@ -103,6 +103,13 @@ class Block:
     def shape_names() -> typing.List[str]:
         return sorted({name for name, rotation in shape_rotations().values()})
 
+    @staticmethod
+    def shape_rotation_names() -> typing.List[str]:
+        names = [f'{name}{rotation}' if name != 'O' else name
+                 for name, rotation in shape_rotations().values()]
+        names.sort()
+        return names
+
     @property
     def face_colour(self):
         return self.squares[0].face_colour
