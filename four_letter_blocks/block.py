@@ -410,6 +410,27 @@ def shape_rotations() -> typing.Dict[
     return names
 
 
+@cache
+def flipped_shapes() -> dict[str, str]:
+    result = {}
+    flipped_families = {'J': 'L',
+                        'L': 'J',
+                        'Z': 'S',
+                        'S': 'Z'}
+    for name, rotation in shape_rotations().values():
+        if name == 'O':
+            result[name] = name
+            continue
+        flipped_shape = flipped_families.get(name, name)
+        flipped_rotation = -int(rotation) % 4
+        if flipped_shape in 'SZI':
+            flipped_rotation = flipped_rotation % 2
+        start_name = f'{name}{rotation}'
+        flipped_name = f'{flipped_shape}{flipped_rotation}'
+        result[start_name] = flipped_name
+    return result
+
+
 def normalize_coordinates(coordinates: typing.Sequence[
         typing.Tuple[int, int]]) -> typing.FrozenSet[typing.Tuple[int, int]]:
     min_x = min(pair[0] for pair in coordinates)

@@ -55,6 +55,7 @@ class BlockPacker:
             self.stop_tries = tries - min_tries
         self.is_tracing = False
         self.fewest_unused: int | None = None
+        self.slot_coverage = self.state
 
     @property
     def positions(self):
@@ -92,6 +93,11 @@ class BlockPacker:
         return not (self.state == 0).any()
 
     def calculate_max_shape_counts(self):
+        """ Calculate how many of each shape and rotation should be packed.
+
+        This tries to get a roughly even number of each shape, plus a few extras
+        to make packing more flexible.
+        """
         # noinspection PyUnresolvedReferences
         block_count = (self.state == 0).sum() // 4
         block_count += 5*7  # Add flexibility to make packing easier.
@@ -104,17 +110,19 @@ class BlockPacker:
         """ Find slots where each shape rotation can fit.
 
         If you allow rotations, you have to combine the slots for each rotation.
+        Any spaces that are already filled have coverage 255.
         :return: {shape: bitmap}
         """
         if self.state is None:
             raise RuntimeError('Cannot find slots with invalid state.')
 
         # Track spaces that are already filled, or how many slots cover them.
-        slot_coverage = self.state.copy()
+        non_gaps = self.state.astype(bool)
+        slot_coverage = non_gaps.astype(np.uint8) * 255
         all_masks = build_masks(self.width, self.height)
         shape_heights = get_shape_heights()
         slots = {}
-        padded = np.pad(self.state.astype(bool), (0, 3), constant_values=1)
+        padded = np.pad(non_gaps, (0, 3), constant_values=1)
         for shape, masks in all_masks.items():
             collisions = np.logical_and(masks, padded)
             colliding_positions = np.any(collisions, axis=(2, 3))
@@ -147,9 +155,10 @@ class BlockPacker:
                 usable_slots = np.logical_and(open_slots, has_even)
             usable_masks = masks[usable_slots]
             shape_coverage = usable_masks[:, :self.height, :self.width].sum(
-                axis=0)
+                axis=0, dtype=np.uint8)
             slot_coverage += shape_coverage
             slots[shape] = usable_slots
+        self.slot_coverage = slot_coverage
         if slot_coverage.all():
             return slots
 
@@ -251,18 +260,7 @@ class BlockPacker:
         best_state = None
         assert self.state is not None
         start_state = self.state
-        used_blocks = np.unique(self.state)
-        block: int
-        for i, block in enumerate(used_blocks[:-1]):
-            if block >= self.GAP and used_blocks[i+1] != block+1:
-                next_block = block + 1
-                break
-        else:
-            next_block = used_blocks[-1] + 1
-            if next_block == self.GAP:
-                next_block += 1
-            elif next_block > 255:
-                raise ValueError('Maximum 254 blocks in packer.')
+        next_block = self.find_next_block()
         fewest_rows = start_state.shape[0]+1
 
         slots = self.find_slots()
@@ -373,6 +371,21 @@ class BlockPacker:
         if not are_partials_saved:
             self.state = None
         return False
+
+    def find_next_block(self):
+        used_blocks = np.unique(self.state)
+        block: int
+        for i, block in enumerate(used_blocks[:-1]):
+            if block >= self.GAP and used_blocks[i + 1] != block + 1:
+                next_block = block + 1
+                break
+        else:
+            next_block = used_blocks[-1] + 1
+            if next_block == self.GAP:
+                next_block += 1
+            elif next_block > 255:
+                raise ValueError('Maximum 254 blocks in packer.')
+        return next_block
 
     def place_block(self,
                     shape_name: str,
