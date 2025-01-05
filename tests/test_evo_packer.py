@@ -23,8 +23,10 @@ def test_no_rotations():
         DA#EC
         DEEEC
         DD##C""")
-    packer = EvoPacker(start_text=start_text)
+    packer = EvoPacker(start_text=start_text, tries=100, min_tries=1)
     packer.is_logging = False
+    packer.epochs = 2
+    packer.pool_size = 100
 
     is_filled = packer.fill(shape_counts)
     packer.sort_blocks()

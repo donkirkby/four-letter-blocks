@@ -102,7 +102,11 @@ class Packing(Individual):
             mover2.move(i2, j2)
         packer = BlockPacker(start_state=new_state)
         packer.force_fours = True
-        packer.random_fill(mover1.shape_counts)
+        packer.are_slots_shuffled = True
+        packer.are_partials_saved = True
+        packer.fill(mover1.shape_counts)
+
+        assert packer.state is not None
         return Packing(dict(state=packer.state,
                             shape_counts=mover1.shape_counts,
                             can_rotate=can_rotate,
@@ -117,6 +121,8 @@ class Packing(Individual):
         can_rotate: bool = self.value['can_rotate']
         block_packer = BlockPacker(start_state=state)
         block_packer.force_fours = True
+        block_packer.are_partials_saved = True
+        block_packer.are_slots_shuffled = True
         grid_size = state.shape[0]
         gaps = np.argwhere(state == 0)
         if gaps.size > 0:
@@ -149,8 +155,9 @@ class Packing(Individual):
             if remove_count == 0:
                 break
 
-        block_packer.random_fill(shape_counts)
+        block_packer.fill(shape_counts)
 
+        assert block_packer.state is not None
         self.value = dict(state=block_packer.state,
                           shape_counts=shape_counts,
                           can_rotate=can_rotate)
@@ -161,7 +168,11 @@ class Packing(Individual):
         can_rotate = all(len(shape) == 1 for shape in shape_counts)
         block_packer = BlockPacker(start_state=start_state)
         block_packer.force_fours = True
-        block_packer.random_fill(shape_counts)
+        block_packer.are_slots_shuffled = True
+        block_packer.are_partials_saved = True
+        block_packer.fill(shape_counts)
+
+        assert block_packer.state is not None
         return dict(state=block_packer.state,
                     shape_counts=shape_counts,
                     can_rotate=can_rotate)
@@ -270,6 +281,7 @@ class EvoPacker(BlockPacker):
                          start_state)
         self.is_logging = False
         self.epochs = 100
+        self.pool_size = 1000
         self.current_epoch = 0
         self.shape_counts: typing.Counter[str] = Counter()
         self.evo: Evolution | None = None
@@ -287,10 +299,10 @@ class EvoPacker(BlockPacker):
         fitness_calculator.summaries.clear()
 
         self.evo = Evolution(
-            pool_size=1000,
+            pool_size=self.pool_size,
             fitness=fitness_calculator.calculate,
             individual_class=Packing,
-            n_offsprings=200,
+            n_offsprings=self.pool_size // 5,
             pair_params=None,
             mutate_params=None,
             init_params=init_params,

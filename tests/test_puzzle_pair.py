@@ -497,9 +497,8 @@ def test_pack_greetings():
                              min_tries=1)
         back_shapes = packer.calculate_max_shape_counts()
         packer.force_fours = True
-        packer.fill(back_shapes,
-                    are_slots_shuffled=True,
-                    are_partials_saved=False)
+        packer.are_slots_shuffled = True
+        packer.fill(back_shapes)
         if not packer.is_full:
             print('First packer failed.')
             continue
@@ -515,9 +514,8 @@ def test_pack_greetings():
                               tries=1000,
                               min_tries=1)
         packer2.force_fours = True
-        packer2.fill(target_shapes,
-                     are_partials_saved=False,
-                     are_slots_shuffled=True)
+        packer2.are_slots_shuffled = True
+        packer2.fill(target_shapes)
         packer.sort_blocks()
         packer2.sort_blocks()
         display1 = packer.display()

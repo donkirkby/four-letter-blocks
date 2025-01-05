@@ -121,8 +121,8 @@ def test_fill_two_blocks():
     width, height = 5, 4
     shape_counts = Counter('LO')
     expected_display = dedent("""\
-        ..ABB
-        AAABB
+        AA..B
+        AABBB
         .....
         .....""")
     packer = BlockPacker(width, height)
@@ -135,8 +135,8 @@ def test_fill_two_blocks_force_fours():
     width, height = 5, 4
     shape_counts = Counter('LO')
     expected_display = dedent("""\
-        AAABB
-        A..BB
+        AABBB
+        AAB..
         .....
         .....""")
     packer = BlockPacker(width, height)
@@ -196,7 +196,7 @@ def test_no_rotations_needs_gap():
     width = height = 5
     shape_counts = Counter(('O', 'J3', 'O'))
     expected_display = dedent("""\
-        AA#CC
+        AA.CC
         AABCC
         ..BBB
         .....
@@ -217,7 +217,9 @@ def test_random_fill():
             .....
             ..##.""")
         packer = BlockPacker(start_text=start_text)
-        packer.random_fill(shape_counts)
+        packer.are_slots_shuffled = True
+        packer.are_partials_saved = True
+        packer.fill(shape_counts)
 
         assert 1 <= shape_counts['O'] <= 3
 
@@ -231,8 +233,10 @@ def test_random_fill_lower_numbers():
             ..#..
             ..DDD
             ..##D""")
-        packer = BlockPacker(start_text=start_text)
-        packer.random_fill(shape_counts)
+        packer = BlockPacker(start_text=start_text, tries=100, min_tries=1)
+        packer.are_slots_shuffled = True
+        packer.are_partials_saved = True
+        packer.fill(shape_counts)
 
         assert 2 <= shape_counts['O'] <= 3
         assert packer.state.max() == 5
@@ -245,7 +249,9 @@ def test_random_fill_tries_multiple_shapes():
             AA...B
             AA.BBB""")
         packer = BlockPacker(start_text=start_text)
-        packer.random_fill(shape_counts)
+        packer.are_slots_shuffled = True
+        packer.are_partials_saved = True
+        packer.fill(shape_counts)
 
         assert shape_counts['L'] == 0
 
@@ -254,7 +260,9 @@ def test_random_fill_no_gaps():
     for _ in range(100):
         shape_counts = Counter({'O': 1})
         packer = BlockPacker(2, 2)
-        packer.random_fill(shape_counts)
+        packer.are_slots_shuffled = True
+        packer.are_partials_saved = True
+        packer.fill(shape_counts)
 
         assert shape_counts['O'] == 0
         assert packer.state.max() == 2
@@ -356,10 +364,10 @@ def test_fill_with_split_row():
         AA.
         AA.
         ...
-        BBB
-        .B.
-        CC.
-        CC.""")
+        BB.
+        BB.
+        CCC
+        .C.""")
     packer = BlockPacker(width, height, split_row=3, tries=100)
     packer.fill(shape_counts)
 
@@ -375,7 +383,7 @@ def test_fill_overflow():
 
     assert len(packer.positions['O']) == 254
 
-    shape_counts['O'] += 1
+    shape_counts = Counter({'O': 255})
     packer = BlockPacker(256, 4, tries=500)
     with pytest.raises(ValueError, match='Maximum 254 blocks in packer.'):
         packer.fill(shape_counts)
@@ -490,8 +498,9 @@ def test_shape_counts_7x7():
         .......
         ...#...
         #.....#"""))
-    expected_shape_counts = {name: 1 for name in Block.shape_names()}
-    expected_shape_counts['O'] = 2
+    expected_shape_counts = {
+        name: 3 if name == 'O' else 2 if name[0] in 'ISZ' else 1
+        for name in Block.shape_rotation_names()}
 
     shape_counts = packer.calculate_max_shape_counts()
 
@@ -509,11 +518,9 @@ def test_shape_counts_9x9():
         .........
         ...#.....
         ...#....."""))
-    expected_shape_counts = {name: 1 for name in Block.shape_names()}
-    expected_shape_counts['O'] = 3
-    for name in expected_shape_counts:
-        if name[0] in 'ISZ':
-            expected_shape_counts[name] = 2
+    expected_shape_counts = {
+        name: 4 if name == 'O' else 2 if name[0] in 'ISZ' else 1
+        for name in Block.shape_rotation_names()}
 
     shape_counts = packer.calculate_max_shape_counts()
 

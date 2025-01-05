@@ -97,7 +97,9 @@ class DoubleBlockPacker:
             shape_scores[shape] = -slot_count / target_count
 
         start_state1 = packer1.state
+        assert start_state1 is not None
         start_state2 = packer2.state
+        assert start_state2 is not None
         next_block = packer1.find_next_block()
         for shape1, _score in shape_scores.most_common():
             shape2 = flipped_shape_names[shape1]

@@ -26,7 +26,8 @@ class PuzzleSet:
             self.block_packer = block_packer
         else:
             self.block_packer = BlockPacker(16, 20,  # Game Crafter cutout size
-                                            tries=10_000)
+                                            tries=10_000,
+                                            min_tries=1)
         self.front_blocks: typing.Dict[
             str,
             typing.List[Block | None]] = defaultdict(list)
