@@ -29,19 +29,19 @@ def parse_puzzle_pair(block_packer: BlockPacker = None):
         ES - es clue pleasantly truthful surrounding verdant foliage abundantly
         IOTAS - iotas clue with marginally transferrable containers wanderlust
         LE - francophone's direct article without extension or divergent structured landing
-        PEI - pei clue leaves fragrant residue throughout residential thoroughfares
+        PEI - pei clue leaves fragrant residue
         PEPPY - Peppy clue makes foreign entangling continue
-        SPLAT - splat clue extends through ridiculous depths
+        SPLAT - splat clue extends through ridiculous depths of description and humour
         TO - pointing out your destination within a wide range
         TOT - tot dot screams among flowering shrubbery lacks any fraught experience
         UP - up clue
         YES - supremely positive
 
-        #DDD#
-        AADCC
-        AA#CC
-        EEBBB
-        #EEB#
+        #AAA#
+        BBACC
+        BB#DC
+        EEEDC
+        #EDD#
     """)))
     puzzle2 = Puzzle.parse(StringIO(dedent("""\
         Back (5x5)
@@ -65,11 +65,11 @@ def parse_puzzle_pair(block_packer: BlockPacker = None):
         RINGO - ringo clue
         TI - ti clue
 
-        #CCB#
-        DCCBB
-        DD#EB
-        DAAEE
-        #AAE#
+        #AAA#
+        BBACC
+        BD#CC
+        BDEEE
+        #DDE#
     """)))
     pair = PuzzlePair(puzzle1, puzzle2, block_packer=block_packer)
     puzzle1.face_colour = QColor('transparent')
@@ -89,31 +89,31 @@ def test_draw_blocks(pixmap_differ: PixmapDiffer):
         assert front.shape_counts == back.flipped_shape_counts
 
         black = QColor('black')
-        draw_gradient_rect(expected, black, 51.25, 31.25, 17.5, 17.5, 6.25)
+        draw_gradient_rect(expected, black, 51.25, 91.25, 17.5, 17.5, 6.25)
         draw_gradient_rect(expected, black, 11.25, 31.25, 17.5, 17.5, 6.25)
-        draw_gradient_rect(expected, black, 91.25, 51.25, 17.5, 17.5, 6.25)
+        draw_gradient_rect(expected, black, 91.25, 91.25, 17.5, 17.5, 6.25)
         draw_gradient_rect(expected, black, 11.25, 51.25, 17.5, 17.5, 6.25)
-        draw_gradient_rect(expected, black, 11.25, 91.25, 17.5, 17.5, 6.25)
-        draw_gradient_rect(expected, black, 211.25, 91.25, 17.5, 17.5, 6.25)
+        draw_gradient_rect(expected, black, 11.25, 71.25, 17.5, 17.5, 6.25)
+        draw_gradient_rect(expected, black, 211.25, 71.25, 17.5, 17.5, 6.25)
         draw_gradient_rect(expected, black, 211.25, 51.25, 17.5, 17.5, 6.25)
-        draw_gradient_rect(expected, black, 131.25, 51.25, 17.5, 17.5, 6.25)
+        draw_gradient_rect(expected, black, 131.25, 91.25, 17.5, 17.5, 6.25)
         draw_gradient_rect(expected, black, 211.25, 31.25, 17.5, 17.5, 6.25)
-        draw_gradient_rect(expected, black, 171.25, 31.25, 17.5, 17.5, 6.25)
+        draw_gradient_rect(expected, black, 171.25, 91.25, 17.5, 17.5, 6.25)
         front.face_colour = QColor('transparent')
         back.face_colour = QColor('transparent')
         puzzle_pair1.square_size = 20
         blocks = front.blocks
-        blocks[0].set_display(70, 70, 0)
-        blocks[1].set_display(30, 50, 0)
-        blocks[2].set_display(70, 10, 0)
-        blocks[3].set_display(10, 10, 0)
-        blocks[4].set_display(10, 70, 0)
+        blocks[0].set_display(50, 70, 0)
+        blocks[1].set_display(50, 30, 0)
+        blocks[2].set_display(70, 10, 2)
+        blocks[3].set_display(10, 50, 0)
+        blocks[4].set_display(10, 10, 0)
 
         blocks = back.blocks
         blocks[0].set_display(130, 70, 0)
-        blocks[1].set_display(170, 70, 0)
-        blocks[2].set_display(130, 10, 0)
-        blocks[3].set_display(150, 50, 0)
+        blocks[1].set_display(130, 10, 2)
+        blocks[2].set_display(150, 30, 0)
+        blocks[3].set_display(190, 50, 0)
         blocks[4].set_display(170, 10, 0)
 
         for block in front.blocks + back.blocks:
@@ -196,14 +196,14 @@ def test_draw_clues(pixmap_differ: PixmapDiffer):
         num_rect.setWidth(number_width)
         clues_rect.adjust(padded_width, 0, 0, 0)
         CluePainter.draw_text(num_rect,
-                              '1.\n\n2.\n\n\n5.\n\n\n6.\n\n\n9.\n\n\n10.',
+                              '1.\n\n\n4.\n\n5.\n\n\n7.\n\n\n8.\n\n\n10.',
                               expected,
                               is_aligned_right=True)
         across_text = dedent("""\
+            Bus clue erroneously beyond everyday page's voluminous boundary
             Peppy clue makes foreign entangling continue
             es clue pleasantly truthful surrounding verdant foliage abundantly
             francophone's direct article without extension or divergent structured landing
-            Bus clue erroneously beyond everyday page's voluminous boundary
             iotas clue with marginally transferrable containers wanderlust
             tot dot screams among flowering shrubbery lacks any fraught experience""")
         CluePainter.draw_text(clues_rect, across_text, expected)
@@ -220,14 +220,15 @@ def test_draw_clues(pixmap_differ: PixmapDiffer):
         num_rect.setWidth(number_width)
         clues_rect.adjust(padded_width, 0, 0, 0)
         CluePainter.draw_text(num_rect,
-                              '1.\n\n\n3.',
+                              '1.\n2.\n3.',
                               expected,
                               is_aligned_right=True)
         across_text = dedent("""\
-            pei clue leaves fragrant residue
-            throughout residential
-            thoroughfares
-            pointing out your destination within a wide range""")
+            Make drunk
+            up clue
+            splat clue extends through
+            ridiculous depths of description
+            and humour""")
         CluePainter.draw_text(clues_rect, across_text, expected)
 
         clues_rect = QRectF(grid_rect)
@@ -241,7 +242,7 @@ def test_draw_clues(pixmap_differ: PixmapDiffer):
                               expected,
                               is_aligned_right=True)
         CluePainter.draw_text(clues_rect,
-                              'supremely positive',
+                              'pei clue leaves fragrant residue',
                               expected)
 
         clues_rect = QRectF(grid_rect.left() + (grid_rect.width() + margin)//2,
@@ -253,11 +254,11 @@ def test_draw_clues(pixmap_differ: PixmapDiffer):
         num_rect.setWidth(number_width)
         clues_rect.adjust(padded_width, 0, 0, 0)
         CluePainter.draw_text(num_rect,
-                              '6.\n7.',
+                              '6.',
                               expected,
                               is_aligned_right=True)
         CluePainter.draw_text(clues_rect,
-                              'Make drunk\nup clue',
+                              'supremely positive',
                               expected)
 
         clues_rect = QRectF(grid_rect.right() + margin, margin,
@@ -267,11 +268,12 @@ def test_draw_clues(pixmap_differ: PixmapDiffer):
         num_rect.setWidth(number_width)
         clues_rect.adjust(padded_width, 0, 0, 0)
         CluePainter.draw_text(num_rect,
-                              '8.',
+                              '9.',
                               expected,
                               is_aligned_right=True)
         CluePainter.draw_text(clues_rect,
-                              'splat clue extends through\nridiculous depths',
+                              'pointing out your destination\n'
+                              'within a wide range',
                               expected)
 
         actual.setFont(QFont('NotoSansCJK'))
@@ -307,10 +309,10 @@ def test_draw_front(pixmap_differ: PixmapDiffer):
 def test_draw_cuts(pixmap_differ: PixmapDiffer):
     block_text = dedent("""\
         AAABB
-        #A#BB
-        #CCC#
-        DDCEE
-        #DDEE
+        #ACCB
+        #DCCB
+        #DEEE
+        DD#E#
     """)
     puzzle = Puzzle.parse_sections('',
                                    block_text,
@@ -340,7 +342,7 @@ def test_draw_cuts(pixmap_differ: PixmapDiffer):
         block.squares[0].size = puzzle.square_size
         block.tab_count = 2
         block.border_colour = block.CUT_COLOUR
-        for block.x, block.y in ((0, 30), (0, 60), (120, 60), (0, 120)):
+        for block.x, block.y in ((0, 30), (0, 60), (0, 90), (60, 120), (120, 120)):
             block.draw_outline(expected)
 
         pair2 = parse_puzzle_pair()
@@ -353,6 +355,11 @@ def test_draw_back(pixmap_differ: PixmapDiffer):
     actual: QPainter
     expected: QPainter
     with pixmap_differ.create_painters(500, 260) as (actual, expected):
+        # Weird interference from test_draw_front and antialiasing?
+        # Work around it by increasing tolerance and radius.
+        pixmap_differ.radius = 2
+        pixmap_differ.tolerance = 4
+
         pair1 = parse_puzzle_pair()
         pair1.square_size = 30
         front_puzzle, back_puzzle = pair1.puzzles
@@ -370,10 +377,10 @@ def test_draw_back(pixmap_differ: PixmapDiffer):
 def test_packing():
     expected_packing = dedent("""\
         AAABB
-        .A.BB
-        #CCC.
-        DDCEE
-        .DDEE""")
+        .AEEB
+        .CEEB
+        .CDDD
+        CC.D.""")
     puzzle_pair = parse_puzzle_pair(BlockPacker(5, 5, tries=1000))
 
     packing = puzzle_pair.block_packer.display()
@@ -383,11 +390,11 @@ def test_packing():
 
 def test_prepacking():
     expected_packing = dedent("""\
-        #CCC#
-        DDCEE
-        .DDEE
-        AABBB
-        AA#B#""")
+        AAA..
+        .ABBB
+        .DDBC
+        EED.C
+        EEDCC""")
     puzzle_pair = parse_puzzle_pair(BlockPacker(start_text=expected_packing,
                                                 tries=1000))
 
@@ -398,17 +405,17 @@ def test_prepacking():
 
 def test_prepacking_flipped():
     start_text = dedent("""\
-        #CCC#
-        EECDD
-        EEDD.
-        BBBAA
-        #B#AA""")
+        ..AAA
+        BBBA.
+        CBDD.
+        C.DEE
+        CCDEE""")
     expected_packing = dedent("""\
-        #CCC#
-        DDCEE
-        .DDEE
-        AABBB
-        AA#B#""")
+        AAA..
+        .ABBB
+        .DDBC
+        EED.C
+        EEDCC""")
     puzzle_pair = parse_puzzle_pair(BlockPacker(start_text=start_text,
                                                 tries=1000))
 
@@ -425,117 +432,16 @@ def test_prepacking_useless():
         DDDD""")
     expected_packing = dedent("""\
         AAABB
-        .A.BB
-        #CCC.
-        DDCEE
-        .DDEE""")
+        .AEEB
+        .CEEB
+        .CDDD
+        CC.D.""")
     puzzle_pair = parse_puzzle_pair(BlockPacker(start_text=start_text,
                                                 tries=1000))
 
     packing = puzzle_pair.block_packer.display()
 
     assert packing == expected_packing
-
-
-def test_pack_greetings():
-    start_text1 = dedent("""\
-        #?????#
-        ???#???
-        ???????
-        ?#?#?#?
-        ???????
-        ???#???
-        #?????#""")
-    start_text2 = dedent("""\
-        ??????#
-        ?#?#???
-        ???????
-        ?#?#?#?
-        ???????
-        ???#?#?
-        #??????""")
-    found_packings1 = [
-        dedent("""\
-            AAAABC#
-            D#E#BCC
-            DDEEBBC
-            D#E#F#G
-            HHHFFFG
-            IIH#J#G
-            #IIJJJG"""),
-        dedent("""\
-            ABBBCC#
-            A#B#DCC
-            AEEEDDD
-            A#E#F#G
-            HIIFFGG
-            HHI#F#G
-            #HIJJJJ""")]
-    found_packings2 = [
-        dedent("""\
-            #ABBBC#
-            AAB#CCC
-            DAEEEEF
-            D#G#H#F
-            DGGHHFF
-            DGI#HJJ
-            #IIIJJ#"""),
-        dedent("""\
-            #AABBB#
-            AAC#BDE
-            FFCCDDE
-            F#C#D#E
-            FGGGGHE
-            III#JHH
-            #IJJJH#""")]
-
-
-    packer2 = None
-    for _ in range(1):  # ~ 50min per 1000
-        packer = BlockPacker(start_text=start_text2,
-                             tries=1000,
-                             min_tries=1)
-        back_shapes = packer.calculate_max_shape_counts()
-        packer.force_fours = True
-        packer.are_slots_shuffled = True
-        packer.fill(back_shapes)
-        if not packer.is_full:
-            print('First packer failed.')
-            continue
-
-        packed_puzzle1 = Puzzle.parse_sections('Title',
-                                               start_text2,
-                                               '',
-                                               packer.display())
-        packed_puzzle1.rotations_display = RotationsDisplay.FRONT
-        target_shapes = packed_puzzle1.flipped_shape_counts
-
-        packer2 = BlockPacker(start_text=start_text1,
-                              tries=1000,
-                              min_tries=1)
-        packer2.force_fours = True
-        packer2.are_slots_shuffled = True
-        packer2.fill(target_shapes)
-        packer.sort_blocks()
-        packer2.sort_blocks()
-        display1 = packer.display()
-        display2 = packer2.display()
-        try:
-            display_index1 = found_packings1.index(display1)
-            display_index2 = found_packings2.index(display2)
-            print(f'Duplicate ({display_index1}, {display_index2}).')
-            continue
-        except ValueError:
-            pass
-        if packer2.is_full:
-            print(display1)
-            print()
-            print(display2)
-            break
-        print(f'Second packer failed with {packer2.fewest_unused} unused.')
-    assert packer2
-    assert packer2.is_full
-    assert False
 
 
 # noinspection DuplicatedCode

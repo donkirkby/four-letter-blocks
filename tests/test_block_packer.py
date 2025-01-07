@@ -207,6 +207,22 @@ def test_no_rotations_needs_gap():
     assert packer.display() == expected_display
 
 
+def test_extra_gaps():
+    width = height = 5
+    shape_counts = Counter({'O': 2, 'S0': 1, 'T0': 2})
+    expected_display = dedent("""\
+        AAABB
+        .A.BB
+        .EEE.
+        DDECC
+        DDCC.""")
+    packer = BlockPacker(width, height, tries=100, min_tries=1)
+    is_filled = packer.fill(shape_counts)
+
+    assert is_filled
+    assert packer.display() == expected_display
+
+
 def test_random_fill():
     for _ in range(100):
         shape_counts = Counter({'O': 5})
@@ -487,6 +503,17 @@ def test_has_slot_coverage_fails():
     slots = packer.find_slots()
 
     assert not slots
+
+
+# noinspection DuplicatedCode
+def test_fill_with_extra_blocks():
+    packer = BlockPacker(start_text=dedent("""\
+        ..
+        .."""))
+
+    is_filled = packer.fill(Counter({'O': 2}))
+
+    assert is_filled
 
 
 def test_shape_counts_7x7():

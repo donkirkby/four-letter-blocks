@@ -62,6 +62,7 @@ class BlockPacker:
         # True if self.state should be set, even with a partial filling
         self.are_partials_saved = False
 
+        self.extra_gaps = -1
         self.fewest_unused: int | None = None
         self.slot_coverage = self.state
 
@@ -114,11 +115,14 @@ class BlockPacker:
         return {shape: math.ceil(multiplier.get(shape[0], 1) * block_count / 28)
                 for shape in shape_names}
 
-    def find_slots(self) -> dict[str, np.ndarray]:
+    def find_slots(
+            self,
+            shape_counts: typing.Counter[str] | None = None) -> dict[str, np.ndarray]:
         """ Find slots where each shape rotation can fit.
 
         If you allow rotations, you have to combine the slots for each rotation.
         Any spaces that are already filled have coverage 255.
+        :param shape_counts: shapes that we're trying to pack.
         :return: {shape: bitmap}
         """
         if self.state is None:
@@ -126,6 +130,13 @@ class BlockPacker:
 
         # Track spaces that are already filled, or how many slots cover them.
         non_gaps = self.state.astype(bool)
+        if self.extra_gaps < 0:
+            if shape_counts is None:
+                self.extra_gaps = 0
+            else:
+                gap_count = self.width * self.height - non_gaps.sum()
+                needed_gaps = sum(shape_counts.values()) * 4
+                self.extra_gaps = max(0, gap_count - needed_gaps)
         slot_coverage = non_gaps.astype(np.uint8) * 255
         all_masks = build_masks(self.width, self.height)
         shape_heights = get_shape_heights()
@@ -167,7 +178,10 @@ class BlockPacker:
             slot_coverage += shape_coverage
             slots[shape] = usable_slots
         self.slot_coverage = slot_coverage
-        if self.are_partials_saved or slot_coverage.all():
+        # noinspection PyTypeChecker
+        uncovered: np.ndarray = self.slot_coverage == 0
+        uncovered_count = uncovered.sum()
+        if self.are_partials_saved or uncovered_count <= self.extra_gaps:
             return slots
 
         # Some unfilled spaces weren't covered by any usable slots, return empty.
@@ -259,7 +273,8 @@ class BlockPacker:
         :param shape_counts: number of blocks of each shape, disables rotation
             if any of the shapes contain a letter and rotation number. Adjusted
             to remaining counts, if self.are_partials_saved is True.
-        :return: True, if successful, otherwise False.
+        :return: True, if all requested shapes have been placed, or if no gaps
+            are left, otherwise False.
         """
         are_slots_shuffled = self.are_slots_shuffled
         are_partials_saved = self.are_partials_saved
@@ -277,7 +292,7 @@ class BlockPacker:
         next_block = self.find_next_block()
         fewest_rows = start_state.shape[0]+1
 
-        slots = self.find_slots()
+        slots = self.find_slots(shape_counts)
         is_rotation_allowed = all(len(shape) == 1 for shape in shape_counts)
         raw_slot_counts = {shape: shape_slots.sum()
                            for shape, shape_slots in slots.items()}
