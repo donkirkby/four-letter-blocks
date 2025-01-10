@@ -163,11 +163,13 @@ class FourLetterBlocksWindow(QMainWindow):
             return True
         buttons = QMessageBox.Ok | QMessageBox.Cancel  # type:ignore[attr-defined]
         ok_button = QMessageBox.Ok  # type:ignore[attr-defined]
+
+        # noinspection PyTypeChecker
         choice = QMessageBox.warning(self,
                                      'Unsaved Changes',
                                      f'Changes have not been saved. Are you '
                                      f'sure you want to {action}?',
-                                     buttons)
+                                     buttons)  # type:ignore[call-arg]
         return choice == ok_button
 
     def build_current_state(self) -> typing.Dict[str, str]:

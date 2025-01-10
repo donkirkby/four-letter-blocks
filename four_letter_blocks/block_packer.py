@@ -70,9 +70,10 @@ class BlockPacker:
     def positions(self):
         result = defaultdict(list)
         shape_map = shape_rotations()
-        max_block = np.max(self.state)
+        max_block = int(np.max(self.state))
         for block in range(2, max_block+1):
             # convert row, col to x, y
+            # noinspection PyTypeChecker
             y_coordinates, x_coordinates = np.nonzero(self.state == block)
             coordinates = list(zip(x_coordinates, y_coordinates))
             norm_coordinates = normalize_coordinates(coordinates)  # type: ignore
@@ -404,7 +405,7 @@ class BlockPacker:
                 next_block = block + 1
                 break
         else:
-            next_block = used_blocks[-1] + 1
+            next_block = int(used_blocks[-1]) + 1
             if next_block == self.GAP:
                 next_block += 1
             elif next_block > 255:

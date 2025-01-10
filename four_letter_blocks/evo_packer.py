@@ -101,7 +101,7 @@ class Packing(Individual):
             mover1.move(i1, j1)
             mover2.move(i2, j2)
         packer = BlockPacker(start_state=new_state)
-        packer.force_fours = True
+        packer.force_fours = self.value.get('force_fours', False)
         packer.are_slots_shuffled = True
         packer.are_partials_saved = True
         packer.fill(mover1.shape_counts)
@@ -120,7 +120,7 @@ class Packing(Individual):
         shape_counts = Counter(self.value['shape_counts'])
         can_rotate: bool = self.value['can_rotate']
         block_packer = BlockPacker(start_state=state)
-        block_packer.force_fours = True
+        block_packer.force_fours = self.value.get('force_fours', False)
         block_packer.are_partials_saved = True
         block_packer.are_slots_shuffled = True
         grid_size = state.shape[0]
