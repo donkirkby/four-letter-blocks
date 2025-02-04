@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 import numpy as np
 
+from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.evo_packer import EvoPacker, Packing,\
     PackingFitnessCalculator, FitnessScore, distance_ranking, ranked_offsets
 
@@ -49,7 +50,10 @@ def test_mutate():
         start_state = packer.state
         packing = Packing(dict(state=start_state,
                                shape_counts=shape_counts,
-                               can_rotate=True))
+                               can_rotate=True,
+                               force_fours=False,
+                               packer_class=BlockPacker,
+                               tries=100))
         mutate_params = None
 
         packing.mutate(mutate_params)
@@ -81,7 +85,10 @@ def test_pair(mock_choices, mock_randrange):
     packer1 = EvoPacker(start_text=start_text1)
     packing1 = Packing(dict(state=packer1.state,
                             shape_counts=shape_counts1,
-                            can_rotate=False))
+                            can_rotate=False,
+                            force_fours=False,
+                            packer_class=BlockPacker,
+                            tries=100))
     shape_counts2 = Counter({'O': 4})
     start_text2 = dedent("""\
         D##B.
@@ -92,7 +99,10 @@ def test_pair(mock_choices, mock_randrange):
     packer2 = EvoPacker(start_text=start_text2)
     packing2 = Packing(dict(state=packer2.state,
                             shape_counts=shape_counts2,
-                            can_rotate=False))
+                            can_rotate=False,
+                            force_fours=False,
+                            packer_class=BlockPacker,
+                            tries=100))
     expected_display = dedent("""\
         .##B.
         CC.BA
@@ -123,7 +133,10 @@ def test_pair_with_fill(mock_choices, mock_randrange):
     packer1 = EvoPacker(start_text=start_text1)
     packing1 = Packing(dict(state=packer1.state,
                             shape_counts=shape_counts1,
-                            can_rotate=False))
+                            can_rotate=False,
+                            force_fours=False,
+                            packer_class=BlockPacker,
+                            tries=100))
     shape_counts2 = Counter({'O': 1, 'J1': 1})
     start_text2 = dedent("""\
         .##B.
@@ -134,7 +147,10 @@ def test_pair_with_fill(mock_choices, mock_randrange):
     packer2 = EvoPacker(start_text=start_text2)
     packing2 = Packing(dict(state=packer2.state,
                             shape_counts=shape_counts2,
-                            can_rotate=False))
+                            can_rotate=False,
+                            force_fours=False,
+                            packer_class=BlockPacker,
+                            tries=100))
     expected_display = dedent("""\
         .##.D
         AADDD

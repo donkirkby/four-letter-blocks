@@ -111,6 +111,15 @@ class Block:
         return names
 
     @property
+    def rotated_shape(self) -> str:
+        shape = self.shape
+        assert shape is not None
+
+        if shape != 'O':
+            shape += str(self.shape_rotation)
+        return shape
+
+    @property
     def face_colour(self):
         return self.squares[0].face_colour
 

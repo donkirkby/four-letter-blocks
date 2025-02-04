@@ -1,5 +1,5 @@
 import typing
-from collections import Counter
+from collections import Counter, defaultdict
 
 import numpy as np
 
@@ -8,21 +8,27 @@ from four_letter_blocks.block_packer import BlockPacker, build_masks
 
 
 class DoubleBlockPacker:
-    def __init__(self, front_text: str, back_text: str, tries: int) -> None:
-        front_lines = front_text.splitlines()
-        width = len(front_lines[0])
-        height = len(front_lines)
-
-        self.front_packer = BlockPacker(width,
-                                        height,
-                                        start_text=front_text)
+    def __init__(self,
+                 front_text: str | None = None,
+                 back_text: str | None = None,
+                 tries: int = -1,
+                 start_state: np.ndarray | None = None) -> None:
+        if start_state is None:
+            front_state = back_state = None
+        else:
+            full_height = start_state.shape[0]
+            front_state = start_state[:full_height//2]
+            back_state = start_state[full_height//2:]
+        self.front_packer = BlockPacker(start_text=front_text,
+                                        start_state=front_state)
         self.front_packer.force_fours = True
+        self.width = self.front_packer.width
+        self.height = self.front_packer.height
         front_unused = np.count_nonzero(
             self.front_packer.state == BlockPacker.UNUSED)
 
-        self.back_packer = BlockPacker(width,
-                                       height,
-                                       start_text=back_text)
+        self.back_packer = BlockPacker(start_text=back_text,
+                                       start_state=back_state)
         self.back_packer.force_fours = True
         back_unused = np.count_nonzero(
             self.back_packer.state == BlockPacker.UNUSED)
@@ -33,17 +39,27 @@ class DoubleBlockPacker:
         self.front_shape_counts = self.front_packer.calculate_max_shape_counts()
         self.tries = tries
         self.is_full = False
+        self.are_slots_shuffled = False
         self.needed_block_count = front_unused // 4
 
-    def fill(self) -> bool:
+    @property
+    def state(self):
+        return np.concatenate((self.front_packer.state, self.back_packer.state))
+
+    def fill(self, shape_counts: dict[str, np.ndarray] | None = None) -> bool:
         """ Fill both front and back with the same block shapes and rotations.
 
         :return: True if no gaps remain, False otherwise.
         """
+        if shape_counts is None:
+            front_shape_counts = self.front_shape_counts
+        else:
+            front_shape_counts = shape_counts
         if self.tries == 0:
             # print('0 tries left.')
             return False
-        self.tries -= 1
+        if self.tries > 0:
+            self.tries -= 1
         width = self.front_packer.width
         height = self.front_packer.height
         flipped_shape_names = flipped_shapes()
@@ -87,10 +103,10 @@ class DoubleBlockPacker:
         shape_scores: typing.Counter[str] = Counter()
         for shape, slot_count in slot_counts.items():
             if is_front_first:
-                target_count = self.front_shape_counts[shape]
+                target_count = front_shape_counts[shape]
             else:
                 front_shape = flipped_shape_names[shape]
-                target_count = self.front_shape_counts[front_shape]
+                target_count = front_shape_counts[front_shape]
             if target_count == 0:
                 continue
             # noinspection PyTypeChecker
@@ -101,6 +117,10 @@ class DoubleBlockPacker:
         start_state2 = packer2.state
         assert start_state2 is not None
         next_block = packer1.find_next_block()
+        if self.are_slots_shuffled:
+            rng = np.random.default_rng()
+        else:
+            rng = None
         for shape1, _score in shape_scores.most_common():
             shape2 = flipped_shape_names[shape1]
             masks1 = all_masks[shape1]
@@ -112,6 +132,8 @@ class DoubleBlockPacker:
                                                 mins1)
             if all_coords1.size == 0:
                 continue
+            if rng is not None:
+                rng.shuffle(all_coords1)
             slots2_masked = masks2[shape2_slots].any(axis=0)[:width, :height]
             slots2_coverage = slots2_masked * coverage2
             uncovered2 = slots2_coverage == 0
@@ -156,7 +178,7 @@ class DoubleBlockPacker:
                         #       f'index1 ({slot_row1}, {slot_col1}), '
                         #       f'index2 ({slot_row2}, {slot_col2})')
                         # print(self.display())
-                        self.is_full = self.fill()
+                        self.is_full = self.fill(front_shape_counts)
                         if self.is_full:
                             # print('Full!')
                             return True
@@ -167,6 +189,20 @@ class DoubleBlockPacker:
                         packer2.state = start_state2
         # print('Tried all minimum slots.')
         return False
+
+    def remove_block(self, row: int, col: int) -> str:
+        """ Remove a block from the current state.
+
+        :param row: row to remove the block from
+        :param col: column to remove the block from
+        :return: the shape of the removed block
+        :raises ValueError: if there is no block at that position"""
+        block_num = self.state[row, col]
+        shape = self.front_packer.remove_block(row, col)
+        back_block = self.back_packer.create_block(block_num)
+        back_square = back_block.squares[0]
+        self.back_packer.remove_block(back_square.y, back_square.x)
+        return shape
 
     @staticmethod
     def find_slot_coords(shape_slots, masks, min_coverages):
@@ -182,6 +218,20 @@ class DoubleBlockPacker:
     def sort_blocks(self):
         self.front_packer.sort_blocks()
         self.back_packer.sort_blocks()
+
+        front_blocks = defaultdict(list)
+        for block_num, block in self.front_packer.create_blocks_with_block_num():
+            shape = block.rotated_shape
+            front_blocks[shape].append(block_num)
+
+        flipped_shape_names = flipped_shapes()
+        block_nums = []
+        for block_num, block in self.back_packer.create_blocks_with_block_num():
+            back_shape = block.rotated_shape
+            front_shape = flipped_shape_names[back_shape]
+            back_block_num = front_blocks[front_shape].pop(0)
+            block_nums.append(back_block_num)
+        self.back_packer.sort_blocks(block_nums)
 
     def display(self) -> str:
         front_display = self.front_packer.display()

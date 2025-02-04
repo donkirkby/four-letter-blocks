@@ -1,3 +1,4 @@
+import re
 from collections import Counter
 from textwrap import dedent
 
@@ -412,6 +413,67 @@ def test_fill_fail():
     is_filled = packer.fill(shape_counts)
 
     assert not is_filled
+
+
+# noinspection DuplicatedCode
+def test_place_block():
+    packer = BlockPacker(start_text=dedent("""\
+        #..#.
+        .....
+        AA#..
+        AA...
+        .#..#"""))
+    expected_display = dedent("""\
+        #..#.
+        ...B.
+        AA#B.
+        AA.BB
+        .#..#""")
+
+    states = list(packer.place_block('L0',
+                                     1,
+                                     3,
+                                     3))
+
+    assert len(states) == 1
+    assert packer.display(states[0]) == expected_display
+
+
+# noinspection DuplicatedCode
+def test_remove_block():
+    packer = BlockPacker(start_text=dedent("""\
+        #..#.
+        ...B.
+        AA#B.
+        AA.BB
+        .#..#"""))
+    expected_display = dedent("""\
+        #..#.
+        .....
+        AA#..
+        AA...
+        .#..#""")
+
+    shape = packer.remove_block(1, 3)
+
+    assert shape == 'L0'
+    assert packer.display() == expected_display
+
+
+# noinspection DuplicatedCode
+def test_remove_block_misses():
+    expected_display = dedent("""\
+        #..#.
+        ...B.
+        AA#B.
+        AA.BB
+        .#..#""")
+    packer = BlockPacker(start_text=expected_display)
+
+    with pytest.raises(ValueError, match=re.escape('No block at (1, 2).')):
+        packer.remove_block(1, 2)
+
+    assert packer.display() == expected_display
 
 
 # noinspection DuplicatedCode

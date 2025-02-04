@@ -202,11 +202,15 @@ class BlockPacker:
                     for c in row)
             for row in state)
 
-    def sort_blocks(self):
+    def sort_blocks(self,
+                    block_nums: typing.Sequence[int] | None = None) -> None:
+        if block_nums is None:
+            block_nums = range(2, 256)
+        block_nums_iter = iter(block_nums)
+        assert self.state is not None
         state = np.zeros(self.state.shape, np.uint8)
         gap_spaces = self.state == 1
         state += gap_spaces
-        next_block = 2
         for row in range(state.shape[0]):
             for col in range(state.shape[1]):
                 new_block = state[row, col]
@@ -219,8 +223,8 @@ class BlockPacker:
                     continue
                 # noinspection PyUnresolvedReferences
                 block_spaces = (self.state == old_block).astype(np.uint8)
+                next_block = next(block_nums_iter)
                 state += next_block * block_spaces
-                next_block += 1
         self.state = state
 
     def create_blocks(self) -> typing.Iterable[Block]:
@@ -257,7 +261,7 @@ class BlockPacker:
         block = Block(*squares)
         return block
 
-    def fill(self, shape_counts: typing.Counter[str]) -> bool:
+    def fill(self, shape_counts: typing.Counter[str] | None = None) -> bool:
         """ Fill in the current state with the given shapes.
 
         Cycles through the available shapes in shape_counts, and tries them in
@@ -273,7 +277,8 @@ class BlockPacker:
 
         :param shape_counts: number of blocks of each shape, disables rotation
             if any of the shapes contain a letter and rotation number. Adjusted
-            to remaining counts, if self.are_partials_saved is True.
+            to remaining counts, if self.are_partials_saved is True. If None,
+            then calls calculate_max_shape_counts().
         :return: True, if all requested shapes have been placed, or if no gaps
             are left, otherwise False.
         """
@@ -287,6 +292,8 @@ class BlockPacker:
         best_state = None
         assert self.state is not None
         start_state = self.state
+        if shape_counts is None:
+            shape_counts = self.calculate_max_shape_counts()
         if not sum(shape_counts.values()):
             # Nothing to add!
             best_state = start_state
@@ -452,6 +459,25 @@ class BlockPacker:
                 continue
             target += block_num * block
             yield new_state
+
+    def remove_block(self, row: int, col: int) -> str:
+        """ Remove a block from the current state.
+
+        :param row: row to remove the block from
+        :param col: column to remove the block from
+        :return: the shape of the removed block
+        :raises ValueError: if there is no block at that position"""
+        assert self.state is not None
+        block_num = self.state[row, col]
+        if block_num <= 1:
+            raise ValueError(f'No block at ({row}, {col}).')
+        block = self.create_block(block_num)
+        shape = block.shape
+        if shape != 'O':
+            shape += str(block.shape_rotation)
+        self.state[self.state == block_num] = 0
+
+        return shape
 
     def count_filled_rows(self):
         filled = np.nonzero(self.state > self.GAP)
