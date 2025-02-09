@@ -134,7 +134,7 @@ class DoubleBlockPacker:
                 continue
             if rng is not None:
                 rng.shuffle(all_coords1)
-            slots2_masked = masks2[shape2_slots].any(axis=0)[:width, :height]
+            slots2_masked = masks2[shape2_slots].any(axis=0)[:height, :width]
             slots2_coverage = slots2_masked * coverage2
             uncovered2 = slots2_coverage == 0
             uncovered_count = np.argwhere(uncovered2).shape[0]
@@ -161,14 +161,14 @@ class DoubleBlockPacker:
                         mask1 = masks1[
                                      slot_row1,
                                      slot_col1,
-                                     :width,
-                                     :height]
+                                     :height,
+                                     :width]
                         packer1.state = start_state1 + next_block * mask1
                         mask2 = masks2[
                                     slot_row2,
                                     slot_col2,
-                                    :width,
-                                    :height]
+                                    :height,
+                                    :width]
                         packer2.state = start_state2 + next_block * mask2
                         # needed_blocks = self.needed_block_count - next_block + 1
                         # print(f'=== {self.tries} tries, '

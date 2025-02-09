@@ -69,6 +69,56 @@ def test_fill():
     assert packer.display() == expected_display
 
 
+def test_fill_rectangle():
+    expected_display = dedent("""\
+        #ABBBB#
+        AAA#CCD
+        EFFFCCD
+        E#F#G#D
+        EHHHGID
+        EHJ#GII
+        #KJJGI#
+        KKLJMM#
+        KLLLMM#
+        
+        HHHFFF#
+        D#H#FCC
+        DBBBBCC
+        D#E#A#G
+        DIEAAAG
+        IIE#K#G
+        #IEJKKG
+        MMJJLK#
+        MMJLLL#""")
+    front_text = dedent("""\
+        #.BBBB#
+        ...#..D
+        ......D
+        .#.#.#D
+        ......D
+        ...#...
+        #.....#
+        ......#
+        ......#""")
+    back_text = dedent("""\
+        ......#
+        D#.#...
+        DBBBB..
+        D#.#.#.
+        D......
+        ...#.#.
+        #......
+        ......#
+        ......#""")
+    packer = DoubleBlockPacker(front_text, back_text, tries=40_000)
+    packer.fill()
+
+    assert packer.is_full
+    packer.sort_blocks()
+
+    assert packer.display() == expected_display
+
+
 def test_slots_shuffled():
     front_text = dedent("""\
         #?????#
