@@ -138,7 +138,7 @@ def test_slots_shuffled():
         #??????""")
     displays = set()
 
-    for _ in range(4):
+    for _ in range(10):
         packer = DoubleBlockPacker(front_text, back_text, tries=400)
         packer.are_slots_shuffled = True
 
