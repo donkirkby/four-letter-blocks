@@ -164,6 +164,7 @@ class BlockPacker:
                 structure[1, 1, :, :] = [[0, 1, 0],
                                          [1, 1, 1],
                                          [0, 1, 0]]
+                gap_groups: np.ndarray
                 gap_groups, group_count = label(gaps, structure=structure)
                 bin_counts = np.bincount(gap_groups.flatten())
                 uneven_groups, = np.nonzero(bin_counts % 4)

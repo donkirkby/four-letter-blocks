@@ -1,3 +1,4 @@
+import re
 import typing
 from collections import Counter
 from copy import deepcopy
@@ -145,8 +146,29 @@ class Packing(Individual):
         if gaps.size > 0:
             row0, col0 = choice(gaps)
         else:
-            row0 = randrange(block_packer.height)
-            col0 = randrange(block_packer.width)
+            display = block_packer.display()
+            puzzle = Puzzle.parse_sections('',
+                                           display,
+                                           '',
+                                           display)
+            targets = []
+            for warning in puzzle.check_word_length():
+                match = re.match(r'complete.*from \((\d+), (\d+)\) '
+                                 r'to \((\d+), (\d+)\)',
+                                 warning)
+                if match:
+                    start_col = int(match.group(1))
+                    start_row = int(match.group(2))
+                    end_col = int(match.group(3))
+                    end_row = int(match.group(4))
+                    for col in range(start_col, end_col+1):
+                        for row in range(start_row, end_row+1):
+                            targets.append((col-1, row-1))
+            if targets:
+                col0, row0 = choice(targets)
+            else:
+                row0 = randrange(block_packer.height)
+                col0 = randrange(block_packer.width)
         block_count = (start_state > 1).sum() // 4  # type: ignore
         min_removed = 0  # min(3, block_count)
         max_removed = min(10, block_count)
@@ -343,7 +365,8 @@ class EvoPacker(BlockPacker):
     def create_init_params(self, shape_counts):
         init_params = dict(start_state=self.state.copy(),
                            shape_counts=shape_counts,
-                           tries=self.tries)
+                           tries=self.tries,
+                           force_fours=self.force_fours)
         return init_params
 
     def fill(self, shape_counts: typing.Counter[str] | None = None) -> bool:

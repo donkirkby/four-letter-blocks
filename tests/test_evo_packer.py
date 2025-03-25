@@ -69,6 +69,45 @@ def test_mutate():
     assert max(unused_counts) == 3
 
 
+def test_mutate_around_warnings():
+    start_text = dedent("""\
+        AAB#CDDDD
+        ABB#CEEEE
+        ABF#CGGHH
+        FFFICGGHH
+        ###I#J###
+        KKIIJJLLL
+        KKMMJ#NOL
+        PMMQQ#NOO
+        PPPQQ#NNO""")  # Warning about block C having full word on it.
+    packer = EvoPacker(start_text=start_text, tries=50, min_tries=1)
+    start_state = packer.state
+    change_counts = np.zeros_like(start_state, dtype=int)
+
+    test_count = 100
+    letter_count = (start_state != BlockPacker.GAP).sum()
+    for _ in range(test_count):
+        shape_counts = packer.calculate_max_shape_counts()
+        packing = Packing(dict(state=start_state,
+                               shape_counts=shape_counts,
+                               can_rotate=True,
+                               force_fours=False,
+                               packer_class=BlockPacker,
+                               tries=100))
+        mutate_params = None
+
+        packing.mutate(mutate_params)
+        end_state = packing.value['state']
+        changes = (end_state != start_state)
+        change_counts += changes
+
+    change_rates = change_counts / test_count
+    warning_change_rate = change_rates[0:4, 4].sum() / 4
+    average_change_rate = change_rates.sum() / letter_count
+
+    assert warning_change_rate > average_change_rate * 1.5
+
+
 @patch('four_letter_blocks.evo_packer.randrange')
 @patch('four_letter_blocks.evo_packer.choices')
 def test_pair(mock_choices, mock_randrange):
