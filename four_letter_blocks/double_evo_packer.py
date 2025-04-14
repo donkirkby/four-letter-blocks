@@ -20,19 +20,18 @@ class DoubleEvoPacker(EvoPacker):
         super().__init__(start_state=start_packer.state[0:start_packer.height],
                          tries=tries)
         self.state = start_packer.state
-        self.front_shape_counts = start_packer.front_shape_counts
+        self.front_target_shape_counts = start_packer.front_target_shape_counts
 
     def setup(self,
-              shape_counts: typing.Counter[str] | None = None,
               fitness_calculator: PackingFitnessCalculator | None = None) -> None:
         if fitness_calculator is None:
             fitness_calculator = DoublePackingFitnessCalculator()
-        if shape_counts is None:
-            shape_counts = self.front_shape_counts.copy()
-        super().setup(shape_counts, fitness_calculator)
+        if self.target_shape_counts is None and self.required_shape_counts is None:
+            self.target_shape_counts = self.front_target_shape_counts.copy()
+        super().setup(fitness_calculator)
 
-    def create_init_params(self, shape_counts):
-        init_params = super().create_init_params(shape_counts)
+    def create_init_params(self):
+        init_params = super().create_init_params()
         init_params['packer_class'] = DoubleBlockPacker
         return init_params
 

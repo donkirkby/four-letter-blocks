@@ -170,7 +170,7 @@ class FillThread(QThread):
         start_text = puzzle.format_blocks().replace('?', '.')
 
         packer = EvoPacker(start_text=start_text)
-        packer.setup(shape_counts, self.fitness_calculator)
+        packer.setup(self.fitness_calculator)
         while packer.current_epoch < 1000:
             is_found = packer.run_epoch()
             if self.isInterruptionRequested():

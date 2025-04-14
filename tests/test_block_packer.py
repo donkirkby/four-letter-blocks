@@ -41,7 +41,8 @@ def test_display_max_ascii():
         ~~""")
 
     packer = BlockPacker(2, 124, tries=500)
-    packer.fill(shape_counts)
+    packer.required_shape_counts = shape_counts
+    packer.fill()
 
     display = packer.display()
     display_lines = display.splitlines()
@@ -54,7 +55,8 @@ def test_display_beyond_ascii():
     shape_counts = Counter({'O': 63})
 
     packer = BlockPacker(2, 126, tries=500)
-    packer.fill(shape_counts)
+    packer.required_shape_counts = shape_counts
+    packer.fill()
 
     with pytest.raises(RuntimeError, match='Too many blocks for text display'):
         packer.display()
@@ -112,7 +114,8 @@ def test_fill_one_block():
         ......
         ......""")
     packer = BlockPacker(width, height)
-    is_filled = packer.fill(shape_counts)
+    packer.required_shape_counts = shape_counts
+    is_filled = packer.fill()
 
     assert packer.display() == expected_display
     assert is_filled
@@ -127,7 +130,8 @@ def test_fill_two_blocks():
         .....
         .....""")
     packer = BlockPacker(width, height)
-    packer.fill(shape_counts)
+    packer.required_shape_counts = shape_counts
+    packer.fill()
 
     assert packer.display() == expected_display
 
@@ -142,7 +146,8 @@ def test_fill_two_blocks_force_fours():
         .....""")
     packer = BlockPacker(width, height)
     packer.force_fours = True
-    packer.fill(shape_counts)
+    packer.required_shape_counts = shape_counts
+    packer.fill()
 
     assert packer.display() == expected_display
 
@@ -157,7 +162,8 @@ def test_fill_no_shapes():
         .....
         .....""")
     packer = BlockPacker(width, height)
-    is_filled = packer.fill(shape_counts)
+    packer.required_shape_counts = shape_counts
+    is_filled = packer.fill()
 
     assert packer.display() == expected_display
     assert is_filled
@@ -173,7 +179,8 @@ def test_fill_three_blocks():
         .....
         .....""")
     packer = BlockPacker(width, height)
-    packer.fill(shape_counts)
+    packer.required_shape_counts = shape_counts
+    packer.fill()
 
     assert packer.display() == expected_display
 
@@ -188,7 +195,8 @@ def test_no_rotations():
         ..B..
         .....""")
     packer = BlockPacker(width, height)
-    packer.fill(shape_counts)
+    packer.required_shape_counts = shape_counts
+    packer.fill()
 
     assert packer.display() == expected_display
 
@@ -203,7 +211,8 @@ def test_no_rotations_needs_gap():
         .....
         .....""")
     packer = BlockPacker(width, height)
-    packer.fill(shape_counts)
+    packer.required_shape_counts = shape_counts
+    packer.fill()
 
     assert packer.display() == expected_display
 
@@ -218,7 +227,8 @@ def test_extra_gaps():
         DDECC
         DDCC.""")
     packer = BlockPacker(width, height, tries=100, min_tries=1)
-    is_filled = packer.fill(shape_counts)
+    packer.required_shape_counts = shape_counts
+    is_filled = packer.fill()
 
     assert is_filled
     assert packer.display() == expected_display
@@ -236,7 +246,8 @@ def test_random_fill():
         packer = BlockPacker(start_text=start_text)
         packer.are_slots_shuffled = True
         packer.are_partials_saved = True
-        packer.fill(shape_counts)
+        packer.required_shape_counts = shape_counts
+        packer.fill()
 
         assert 1 <= shape_counts['O'] <= 3
 
@@ -253,7 +264,8 @@ def test_random_fill_lower_numbers():
         packer = BlockPacker(start_text=start_text, tries=100, min_tries=1)
         packer.are_slots_shuffled = True
         packer.are_partials_saved = True
-        packer.fill(shape_counts)
+        packer.required_shape_counts = shape_counts
+        packer.fill()
 
         assert 2 <= shape_counts['O'] <= 3
         assert packer.state.max() == 5
@@ -268,7 +280,8 @@ def test_random_fill_tries_multiple_shapes():
         packer = BlockPacker(start_text=start_text)
         packer.are_slots_shuffled = True
         packer.are_partials_saved = True
-        packer.fill(shape_counts)
+        packer.required_shape_counts = shape_counts
+        packer.fill()
 
         assert shape_counts['L'] == 0
 
@@ -279,7 +292,8 @@ def test_random_fill_no_gaps():
         packer = BlockPacker(2, 2)
         packer.are_slots_shuffled = True
         packer.are_partials_saved = True
-        packer.fill(shape_counts)
+        packer.required_shape_counts = shape_counts
+        packer.fill()
 
         assert shape_counts['O'] == 0
         assert packer.state.max() == 2
@@ -369,7 +383,8 @@ def test_fill_with_underhang():
         BBC
         .CC""")
     packer = BlockPacker(width, height, tries=100)
-    packer.fill(shape_counts)
+    packer.required_shape_counts = shape_counts
+    packer.fill()
 
     assert packer.display() == expected_display
 
@@ -386,7 +401,8 @@ def test_fill_with_split_row():
         CCC
         .C.""")
     packer = BlockPacker(width, height, split_row=3, tries=100)
-    packer.fill(shape_counts)
+    packer.required_shape_counts = shape_counts
+    packer.fill()
 
     assert packer.display() == expected_display
 
@@ -396,21 +412,24 @@ def test_fill_overflow():
     shape_counts = Counter({'O': 254})
 
     packer = BlockPacker(256, 4, tries=500)
-    packer.fill(shape_counts)
+    packer.required_shape_counts = shape_counts
+    packer.fill()
 
     assert len(packer.positions['O']) == 254
 
     shape_counts = Counter({'O': 255})
     packer = BlockPacker(256, 4, tries=500)
     with pytest.raises(ValueError, match='Maximum 254 blocks in packer.'):
-        packer.fill(shape_counts)
+        packer.required_shape_counts = shape_counts
+        packer.fill()
 
 
 def test_fill_fail():
     shape_counts = Counter({'O': 2})
 
     packer = BlockPacker(2, 3, tries=500)
-    is_filled = packer.fill(shape_counts)
+    packer.required_shape_counts = shape_counts
+    is_filled = packer.fill()
 
     assert not is_filled
 
@@ -505,7 +524,8 @@ def test_find_slots_after_fail():
         ..#..
         .....
         .#..#"""))
-    packer.fill(Counter({'O': 20}))  # fails
+    packer.required_shape_counts = Counter({'O': 20})
+    packer.fill()  # fails
 
     with pytest.raises(RuntimeError,
                        match='Cannot find slots with invalid state.'):
@@ -573,7 +593,8 @@ def test_fill_with_extra_blocks():
         ..
         .."""))
 
-    is_filled = packer.fill(Counter({'O': 2}))
+    packer.required_shape_counts = Counter({'O': 2})
+    is_filled = packer.fill()
 
     assert is_filled
 

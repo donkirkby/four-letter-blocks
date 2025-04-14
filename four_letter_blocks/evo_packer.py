@@ -94,7 +94,9 @@ class Packing(Individual):
         state2 = other.value['state']
         grid_size = state1.shape[0]
         new_state = np.zeros((grid_size, grid_size), dtype=np.uint8)
-        counts1 = self.value['shape_counts']
+        required_counts1 = self.value.get('required_shape_counts')
+        target_counts1 = self.value.get('target_shape_counts')
+        counts1 = required_counts1 if target_counts1 is None else target_counts1
         can_rotate = self.value['can_rotate']
         mover1 = BlockMover(state1, new_state, can_rotate)
         mover1.shape_counts += counts1
@@ -112,14 +114,19 @@ class Packing(Individual):
         packer_class = self.value['packer_class']
         tries = self.value['tries']
         packer = packer_class(start_state=new_state, tries=tries)
+        if target_counts1 is not None:
+            packer.target_shape_counts = mover1.shape_counts
+        else:
+            packer.required_shape_counts = mover1.shape_counts
         packer.force_fours = self.value['force_fours']
         packer.are_slots_shuffled = True
         packer.are_partials_saved = True
-        packer.fill(mover1.shape_counts)
+        packer.fill()
 
         assert packer.state is not None
         return Packing(dict(state=packer.state,
-                            shape_counts=mover1.shape_counts,
+                            target_shape_counts=packer.target_shape_counts,
+                            required_shape_counts=packer.required_shape_counts,
                             can_rotate=can_rotate,
                             pos1=(row1, col1),
                             pos2=(row2, col2),
@@ -131,12 +138,20 @@ class Packing(Individual):
         self.value: dict
 
         state: np.ndarray | tuple = deepcopy(self.value['state'])
-        shape_counts = Counter(self.value['shape_counts'])
+        required_shape_counts = self.value.get('required_shape_counts')
+        if required_shape_counts is not None:
+            required_shape_counts = Counter(required_shape_counts)
+        target_shape_counts = self.value.get('target_shape_counts')
+        if target_shape_counts is not None:
+            target_shape_counts = Counter(target_shape_counts)
+        shape_counts = required_shape_counts or target_shape_counts
         can_rotate: bool = self.value['can_rotate']
         packer_class = self.value['packer_class']
         tries = self.value['tries']
         block_packer: BlockPacker = packer_class(start_state=state,
                                                  tries=tries)
+        block_packer.required_shape_counts = required_shape_counts
+        block_packer.target_shape_counts = target_shape_counts
         block_packer.force_fours = self.value['force_fours']
         block_packer.are_partials_saved = True
         block_packer.are_slots_shuffled = True
@@ -191,11 +206,12 @@ class Packing(Individual):
             if remove_count == 0:
                 break
 
-        block_packer.fill(shape_counts)
+        block_packer.fill()
 
         assert block_packer.state is not None
         self.value = dict(state=block_packer.state,
-                          shape_counts=shape_counts,
+                          required_shape_counts=required_shape_counts,
+                          target_shape_counts=target_shape_counts,
                           can_rotate=can_rotate,
                           packer_class=packer_class,
                           force_fours=block_packer.force_fours,
@@ -203,8 +219,11 @@ class Packing(Individual):
 
     def _random_init(self, init_params: dict):
         start_state = init_params['start_state']
-        shape_counts = Counter(init_params['shape_counts'])
-        can_rotate = all(len(shape) == 1 for shape in shape_counts)
+        required_shape_counts = Counter(init_params['required_shape_counts'])
+        target_shape_counts = Counter(init_params['target_shape_counts'])
+        can_rotate = all(
+            len(shape) == 1
+            for shape in required_shape_counts or target_shape_counts)
         packer_class = init_params.get('packer_class', BlockPacker)
         tries = init_params['tries']
         block_packer = packer_class(start_state=start_state,
@@ -212,11 +231,14 @@ class Packing(Individual):
         block_packer.force_fours = init_params.get('force_fours', False)
         block_packer.are_slots_shuffled = True
         block_packer.are_partials_saved = True
-        block_packer.fill(shape_counts)
+        block_packer.target_shape_counts = target_shape_counts
+        block_packer.required_shape_counts = required_shape_counts
+        block_packer.fill()
 
         assert block_packer.state is not None
         return dict(state=block_packer.state,
-                    shape_counts=shape_counts,
+                    required_shape_counts=required_shape_counts,
+                    target_shape_counts=target_shape_counts,
                     can_rotate=can_rotate,
                     force_fours=block_packer.force_fours,
                     packer_class=packer_class,
@@ -334,7 +356,6 @@ class EvoPacker(BlockPacker):
         self.epochs = 100
         self.pool_size = 1000
         self.current_epoch = 0
-        self.shape_counts: typing.Counter[str] = Counter()
         self.evo: Evolution | None = None
         self.top_fitness: FitnessScore = FitnessScore(
             -self.width * self.height,
@@ -343,10 +364,9 @@ class EvoPacker(BlockPacker):
         self.top_choices: set[str] = set()
 
     def setup(self,
-              shape_counts: typing.Counter[str],
               fitness_calculator: PackingFitnessCalculator | None = None):
         assert self.state is not None
-        init_params = self.create_init_params(shape_counts)
+        init_params = self.create_init_params()
         if fitness_calculator is None:
             fitness_calculator = PackingFitnessCalculator()
         fitness_calculator.summaries.clear()
@@ -360,19 +380,17 @@ class EvoPacker(BlockPacker):
             mutate_params=None,
             init_params=init_params,
             pool_count=2)
-        self.shape_counts = shape_counts
 
-    def create_init_params(self, shape_counts):
+    def create_init_params(self):
         init_params = dict(start_state=self.state.copy(),
-                           shape_counts=shape_counts,
+                           required_shape_counts=self.required_shape_counts,
+                           target_shape_counts=self.target_shape_counts,
                            tries=self.tries,
                            force_fours=self.force_fours)
         return init_params
 
-    def fill(self, shape_counts: typing.Counter[str] | None = None) -> bool:
-        if shape_counts is None:
-            shape_counts = self.calculate_max_shape_counts()
-        self.setup(shape_counts)
+    def fill(self) -> bool:
+        self.setup()
         while self.current_epoch < self.epochs:
             if self.run_epoch():
                 return True

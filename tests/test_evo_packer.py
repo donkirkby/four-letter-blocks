@@ -25,11 +25,12 @@ def test_no_rotations():
         DEEEC
         DD##C""")
     packer = EvoPacker(start_text=start_text, tries=100, min_tries=1)
-    packer.is_logging = False
+    packer.required_shape_counts = shape_counts
+    packer.is_logging = True
     packer.epochs = 2
     packer.pool_size = 100
 
-    is_filled = packer.fill(shape_counts)
+    is_filled = packer.fill()
     packer.sort_blocks()
 
     assert is_filled
@@ -39,7 +40,7 @@ def test_no_rotations():
 def test_mutate():
     unused_counts = []
     for _ in range(100):
-        shape_counts = Counter({'O': 3})
+        required_shape_counts = Counter({'O': 3})
         start_text = dedent("""\
             .##..
             ...AA
@@ -49,7 +50,7 @@ def test_mutate():
         packer = EvoPacker(start_text=start_text)
         start_state = packer.state
         packing = Packing(dict(state=start_state,
-                               shape_counts=shape_counts,
+                               required_shape_counts=required_shape_counts,
                                can_rotate=True,
                                force_fours=False,
                                packer_class=BlockPacker,
@@ -60,7 +61,7 @@ def test_mutate():
 
         packer2 = EvoPacker(start_state=packing.value['state'])
         used_count = sum(1 for _ in packer2.create_blocks())
-        unused_count = sum(packing.value['shape_counts'].values())
+        unused_count = packing.value['required_shape_counts'].total()
 
         assert used_count + unused_count == 5
 
@@ -85,11 +86,11 @@ def test_mutate_around_warnings():
     change_counts = np.zeros_like(start_state, dtype=int)
 
     test_count = 100
-    letter_count = (start_state != BlockPacker.GAP).sum()
+    letter_count = (start_state != BlockPacker.GAP).sum()  # type: ignore
     for _ in range(test_count):
         shape_counts = packer.calculate_max_shape_counts()
         packing = Packing(dict(state=start_state,
-                               shape_counts=shape_counts,
+                               required_shape_counts=shape_counts,
                                can_rotate=True,
                                force_fours=False,
                                packer_class=BlockPacker,
@@ -123,7 +124,7 @@ def test_pair(mock_choices, mock_randrange):
         BB##.""")
     packer1 = EvoPacker(start_text=start_text1)
     packing1 = Packing(dict(state=packer1.state,
-                            shape_counts=shape_counts1,
+                            required_shape_counts=shape_counts1,
                             can_rotate=False,
                             force_fours=False,
                             packer_class=BlockPacker,
@@ -137,7 +138,7 @@ def test_pair(mock_choices, mock_randrange):
         .C##A""")
     packer2 = EvoPacker(start_text=start_text2)
     packing2 = Packing(dict(state=packer2.state,
-                            shape_counts=shape_counts2,
+                            required_shape_counts=shape_counts2,
                             can_rotate=False,
                             force_fours=False,
                             packer_class=BlockPacker,
@@ -153,7 +154,7 @@ def test_pair(mock_choices, mock_randrange):
     child = packing1.pair(packing2, {})
 
     assert packer2.display(child.value['state']) == expected_display
-    assert child.value['shape_counts'] == expected_shape_counts
+    assert child.value['required_shape_counts'] == expected_shape_counts
 
 
 @patch('four_letter_blocks.evo_packer.randrange')
@@ -171,7 +172,7 @@ def test_pair_with_fill(mock_choices, mock_randrange):
         BB##D""")
     packer1 = EvoPacker(start_text=start_text1)
     packing1 = Packing(dict(state=packer1.state,
-                            shape_counts=shape_counts1,
+                            required_shape_counts=shape_counts1,
                             can_rotate=False,
                             force_fours=False,
                             packer_class=BlockPacker,
@@ -185,7 +186,7 @@ def test_pair_with_fill(mock_choices, mock_randrange):
         ..##.""")
     packer2 = EvoPacker(start_text=start_text2)
     packing2 = Packing(dict(state=packer2.state,
-                            shape_counts=shape_counts2,
+                            required_shape_counts=shape_counts2,
                             can_rotate=False,
                             force_fours=False,
                             packer_class=BlockPacker,
@@ -201,7 +202,7 @@ def test_pair_with_fill(mock_choices, mock_randrange):
     child = packing1.pair(packing2, {})
 
     assert packer2.display(child.value['state']) == expected_display
-    assert child.value['shape_counts'] == expected_shape_counts
+    assert child.value['required_shape_counts'] == expected_shape_counts
 
 
 def test_fitness():

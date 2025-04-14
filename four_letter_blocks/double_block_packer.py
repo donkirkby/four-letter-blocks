@@ -36,7 +36,7 @@ class DoubleBlockPacker:
             raise ValueError(
                 f'Different space counts: {front_unused} and {back_unused}.')
 
-        self.front_shape_counts = self.front_packer.calculate_max_shape_counts()
+        self.front_target_shape_counts = self.front_packer.calculate_max_shape_counts()
         self.tries = tries
         self.is_full = False
         self.are_slots_shuffled = False
@@ -52,7 +52,7 @@ class DoubleBlockPacker:
         :return: True if no gaps remain, False otherwise.
         """
         if shape_counts is None:
-            front_shape_counts = self.front_shape_counts
+            front_shape_counts = self.front_target_shape_counts
         else:
             front_shape_counts = shape_counts
         if self.tries == 0:

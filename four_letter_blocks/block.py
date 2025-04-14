@@ -13,34 +13,34 @@ from four_letter_blocks.grid import Grid
 from four_letter_blocks.square import Square
 
 
-def create_tab_path(path, square_size):
-    curved_portion = 0.75 * square_size
-    tab_width = 0.24 * square_size
-    stem_width = 0.16 * square_size
-    stem_length = 0.25 * square_size
-    path.lineTo(-curved_portion / 2, 0)  # E
+def create_tab_path(path, square_size, nick_radius: int = 0):
+    curved_portion = 0.9 * square_size
+    tab_width = 0.34 * square_size
+    stem_width = 0.23 * square_size
+    stem_length = 0.33 * square_size
+    path.lineTo(-curved_portion / 2 - 2*nick_radius, 0)  # E
     path.cubicTo(-curved_portion / 3, 0,  # inner E
-                 -1.25 * stem_width, -.5 * stem_length,  # outer D
-                 -.781 * stem_width, -.5 * stem_length)  # D
-    path.cubicTo(-.5 * stem_width, -.5 * stem_length,  # inner D
-                 -.44 * stem_width, -.28 * stem_length,  # outer C
-                 -.5 * stem_width, -.2 * stem_length)  # C
-    path.cubicTo(-.56 * stem_width, -.12 * stem_length,  # inner C
-                 -.5833 * tab_width, .2 * stem_length,  # outer B
-                 -tab_width / 2, .28 * stem_length)  # B
-    path.cubicTo(-.416667 * tab_width, .36 * stem_length,  # inner B
-                 -.416667 * tab_width, 0.5 * stem_length,  # outer A
+                 -1.25 * stem_width, -.05 * stem_length,  # outer D
+                 -.781 * stem_width, -.05 * stem_length)  # D
+    path.cubicTo(-.5 * stem_width, -.05 * stem_length,  # inner D
+                 -.44 * stem_width, 0 * stem_length,  # outer C
+                 -.5 * stem_width, .1 * stem_length)  # C
+    path.cubicTo(-.56 * stem_width, .2 * stem_length,  # inner C
+                 -.42 * tab_width, .3 * stem_length,  # outer B
+                 -.45 * tab_width, .35 * stem_length)  # B
+    path.cubicTo(-.4 * tab_width, .4 * stem_length,  # inner B
+                 -.4 * tab_width, 0.5 * stem_length,  # outer A
                  0, 0.5 * stem_length)  # A
-    path.cubicTo(.416667 * tab_width, 0.5 * stem_length,  # outer A
-                 .416667 * tab_width, .36 * stem_length,  # inner B
-                 tab_width / 2, .28 * stem_length)  # B
-    path.cubicTo(.5833 * tab_width, .2 * stem_length,  # outer B
-                 .56 * stem_width, -.12 * stem_length,  # inner C
-                 .5 * stem_width, -.2 * stem_length)  # C
-    path.cubicTo(.44 * stem_width, -.28 * stem_length,  # outer C
-                 .5 * stem_width, -.5 * stem_length,  # inner D
-                 .781 * stem_width, -.5 * stem_length)  # D
-    path.cubicTo(1.25 * stem_width, -.5 * stem_length,  # outer D
+    path.cubicTo(.4 * tab_width, 0.5 * stem_length,  # outer A
+                 .4 * tab_width, .4 * stem_length,  # inner B
+                 .45 * tab_width, .35 * stem_length)  # B
+    path.cubicTo(.42 * tab_width, .3 * stem_length,  # outer B
+                 .56 * stem_width, .2 * stem_length,  # inner C
+                 .5 * stem_width, .1 * stem_length)  # C
+    path.cubicTo(.44 * stem_width, 0 * stem_length,  # outer C
+                 .5 * stem_width, -.05 * stem_length,  # inner D
+                 .781 * stem_width, -.05 * stem_length)  # D
+    path.cubicTo(1.25 * stem_width, -.05 * stem_length,  # outer D
                  curved_portion / 3, 0,  # inner E
                  curved_portion / 2, 0)  # E
     path.lineTo(square_size / 2, 0)
@@ -316,7 +316,7 @@ class Block:
             path.moveTo(nick_radius, 0)
             path.lineTo((square_size-shortfall)/2, 0)
         elif self.tab_count == 1:
-            create_tab_path(path, square_size)
+            create_tab_path(path, square_size, nick_radius)
         else:
             create_double_tab_path(path, square_size, nick_radius)
         if shortfall:

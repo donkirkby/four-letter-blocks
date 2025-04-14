@@ -22,10 +22,10 @@ def parse_args():
     return parser.parse_args()
 
 
-def main():
+def main() -> None:
     args = parse_args()
-    shape_totals = Counter()  # Total front shapes in core folder
-    shape_maxes = Counter()  # Max back shapes in other folder
+    shape_totals: Counter[str] = Counter()  # Total front shapes in core folder
+    shape_maxes: Counter[str] = Counter()  # Max back shapes in other folder
     core_folder: Path = args.core_path
 
     print(f'Scanning total front shapes in {core_folder.name}:')

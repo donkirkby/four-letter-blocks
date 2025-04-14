@@ -10,7 +10,7 @@ from four_letter_blocks.evo_packer import Packing
 
 
 @pytest.mark.skip(reason="Too slow for a unit test.")
-def test_double_evo_packer():
+def test_fill():
     front_text = dedent("""\
         ???#?????
         ???#?????

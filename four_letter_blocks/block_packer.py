@@ -29,6 +29,19 @@ class BlockPacker:
                  start_text: str | None = None,
                  start_state: np.ndarray | None = None,
                  split_row=0):
+        """ Create an instance of BlockPacker.
+
+        :param width: Width of the grid to pack
+        :param height: Height of the grid to pack
+        :param tries: Maximum number of cycles to try finding a block that will
+            fit
+        :param min_tries: Minimum number of cycles to try finding a block that
+            will fit
+        :param start_text: Text grid to start filling from
+        :param start_state: Initial grid state to start filling from
+        :param split_row: Index of the first row of the second section, when you
+            don't want any blocks to cross between two sections
+        """
         self.state: np.ndarray | None
         if start_state is not None:
             self.height, self.width = start_state.shape
@@ -61,6 +74,13 @@ class BlockPacker:
 
         # True if self.state should be set, even with a partial filling
         self.are_partials_saved = False
+
+        # Number of blocks of each shape that you would like to use, but other
+        # counts are allowed
+        self.target_shape_counts: Counter[str] | None = None
+
+        # Exact number of blocks of each shape that you must have in the packing.
+        self.required_shape_counts: Counter[str] | None = None
 
         self.extra_gaps = -1
         self.fewest_unused: int | None = None
@@ -113,8 +133,9 @@ class BlockPacker:
         block_count += 7  # Add flexibility to make packing easier.
         multiplier = {'O': 4, 'S': 2, 'Z': 2, 'I': 2}
         shape_names = Block.shape_rotation_names()
-        return {shape: math.ceil(multiplier.get(shape[0], 1) * block_count / 28)
-                for shape in shape_names}
+        return Counter({
+            shape: math.ceil(multiplier.get(shape[0], 1) * block_count / 28)
+            for shape in shape_names})
 
     def find_slots(
             self,
@@ -262,26 +283,28 @@ class BlockPacker:
         block = Block(*squares)
         return block
 
-    def fill(self, shape_counts: typing.Counter[str] | None = None) -> bool:
+    def fill(self) -> bool:
         """ Fill in the current state with the given shapes.
 
-        Cycles through the available shapes in shape_counts, and tries them in
-        different positions, looking for the fewest rows. Set the current state
-        to a filled in copy, not changing the original.
+        Cycles through the available shapes in self.target_shape_counts or
+        self.required_shape_counts, and tries them in different positions,
+        looking for the fewest rows. Set the current state to a filled in copy,
+        not changing the original.
 
-        Slots with least coverage are always filled first. If
+        Slots with the least coverage are always filled first. If
         self.are_slots_shuffled is True, then coverage ties are broken randomly,
         otherwise ties are filled from top to bottom.
 
         If self.are_partials_saved is True, then we don't cycle through options,
         just make the first choice for each slot and return with self.state set.
 
-        :param shape_counts: number of blocks of each shape, disables rotation
-            if any of the shapes contain a letter and rotation number. Adjusted
-            to remaining counts, if self.are_partials_saved is True. If None,
-            then calls calculate_max_shape_counts().
-        :return: True, if all requested shapes have been placed, or if no gaps
-            are left, otherwise False.
+        For self.target_shape_counts and self.required_shape_counts, disables
+        rotation if any of the shapes contain a letter and rotation number. They
+        are adjusted to remaining counts, if self.are_partials_saved is True. If
+        both are None, then calls calculate_max_shape_counts() to set
+        self.target_shape_counts.
+        :return: True, if self.required_shape_counts has gone to zero, or if
+            it's None and no gaps are left, otherwise False.
         """
         are_slots_shuffled = self.are_slots_shuffled
         are_partials_saved = self.are_partials_saved
@@ -293,11 +316,16 @@ class BlockPacker:
         best_state = None
         assert self.state is not None
         start_state = self.state
+        if self.required_shape_counts is not None:
+            shape_counts = self.required_shape_counts
+        else:
+            assert self.target_shape_counts is not None
+            shape_counts = self.target_shape_counts
         if shape_counts is None:
             shape_counts = self.calculate_max_shape_counts()
-        if not sum(shape_counts.values()):
+        if not shape_counts.total():
             # Nothing to add!
-            best_state = start_state
+            return True
         next_block = self.find_next_block()
         fewest_rows = start_state.shape[0]+1
 
@@ -355,7 +383,7 @@ class BlockPacker:
                                 unused_count < self.fewest_unused):
                             self.fewest_unused = unused_count
                         is_filled = unused_count == 0
-                        remaining_pieces_count = sum(shape_counts.values())
+                        remaining_pieces_count = shape_counts.total()
                         is_finished = is_filled or remaining_pieces_count == 0
                         if self.is_tracing:
                             print(f'{unused_count} unused '
@@ -363,7 +391,7 @@ class BlockPacker:
                                   f'finished? {is_finished}')
                             print(self.display())
                         if not is_finished and self.tries != 0:
-                            is_filled = self.fill(shape_counts)
+                            is_filled = self.fill()
                             if not is_filled:
                                 continue
                         used_rows = self.count_filled_rows()
@@ -488,11 +516,11 @@ class BlockPacker:
             used_rows = filled[0][-1] + 1
         return used_rows
 
-    def random_fill(self, shape_counts: typing.Counter[str]):
+    def random_fill(self):
         """ Randomly place pieces from shape_counts on empty spaces. """
         self.are_slots_shuffled = True
         self.are_partials_saved = False
-        self.fill(shape_counts)
+        self.fill()
 
     def flip(self) -> 'BlockPacker':
         assert self.state is not None
