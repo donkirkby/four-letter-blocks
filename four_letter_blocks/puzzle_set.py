@@ -11,6 +11,7 @@ from colorspacious import cspace_convert  # type:ignore[import]
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.puzzle import Puzzle, draw_rotated_tiles
+from four_letter_blocks.square import Square
 
 
 class PuzzleSet:
@@ -49,7 +50,13 @@ class PuzzleSet:
         self.count_diffs: typing.Dict[str, int] = {}
         self.count_min: typing.Dict[str, int] = {}
         self.count_max: typing.Dict[str, int] = {}
+        self.black_positions: typing.List[typing.Tuple[int, int]] = []
         self.pack_puzzles()
+        state = self.block_packer.display()
+        for y, line in enumerate(state.splitlines()):
+            for x, c in enumerate(line):
+                if c in '.#':
+                    self.black_positions.append((x, y))
 
     def pack_puzzles(self):
         combos = self.combos
@@ -278,6 +285,35 @@ class PuzzleSet:
         for block in self.display_blocks(block_packer, self.back_blocks):
             if self.can_draw_block(block):
                 block.draw(painter, is_packed=True)
+
+    def draw_black_squares(self,
+                           painter: QPainter,
+                           is_flipped: bool = False) -> None:
+        grid_size = self.puzzles[0].grid.width
+        block = Block(Square(' '))
+        block.squares[0].size = self.square_size
+        block.tab_count = self.tab_count
+        block.face_colour = QColor('black')
+        for x, y in self.black_positions:
+            if is_flipped:
+                column = grid_size - x - 0.5
+            else:
+                column = x + 0.5
+            block.x = self.square_size * column
+            block.y = self.square_size * (y + 0.5)
+            if self.can_draw_block(block):
+                block.draw(painter, is_packed=True)
+
+    def draw_black_square_cuts(self, painter, nick_radius):
+        block = Block(Square(' '))
+        block.squares[0].size = self.square_size
+        block.border_colour = Block.CUT_COLOUR
+        block.tab_count = self.tab_count
+        for x, y in self.black_positions:
+            block.x = self.square_size * (x + 0.5)
+            block.y = self.square_size * (y + 0.5)
+            if self.can_draw_block(block):
+                block.draw_outline(painter, nick_radius)
 
     @staticmethod
     def draw_background(painter: QPainter, tile: QPixmap):

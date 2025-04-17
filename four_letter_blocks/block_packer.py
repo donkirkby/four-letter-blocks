@@ -390,7 +390,9 @@ class BlockPacker:
                                   f'with {self.tries} tries left, '
                                   f'finished? {is_finished}')
                             print(self.display())
-                        if not is_finished and self.tries != 0:
+                        if not is_finished:
+                            if self.tries == 0:
+                                return False
                             is_filled = self.fill()
                             if not is_filled:
                                 continue

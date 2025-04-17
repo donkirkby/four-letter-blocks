@@ -212,6 +212,10 @@ class Block:
             painter.setFont(self.font)
         self.transform_painter(painter, 1)
         size = self.squares[0].size
+        if self.tab_count == 1:
+            face_offset = size * 0.075
+        else:
+            face_offset = 0
         x0 = self.squares[0].x
         y0 = self.squares[0].y
         scaled_positions = {(round((x-x0)/size), round((y-y0)/size))
@@ -220,7 +224,7 @@ class Block:
         divider_pen = QPen(self.divider_colour)
         divider_pen.setWidth(size // 33)
         for square in self.squares:
-            square.draw(painter, is_packed=is_packed)
+            square.draw(painter, is_packed=is_packed, face_offset=face_offset)
             x = square.x
             y = square.y
             scaled_x = round((x-x0)/size)

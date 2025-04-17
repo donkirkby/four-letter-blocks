@@ -272,8 +272,14 @@ def test_draw_with_tabs(pixmap_differ: PixmapDiffer):
         block = create_basic_block()
         block.tab_count = 1
 
+        for x, y in ((0, 0), (100, 0), (200, 0), (0, 100)):
+            draw_gradient_rect(expected,
+                               QColor('pink'),
+                               x + 13.75, y + 63.75,
+                               87.5, 87.5,
+                               31.25)
         for square in block.squares:
-            square.draw(expected)
+            square.draw(expected, is_packed=True)
 
         pen = QPen()
         pen.setWidth(3)
@@ -320,7 +326,9 @@ def test_draw_with_tabs(pixmap_differ: PixmapDiffer):
         expected.drawPath(path)
         expected.rotate(90)
 
-        block.draw(actual)
+        block.face_colour = 'pink'
+        block.draw(actual, is_packed=True)
+        block.draw_outline(actual)
 
 
 # noinspection DuplicatedCode

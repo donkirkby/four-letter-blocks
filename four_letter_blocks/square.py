@@ -33,7 +33,10 @@ class Square:
             number_repr = f", {self.number}"
         return f"Square({self.letter!r}{number_repr})"
 
-    def draw(self, painter: QPainter, is_packed=False):
+    def draw(self,
+             painter: QPainter,
+             is_packed=False,
+             face_offset: float = 0):
         pen = painter.pen()
         pen.setWidth(round(self.size/80))
         painter.setPen(pen)
@@ -50,8 +53,10 @@ class Square:
         if is_packed:
             draw_gradient_rect(painter,
                                face,
-                               self.x + self.size / 16, self.y + self.size / 16,
-                               self.size * 7 / 8, self.size * 7 / 8,
+                               self.x + self.size / 16 + face_offset,
+                               self.y + self.size / 16 + face_offset,
+                               self.size * 7 / 8,
+                               self.size * 7 / 8,
                                self.size * 5 / 16)
         else:
             painter.fillRect(self.x, self.y, self.size, self.size, face)

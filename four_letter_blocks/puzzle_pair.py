@@ -1,9 +1,8 @@
 import math
-import typing
 from collections import Counter
 
 from PySide6.QtCore import QPoint, QRectF
-from PySide6.QtGui import QPainter, QColor, QPainterPath, Qt
+from PySide6.QtGui import QPainter, QPainterPath, Qt
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
@@ -24,12 +23,6 @@ class PuzzlePair(PuzzleSet):
                          back_puzzle,
                          block_packer=block_packer,
                          start_hue=start_hue)
-        self.black_positions: typing.List[typing.Tuple[int, int]] = []
-        state = self.block_packer.display()
-        for y, line in enumerate(state.splitlines()):
-            for x, c in enumerate(line):
-                if c in '.#':
-                    self.black_positions.append((x, y))
         self.slug_count = 1
         self.slug_index = 0
 
@@ -121,15 +114,7 @@ class PuzzlePair(PuzzleSet):
 
     def draw_front_blocks(self, painter: QPainter):
         super().draw_front(painter)
-        block = Block(Square(' '))
-        block.squares[0].size = self.square_size
-        block.face_colour = QColor('black')
-
-        for x, y in self.black_positions:
-            block.x = self.square_size * (x + 0.5)
-            block.y = self.square_size * (y + 0.5)
-            if self.can_draw_block(block):
-                block.draw(painter, is_packed=True)
+        self.draw_black_squares(painter)
 
     # noinspection DuplicatedCode
     def draw_back(self,
@@ -145,16 +130,7 @@ class PuzzlePair(PuzzleSet):
 
     def draw_back_blocks(self, painter: QPainter):
         super().draw_back(painter)
-        grid_size = self.puzzles[0].grid.width
-        block = Block(Square(' '))
-        block.squares[0].size = self.square_size
-        block.face_colour = QColor('black')
-
-        for x, y in self.black_positions:
-            block.x = self.square_size * (grid_size - x - 0.5)
-            block.y = self.square_size * (y + 0.5)
-            if self.can_draw_block(block):
-                block.draw(painter, is_packed=True)
+        self.draw_black_squares(painter, is_flipped=True)
 
     def draw_cuts(self,
                   painter: QPainter,
@@ -173,20 +149,11 @@ class PuzzlePair(PuzzleSet):
         y_shift = grid_rect.top() - shift
         painter.translate(x_shift, y_shift)
         super().draw_cuts(painter, nick_radius)
-        block = Block(Square(' '))
-        block.squares[0].size = self.square_size
-        block.border_colour = Block.CUT_COLOUR
-        block.tab_count = 2
-
-        for x, y in self.black_positions:
-            block.x = self.square_size * (x + 0.5)
-            block.y = self.square_size * (y + 0.5)
-            if self.can_draw_block(block):
-                block.draw_outline(painter, nick_radius)
+        self.draw_black_square_cuts(painter, nick_radius)
 
         painter.translate(-x_shift, -y_shift)
         self.draw_boundary_cuts(painter, nick_radius)
-    
+
     def draw_boundary_cuts(self,
                            painter: QPainter,
                            nick_radius: int = 0):
