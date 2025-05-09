@@ -79,10 +79,11 @@ def parse_puzzle_pair(block_packer: BlockPacker = None):
 
 
 def test_draw_blocks(pixmap_differ: PixmapDiffer):
-    pytest.skip('Failing only when run with all other tests.')
     actual: QPainter
     expected: QPainter
     with pixmap_differ.create_painters(360, 180) as (actual, expected):
+        pixmap_differ.radius = 2
+        pixmap_differ.tolerance = 1
         expected.fillRect(0, 0, 360, 180, 'cornsilk')
         actual.fillRect(0, 0, 360, 180, 'cornsilk')
         puzzle_pair1 = parse_puzzle_pair()
