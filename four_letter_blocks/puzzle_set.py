@@ -52,6 +52,10 @@ class PuzzleSet:
         self.count_max: typing.Dict[str, int] = {}
         self.black_positions: typing.List[typing.Tuple[int, int]] = []
         self.pack_puzzles()
+        self.pack_black_positions()
+
+    def pack_black_positions(self):
+        self.black_positions.clear()
         state = self.block_packer.display()
         for y, line in enumerate(state.splitlines()):
             for x, c in enumerate(line):

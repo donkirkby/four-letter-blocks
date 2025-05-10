@@ -251,15 +251,8 @@ class Block:
         self.transform_painter(painter, 1)
         square_positions = self.square_positions
         size = self.squares[0].size
-        old_pen = painter.pen()
-        outer_pen = QPen(self.border_colour)
-        outer_pen.setWidth(math.floor(size / 33))
-        if nick_radius:
-            outer_pen.setCapStyle(Qt.PenCapStyle.FlatCap)
-        else:
-            outer_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        old_pen = self.set_outline_pen(painter, nick_radius)
         for square in self.squares:
-            painter.setPen(outer_pen)
             x = square.x
             y = square.y
             if (round(x), round(y - size)) not in square_positions:
@@ -276,8 +269,19 @@ class Block:
                                       nick_radius,
                                       x + size, y,
                                       x + size, y + size)
-            painter.setPen(old_pen)
+        painter.setPen(old_pen)
         self.transform_painter(painter, -1)
+
+    def set_outline_pen(self, painter, nick_radius):
+        old_pen = painter.pen()
+        outer_pen = QPen(self.border_colour)
+        outer_pen.setWidth(math.floor(self.squares[0].size / 33))
+        if nick_radius:
+            outer_pen.setCapStyle(Qt.PenCapStyle.FlatCap)
+        else:
+            outer_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        painter.setPen(outer_pen)
+        return old_pen
 
     def draw_nicked_line(self,
                          painter: QPainter,

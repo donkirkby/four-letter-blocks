@@ -109,7 +109,7 @@ def parse_puzzle_set(packing_pages: typing.IO | None = None) -> OneSidedSet:
                              puzzle3,
                              puzzle4,
                              packing_pages=packing_pages,
-                             frame_lengths=[5, 2])
+                             frame_lengths=((5, 2), (5,)))
     return puzzle_set
 
 def test_bad_type():
@@ -171,28 +171,27 @@ def test_duplicate_title():
         parse_puzzle_set(packing_pages)
 
 
-def test_draw_cuts(pixmap_differ: PixmapDiffer):
+def test_draw_page1(pixmap_differ: PixmapDiffer):
     actual: QPainter
     expected: QPainter
     with pixmap_differ.create_painters(
             360,
             180,
-            'test_one_sided_set_init') as (actual, expected):
-        # TODO: Pack into two 6x9 grids, with 5 & 2 frames on top & bottom of each.
+            'test_draw_page1') as (actual, expected):
         expected_puzzle_set = parse_puzzle_set()
         expected_puzzle_set.square_size = 20
         blocks1 = expected_puzzle_set.puzzles[0].blocks
-        blocks1[0].x, blocks1[0].y = 30, 90
-        blocks1[1].x, blocks1[1].y = 30, 10
-        blocks1[2].x, blocks1[2].y = 10, 10
-        blocks1[3].x, blocks1[3].y = 70, 10
-        blocks1[4].x, blocks1[4].y = 130, 70
+        blocks1[0].x, blocks1[0].y = 40, 100
+        blocks1[1].x, blocks1[1].y = 40, 20
+        blocks1[2].x, blocks1[2].y = 20, 20
+        blocks1[3].x, blocks1[3].y = 80, 20
+        blocks1[4].x, blocks1[4].y = 140, 80
         blocks2 = expected_puzzle_set.puzzles[1].blocks
-        blocks2[0].x, blocks2[0].y = 70, 30
-        blocks2[1].x, blocks2[1].y = 50, 70
-        blocks2[2].x, blocks2[2].y = 10, 70
-        blocks2[3].x, blocks2[3].y = 90, 90
-        blocks2[4].x, blocks2[4].y = 130, 10
+        blocks2[0].x, blocks2[0].y = 80, 40
+        blocks2[1].x, blocks2[1].y = 60, 80
+        blocks2[2].x, blocks2[2].y = 20, 80
+        blocks2[3].x, blocks2[3].y = 100, 100
+        blocks2[4].x, blocks2[4].y = 140, 20
 
         for block in blocks1 + blocks2:
             block.border_colour = block.CUT_COLOUR
@@ -204,26 +203,101 @@ def test_draw_cuts(pixmap_differ: PixmapDiffer):
         block.tab_count = 1
         block.border_colour = block.CUT_COLOUR
         block.face_colour = QColor('black')
-        for block.x, block.y in [(30, 10),
-                                 (150, 10),
-                                 (70, 30),
-                                 (150, 30),
-                                 (10, 70),
-                                 (110, 70),
-                                 (130, 70),
-                                 (70, 110)]:
+        for block.x, block.y in [(40, 20),
+                                 (160, 20),
+                                 (80, 40),
+                                 (160, 40),
+                                 (20, 80),
+                                 (120, 80),
+                                 (140, 80),
+                                 (80, 120)]:
             block.draw(expected, is_packed=True)
             block.draw_outline(expected)
 
+        expected.setPen(block.CUT_COLOUR)
+        expected.drawLine(20, 20, 10, 20)
+        expected.drawLine(10, 20, 10, 10)
+        expected.drawLine(10, 10, 120, 10)
+        expected.drawLine(120, 10, 120, 20)
+
+        expected.drawLine(120, 10, 160, 10)
+        expected.drawLine(160, 10, 160, 20)
+
+        expected.drawLine(180, 20, 180, 10)
+        expected.drawLine(180, 10, 190, 10)
+        expected.drawLine(190, 10, 190, 120)
+        expected.drawLine(190, 120, 180, 120)
+
+        expected.drawLine(180, 140, 190, 140)
+        expected.drawLine(190, 140, 190, 150)
+        expected.drawLine(190, 150, 80, 150)
+        expected.drawLine(80, 150, 80, 140)
+
+        expected.drawLine(80, 150, 40, 150)
+        expected.drawLine(40, 150, 40, 140)
+
+        expected.drawLine(20, 140, 20, 150)
+        expected.drawLine(20, 150, 10, 150)
+        expected.drawLine(10, 150, 10, 40)
+        expected.drawLine(10, 40, 20, 40)
 
         actual_puzzle_set = parse_puzzle_set()
 
         assert actual_puzzle_set.page_count == 2
 
         actual_puzzle_set.square_size = 20
-        for shape_blocks in actual_puzzle_set.front_blocks.values():
-            for block in shape_blocks:
-                for square in block.squares:
-                    square.size = actual_puzzle_set.square_size
+        actual_puzzle_set.draw_front(actual)
+        actual_puzzle_set.draw_cuts(actual)
+
+
+def test_draw_page2(pixmap_differ: PixmapDiffer):
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(
+            360,
+            180,
+            'test_draw_page2') as (actual, expected):
+        expected_puzzle_set = parse_puzzle_set()
+        expected_puzzle_set.square_size = 20
+        blocks1 = expected_puzzle_set.puzzles[2].blocks
+        blocks1[0].x, blocks1[0].y = 150, 10
+        blocks1[1].x, blocks1[1].y = 10, 10
+        blocks1[2].x, blocks1[2].y = 70, 70
+        blocks1[3].x, blocks1[3].y = 30, 30
+        blocks1[4].x, blocks1[4].y = 10, 50
+        blocks2 = expected_puzzle_set.puzzles[3].blocks
+        blocks2[0].x, blocks2[0].y = 50, 10
+        blocks2[1].x, blocks2[1].y = 110, 10
+        blocks2[2].x, blocks2[2].y = 110, 70
+        blocks2[3].x, blocks2[3].y = 70, 50
+        blocks2[4].x, blocks2[4].y = 30, 90
+
+        for block in blocks1 + blocks2:
+            block.tab_count = 1
+            block.border_colour = block.CUT_COLOUR
+            block.draw(expected, is_packed=True)
+            block.draw_outline(expected)
+        square = Square(' ')
+        square.size = 20
+        block = Block(square)
+        block.tab_count = 1
+        block.border_colour = block.CUT_COLOUR
+        block.face_colour = QColor('black')
+        for block.x, block.y in [(90, 30),
+                                 (130, 50),
+                                 (110, 90),
+                                 (10, 110),
+                                 (70, 110),
+                                 (110, 110),
+                                 (130, 110),
+                                 (150, 110)]:
+            block.draw(expected, is_packed=True)
+            block.draw_outline(expected)
+
+        actual_puzzle_set = parse_puzzle_set()
+        actual_puzzle_set.page_index = 1
+        actual_puzzle_set.pack_puzzles()
+
+        actual_puzzle_set.square_size = 20
         actual_puzzle_set.draw_front(actual)
         actual_puzzle_set.draw_cuts(actual)
