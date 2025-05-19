@@ -15,14 +15,15 @@ from four_letter_blocks.square import Square
 
 class PuzzlePair(PuzzleSet):
     def __init__(self,
-                 front_puzzle: Puzzle,
-                 back_puzzle: Puzzle,
+                 *puzzles: Puzzle,
                  block_packer: BlockPacker | None = None,
-                 start_hue: int = 0):
-        super().__init__(front_puzzle,
-                         back_puzzle,
+                 start_hue: int = 0,
+                 set_options: dict | None = None):
+        assert len(puzzles) == 2
+        super().__init__(*puzzles,
                          block_packer=block_packer,
-                         start_hue=start_hue)
+                         start_hue=start_hue,
+                         set_options=set_options)
         self.slug_count = 1
         self.slug_index = 0
 
@@ -30,13 +31,11 @@ class PuzzlePair(PuzzleSet):
         front_puzzle, back_puzzle = self.puzzles
         front_puzzle.rotations_display = RotationsDisplay.FRONT
         self.shape_counts = front_puzzle.shape_counts
-        packed_shape_counts = Counter({
-            shape: len(positions)
-            for shape, positions in self.block_packer.rotated_positions.items()})
+        self.block_packer.required_shape_counts = Counter(self.shape_counts)
+        packed_shape_counts = self.block_packer.packed_shape_counts
         flipped_packer = self.block_packer.flip()
-        flipped_shape_counts = Counter({
-            shape: len(positions)
-            for shape, positions in flipped_packer.rotated_positions.items()})
+        flipped_packer.required_shape_counts = Counter(self.shape_counts)
+        flipped_shape_counts = flipped_packer.packed_shape_counts
         if packed_shape_counts == self.shape_counts:
             pass
         elif flipped_shape_counts == self.shape_counts:
@@ -75,8 +74,14 @@ class PuzzlePair(PuzzleSet):
                         remaining_counts[front_combo] -= 1
                         break
 
+        warnings = []
         for shape, count in remaining_counts.items():
-            assert count == 0, (shape, count)
+            if count:
+                warnings.append(f"{count}x{shape}")
+        if warnings:
+            raise ValueError(f'Extra shape counts in {front_puzzle.title}: '
+                             f'{", ".join(warnings)}.')
+
         front_puzzle.rotations_display = RotationsDisplay.OFF
         self.set_face_colours()
 

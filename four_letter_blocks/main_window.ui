@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="main_tabs">
       <property name="currentIndex">
-       <number>3</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="single_tab">
        <attribute name="title">
@@ -255,65 +255,24 @@
         <string>Se&amp;t</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout">
-        <item row="2" column="5">
-         <widget class="QPushButton" name="remove_button">
-          <property name="text">
-           <string>Remove</string>
-          </property>
-         </widget>
-        </item>
         <item row="2" column="4">
-         <widget class="QPushButton" name="add_button">
-          <property name="text">
-           <string>Add...</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="0">
-         <widget class="QLabel" name="background_hue_label">
-          <property name="text">
-           <string>Background hue</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="3">
-         <widget class="QPushButton" name="puzzle_set_fill_button">
-          <property name="text">
-           <string>Fill</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="0" colspan="6">
-         <widget class="QLabel" name="crossword_label">
-          <property name="text">
-           <string>Crossword Files</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="2">
          <widget class="QPushButton" name="puzzle_set_clear_button">
           <property name="text">
            <string>Clear</string>
           </property>
          </widget>
         </item>
-        <item row="1" column="0" colspan="6">
-         <widget class="QListWidget" name="crossword_files"/>
-        </item>
-        <item row="5" column="1" colspan="5">
-         <widget class="QPlainTextEdit" name="puzzle_set_blocks"/>
-        </item>
-        <item row="3" column="1" colspan="5">
-         <widget class="QSpinBox" name="background_hue">
-          <property name="suffix">
-           <string>°</string>
-          </property>
-          <property name="maximum">
-           <number>360</number>
+        <item row="2" column="6">
+         <widget class="QPushButton" name="add_button">
+          <property name="text">
+           <string>Add...</string>
           </property>
          </widget>
         </item>
-        <item row="5" column="0">
+        <item row="6" column="1" colspan="7">
+         <widget class="QPlainTextEdit" name="puzzle_set_blocks"/>
+        </item>
+        <item row="6" column="0">
          <widget class="QLabel" name="puzzle_set_blocks_label">
           <property name="text">
            <string>Blocks</string>
@@ -323,7 +282,51 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="1">
+        <item row="2" column="7">
+         <widget class="QPushButton" name="remove_button">
+          <property name="text">
+           <string>Remove</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="0">
+         <widget class="QLabel" name="puzzle_set_font_label">
+          <property name="text">
+           <string>First font</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0" colspan="8">
+         <widget class="QListWidget" name="crossword_files"/>
+        </item>
+        <item row="5" column="1" colspan="7">
+         <widget class="QComboBox" name="puzzle_set_font_list"/>
+        </item>
+        <item row="4" column="1" colspan="7">
+         <widget class="QSpinBox" name="background_hue">
+          <property name="suffix">
+           <string>°</string>
+          </property>
+          <property name="maximum">
+           <number>360</number>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="background_hue_label">
+          <property name="text">
+           <string>Background hue</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="5">
+         <widget class="QPushButton" name="puzzle_set_fill_button">
+          <property name="text">
+           <string>Fill</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="3">
          <spacer name="crossword_spacer">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -336,15 +339,19 @@
           </property>
          </spacer>
         </item>
-        <item row="4" column="0">
-         <widget class="QLabel" name="puzzle_set_font_label">
+        <item row="0" column="0" colspan="8">
+         <widget class="QLabel" name="crossword_label">
           <property name="text">
-           <string>First font</string>
+           <string>Crossword Files</string>
           </property>
          </widget>
         </item>
-        <item row="4" column="1" colspan="5">
-         <widget class="QComboBox" name="puzzle_set_font_list"/>
+        <item row="3" column="3">
+         <widget class="QCheckBox" name="one_sided_checkbox">
+          <property name="text">
+           <string>One Sided</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>

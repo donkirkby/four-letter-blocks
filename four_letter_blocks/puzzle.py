@@ -7,6 +7,7 @@ from enum import Enum, auto
 from html import escape
 from itertools import chain
 from operator import attrgetter
+from pathlib import Path
 from random import shuffle
 from textwrap import dedent
 
@@ -40,11 +41,19 @@ class Puzzle:
     use_suits: bool = False
     is_packed: bool = False
     rotations_display: RotationsDisplay = RotationsDisplay.OFF
+    source_path: Path | None = None
 
     @staticmethod
     def parse(source_file: typing.IO) -> 'Puzzle':
         title, grid_text, clues_text, blocks_text = split_sections(source_file)
         return Puzzle.parse_sections(title, grid_text, clues_text, blocks_text)
+
+    @staticmethod
+    def parse_path(source_path: Path) -> 'Puzzle':
+        with source_path.open() as source_file:
+            puzzle = Puzzle.parse(source_file)
+            puzzle.source_path = source_path
+            return puzzle
 
     @staticmethod
     def parse_sections(
@@ -80,13 +89,13 @@ class Puzzle:
         self.use_suits = 121 < self.grid.width * self.grid.height
         self.number_clues()
 
-    def number_clues(self):
+    def number_clues(self) -> None:
         self.across_clues.clear()
         self.down_clues.clear()
         references = {}  # {word: reference} e.g., {'FOO': '1 Across'}
-        used_numbers = Counter()  # {suit: used_number}
+        used_numbers: Counter[int|None] = Counter()  # {suit_slot: used_number}
         suits = list('CDHS')
-        suit_order = [None] * 4
+        suit_order: list[None | str] = [None] * 4
         x_mid = self.grid.width / 2
         y_mid = self.grid.height / 2
         for block in self.blocks:

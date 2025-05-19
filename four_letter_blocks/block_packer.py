@@ -116,6 +116,22 @@ class BlockPacker:
         return rotated_positions
 
     @property
+    def packed_shape_counts(self):
+        input_shape_counts = (self.target_shape_counts or
+                              self.required_shape_counts or
+                              {})
+        can_rotate = all(len(shape) == 0 for shape in input_shape_counts)
+        shape_counts = Counter()
+        for shape, shape_positions in self.positions.items():
+            for x, y, rotation in shape_positions:
+                if shape == 'O' or can_rotate:
+                    counted_shape = shape
+                else:
+                    counted_shape = f'{shape}{rotation}'
+                shape_counts[counted_shape] += 1
+        return shape_counts
+
+    @property
     def is_full(self):
         if self.state is None:
             return False
@@ -234,7 +250,7 @@ class BlockPacker:
         gap_spaces = self.state == 1
         state += gap_spaces
         for row in range(state.shape[0]):
-            for col in range(state.shape[1]):
+            for col in range(state.shape[1]):  # type: ignore
                 new_block = state[row, col]
                 if new_block != 0:
                     # already filled as part of a block
@@ -270,8 +286,9 @@ class BlockPacker:
                 continue
             yield block_num, block
 
-    def create_block(self, block_num):
-        coordinates = np.column_stack(np.nonzero(self.state == block_num))
+    def create_block(self, block_num) -> Block:
+        coordinates = np.column_stack(np.nonzero(
+            self.state == block_num))  # type: ignore
         if coordinates.size == 0:
             raise ValueError(f'No blocks have value {block_num}.')
         squares = []
@@ -504,6 +521,7 @@ class BlockPacker:
             raise ValueError(f'No block at ({row}, {col}).')
         block = self.create_block(block_num)
         shape = block.shape
+        assert shape is not None
         if shape != 'O':
             shape += str(block.shape_rotation)
         self.state[self.state == block_num] = 0

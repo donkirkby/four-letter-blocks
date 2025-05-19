@@ -15,7 +15,7 @@ from four_letter_blocks.square import draw_gradient_rect, Square
 from tests.pixmap_differ import PixmapDiffer
 
 
-def parse_puzzle_pair(block_packer: BlockPacker = None):
+def parse_puzzle_pair(block_packer: BlockPacker = None) -> PuzzlePair:
     puzzle1 = Puzzle.parse(StringIO(dedent("""\
         Front (5x5)
 
@@ -389,6 +389,49 @@ def test_packing():
     packing = puzzle_pair.block_packer.display()
 
     assert packing == expected_packing
+
+
+def test_shape_counts_differ():
+    puzzle1 = Puzzle.parse(StringIO(dedent('''\
+        Example 1
+
+        #ABC#
+        DEFGH
+        IJ#KL
+        MNOPQ
+        #RST#
+
+        -
+
+        #AAA#
+        BBAEE
+        BB#EE
+        CCDDD
+        #CCD#
+        ''')))
+    puzzle2 = Puzzle.parse(StringIO(dedent('''\
+        Example 2
+    
+        #ABCD
+        EFGHI
+        #J#K#
+        LMNOP
+        QRST#
+    
+        -
+    
+        #ABBB
+        AAAFB
+        #C#F#
+        CCEFF
+        CEEE#
+        ''')))
+
+    with pytest.raises(ValueError,
+                       match=r'Extra shape counts in Example 1: 2xO, 1xZ0\.'):
+        PuzzlePair(puzzle1,
+                   puzzle2,
+                   block_packer=BlockPacker(5, 5, tries=1000))
 
 
 def test_prepacking():

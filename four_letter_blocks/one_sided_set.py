@@ -1,8 +1,6 @@
 import math
 import typing
 from collections import Counter
-from itertools import chain
-from typing import TextIO
 
 from PySide6.QtGui import QPainter
 from mypy.checker import defaultdict
@@ -16,15 +14,15 @@ class OneSidedSet(PuzzleSet):
     def __init__(self,
                  *puzzles: Puzzle,
                  block_packer: BlockPacker | None = None,
-                 packing_pages: TextIO | None = None,
                  start_hue: int = 0,
+                 set_options: dict | None = None,
                  frame_lengths: typing.Sequence[typing.Sequence[int]] = ()):
         """ Initialise a set of puzzles.
 
         :param puzzles: The puzzles to pack.
         :param block_packer: The block packer to use.
-        :param packing_pages: An open file with packing layouts.
         :param start_hue: The hue of the first puzzle's face colour.
+        :param set_options: Other options that can be set in a puzzle set file.
         :param frame_lengths: The number of squares in the frame segments:
             ((top, top, ...), (right, right, ...)).
         """
@@ -32,49 +30,12 @@ class OneSidedSet(PuzzleSet):
         self.page_count = math.ceil(len(puzzles) / 2)
         self.page_index = 0
         self.page_packers: list[BlockPacker] = []
-        sorted_puzzles = self.sort_puzzles(puzzles, packing_pages)
         if block_packer is None and self.page_packers:
             block_packer = self.page_packers[0]
-        super().__init__(*sorted_puzzles,
+        super().__init__(*puzzles,
                          block_packer=block_packer,
-                         start_hue=start_hue)
-
-    def sort_puzzles(self, puzzles, packing_pages) -> list[Puzzle]:
-        if packing_pages is None:
-            sorted_puzzles = puzzles
-        else:
-            packing_lines: list[str] = []
-            sorted_puzzles = []
-            seen_titles = set()
-            # Force blank line at end
-            packing_pages_lines = chain(packing_pages, [''])
-            for line in packing_pages_lines:
-                if line.startswith('type:'):
-                    set_type = line[5:].strip()
-                    if set_type != 'OneSidedSet':
-                        raise ValueError(
-                            f'Expected type OneSidedSet, but found {set_type}.')
-                elif line.startswith('title:'):
-                    title = line[6:].strip()
-                    if title in seen_titles:
-                        raise ValueError(f'Duplicate puzzle title: {title}.')
-                    seen_titles.add(title)
-                    for puzzle in puzzles:
-                        if puzzle.title == title:
-                            sorted_puzzles.append(puzzle)
-                            break
-                    else:
-                        raise ValueError(f'Puzzle title not found: {title}.')
-                else:
-                    line = line.strip()
-                    if line:
-                        packing_lines.append(line)
-                    elif packing_lines:
-                        packing_text = '\n'.join(packing_lines)
-                        page_packer = BlockPacker(start_text=packing_text)
-                        self.page_packers.append(page_packer)
-                        packing_lines.clear()
-        return sorted_puzzles
+                         start_hue=start_hue,
+                         set_options=set_options)
 
     def pack_puzzles(self):
         page_puzzles = self.puzzles[self.page_index * 2: self.page_index * 2 + 2]
@@ -86,12 +47,8 @@ class OneSidedSet(PuzzleSet):
         for puzzle in page_puzzles:
             puzzle.rotations_display = RotationsDisplay.FRONT
             shape_counts += puzzle.shape_counts
-
-        packed_shape_counts = Counter()
-        for block in self.block_packer.create_blocks():
-            rotated_shape = block.rotated_shape
-            packed_shape_counts[rotated_shape] += 1
-
+        self.block_packer.required_shape_counts = shape_counts
+        packed_shape_counts = self.block_packer.packed_shape_counts
         required_shape_counts = shape_counts - packed_shape_counts
         self.block_packer.required_shape_counts = required_shape_counts
         self.block_packer.are_partials_saved = False

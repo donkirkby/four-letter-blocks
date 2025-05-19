@@ -330,6 +330,33 @@ def test_rotated_positions():
     assert packer.rotated_positions == expected_positions
 
 
+def test_packed_shape_counts():
+    packer = BlockPacker(start_text=dedent("""\
+        AA#CC
+        AAB.C
+        BBBDC
+        .DDD.
+        ....."""))
+    packer.required_shape_counts = Counter({'O': 1, 'L1': 3, 'L2': 1, 'I0': 1})
+
+    expected_counts = {'O': 1, 'L1': 2, 'L2': 1}
+
+    assert packer.packed_shape_counts == expected_counts
+
+
+def test_packed_shape_counts_can_rotate():
+    packer = BlockPacker(start_text=dedent("""\
+        AA#CC
+        AAB.C
+        BBBDC
+        .DDD.
+        ....."""))
+
+    expected_counts = {'O': 1, 'L': 3}
+
+    assert packer.packed_shape_counts == expected_counts
+
+
 def test_create_blocks():
     packer = BlockPacker(start_text=dedent("""\
         AA#CC

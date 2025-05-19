@@ -13,7 +13,7 @@ from tests.pixmap_differ import PixmapDiffer
 
 
 # noinspection DuplicatedCode
-def test_draw_front_slug1(pixmap_differ: PixmapDiffer):
+def test_draw_front_slug1(pixmap_differ: PixmapDiffer) -> None:
     front_file = Path(__file__).parent / 'test-front11x11.txt'
     back_file = Path(__file__).parent / 'test-back11x11.txt'
     with front_file.open() as f:
@@ -21,7 +21,7 @@ def test_draw_front_slug1(pixmap_differ: PixmapDiffer):
     with back_file.open() as f:
         back_puzzle = Puzzle.parse(f)
     packer = BlockPacker(width=11, height=11, split_row=5, tries=100)
-    pair = BigPuzzlePair(front_puzzle, back_puzzle, packer)
+    pair = BigPuzzlePair(front_puzzle, back_puzzle, block_packer=packer)
     pair.margin = 10
     front_puzzle.face_colour = QColor('transparent')
     front_puzzle.square_size = 25
@@ -129,7 +129,7 @@ def test_draw_front_slug1(pixmap_differ: PixmapDiffer):
 
 
 # noinspection DuplicatedCode
-def test_draw_front_slug2(pixmap_differ: PixmapDiffer):
+def test_draw_front_slug2(pixmap_differ: PixmapDiffer) -> None:
     front_file = Path(__file__).parent / 'test-front11x11.txt'
     back_file = Path(__file__).parent / 'test-back11x11.txt'
     with front_file.open() as f:
@@ -137,7 +137,7 @@ def test_draw_front_slug2(pixmap_differ: PixmapDiffer):
     with back_file.open() as f:
         back_puzzle = Puzzle.parse(f)
     packer = BlockPacker(width=11, height=11, split_row=5, tries=100)
-    pair = BigPuzzlePair(front_puzzle, back_puzzle, packer)
+    pair = BigPuzzlePair(front_puzzle, back_puzzle, block_packer=packer)
     front_puzzle.face_colour = QColor('transparent')
     pair.margin = 10
     front_puzzle.square_size = 25

@@ -20,15 +20,27 @@ class PuzzleSet:
     def __init__(self,
                  *puzzles: Puzzle,
                  block_packer: BlockPacker | None = None,
-                 start_hue: int = 0):
+                 start_hue: int = 0,
+                 set_options: dict | None = None):
+        set_options = set_options or {}
         self.puzzles = puzzles
         self.shape_counts: typing.Counter[str] = Counter()
+        packing_pages = set_options.get('packing_pages', [])
+        self.page_packers: list[BlockPacker] = []
         if block_packer:
             self.block_packer = block_packer
+            self.page_packers.append(self.block_packer)
+        elif packing_pages:
+            for packing_page in packing_pages:
+                self.page_packers.append(BlockPacker(start_text=packing_page,
+                                                     tries=10_000,
+                                                     min_tries=1))
+            self.block_packer = self.page_packers[0]
         else:
             self.block_packer = BlockPacker(16, 20,  # Game Crafter cutout size
                                             tries=10_000,
                                             min_tries=1)
+            self.page_packers.append(self.block_packer)
         self.front_blocks: typing.Dict[
             str,
             typing.List[Block | None]] = defaultdict(list)
@@ -45,11 +57,12 @@ class PuzzleSet:
             first, last = pair  # type:ignore[misc]
             self.pairs[first] = last
             self.pairs[last] = first
-        self.start_hue = start_hue
+        self.start_hue = set_options.get('start_hue', start_hue)
         self.count_parities: typing.Dict[str, int] = {}
         self.count_diffs: typing.Dict[str, int] = {}
         self.count_min: typing.Dict[str, int] = {}
         self.count_max: typing.Dict[str, int] = {}
+        self.can_rotate: bool = set_options.get('can_rotate', True)
         self.black_positions: typing.List[typing.Tuple[int, int]] = []
         self.pack_puzzles()
         self.pack_black_positions()
@@ -191,9 +204,17 @@ class PuzzleSet:
         if extras:
             self.block_summary += ' with extras: ' + ', '.join(extras)
         self.block_packer.required_shape_counts = Counter(self.shape_counts)
-        is_filled = self.block_packer.fill()
-        if not is_filled:
-            raise RuntimeError("Blocks wouldn't fit.")
+        raw_shape_counts = self.block_packer.packed_shape_counts
+        if not self.can_rotate:
+            packed_shape_counts = raw_shape_counts
+        else:
+            packed_shape_counts = Counter()
+            for shape, n in raw_shape_counts.items():
+                packed_shape_counts[shape[0]] += n
+        if packed_shape_counts != self.shape_counts:
+            is_filled = self.block_packer.fill()
+            if not is_filled:
+                raise RuntimeError("Blocks wouldn't fit.")
         self.set_face_colours()
 
     def set_face_colours(self):
@@ -378,8 +399,10 @@ class PuzzleSet:
                                            painter.background().color())
         draw_rotated_tiles(tile, painter, size, x_offset, y_offset)
 
+    # Disable inspection and type check until issue PY-78964 is fixed.
+    # noinspection PyInconsistentReturns
     def create_background_tile(self, tile_size: int,
-                               background: QColor) -> QPixmap:
+                               background: QColor) -> QPixmap:  # type: ignore
         tile = QPixmap(tile_size, tile_size)
         tile_painter = QPainter(tile)
         tile_painter.setBackground(background)

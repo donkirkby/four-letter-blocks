@@ -105,7 +105,9 @@ class FourLetterBlocksWindow(QMainWindow):
         self.old_blocks: typing.List[typing.List[str]] = []
         self.base_title = self.windowTitle()
 
-        for font_string in self.settings.value('font_list', '').splitlines():
+        font_list_text = self.settings.value('font_list', '')
+        assert isinstance(font_list_text, str)
+        for font_string in font_list_text.splitlines():
             font = QFont()
             font.fromString(font_string)
             item = FontListItem(font)
@@ -208,7 +210,7 @@ class FourLetterBlocksWindow(QMainWindow):
         traceback.print_exception(ex_type, value, tb)
         QMessageBox.warning(self,
                             str(ex_type.__name__),
-                            str(value))
+                            str(value))  # type: ignore[warning]
 
     def keyPressEvent(self, event: QKeyEvent):
         if event.key() != Qt.Key.Key_Insert:
@@ -305,6 +307,7 @@ class FourLetterBlocksWindow(QMainWindow):
             return
 
         font_size = self.settings.value('font_size', 11, int)
+        assert isinstance(font_size, int)
         font.setPointSize(font_size)
         item = FontListItem(font)
         self.ui.font_list.addItem(item)
@@ -774,8 +777,7 @@ class FourLetterBlocksWindow(QMainWindow):
                                            y_offset=puzzle_set.square_size // 2)
         puzzle_set.draw_front(painter)
         painter.end()
-        success = front_image.save(front_buffer,
-                                   'PNG')  # type:ignore[call-overload]
+        success = front_image.save(front_buffer, 'PNG')  # type:ignore[call-overload]
         assert success
 
         back_buffer = QBuffer()
@@ -788,8 +790,7 @@ class FourLetterBlocksWindow(QMainWindow):
                                            y_offset=puzzle_set.square_size // 2)
         puzzle_set.draw_back(painter)
         painter.end()
-        success = back_image.save(back_buffer,
-                                  'PNG')  # type:ignore[call-overload]
+        success = back_image.save(back_buffer, 'PNG')  # type:ignore[call-overload]
         assert success
 
         """ Booklet page images are 1575 x 2475. Safety margin is 75 pixels on
@@ -814,8 +815,7 @@ class FourLetterBlocksWindow(QMainWindow):
             clue_painter.draw_page(painter)
             painter.end()
             page_buffer = QBuffer()
-            success = page_image.save(page_buffer,
-                                      'PNG')  # type:ignore[call-overload]
+            success = page_image.save(page_buffer, 'PNG')  # type:ignore[call-overload]
             assert success
             page_buffers.append(page_buffer)
 
@@ -884,14 +884,14 @@ class FourLetterBlocksWindow(QMainWindow):
         if grid_size <= 9:
             puzzle_pair = PuzzlePair(front_puzzle,
                                      back_puzzle,
-                                     packer,
+                                     block_packer=packer,
                                      start_hue=start_hue)
             square_coefficient = 1 / (grid_size + 3)
         else:
             packer.split_row = grid_size // 2
             puzzle_pair = BigPuzzlePair(front_puzzle,
                                         back_puzzle,
-                                        packer,
+                                        block_packer=packer,
                                         start_hue=start_hue)
             square_coefficient = 1 / (grid_size - 1)
         puzzle_pair.tab_count = 2
@@ -922,8 +922,7 @@ class FourLetterBlocksWindow(QMainWindow):
                 # puzzle_pair.draw_cuts(painter, header_fraction=header_fraction)
             finally:
                 painter.end()
-            success = front_image.save(front_buffer,
-                                       'PNG')  # type:ignore[call-overload]
+            success = front_image.save(front_buffer, 'PNG')  # type:ignore[call-overload]
             assert success
 
             back_buffer = QBuffer()
@@ -941,8 +940,7 @@ class FourLetterBlocksWindow(QMainWindow):
                 puzzle_pair.draw_back(painter, font_size)
             finally:
                 painter.end()
-            success = back_image.save(back_buffer,
-                                      'PNG')  # type:ignore[call-overload]
+            success = back_image.save(back_buffer, 'PNG')  # type:ignore[call-overload]
             assert success
 
             svg_buffer = QBuffer()
@@ -1011,8 +1009,7 @@ class FourLetterBlocksWindow(QMainWindow):
         height = puzzle.draw_blocks(painter)
         painter.end()
         cropped = pixmap.copy(0, 0, width, height)
-        cropped.toImage().save(str(file_path),
-                               'png')  # type:ignore[call-overload]
+        cropped.toImage().save(str(file_path), 'png')  # type: ignore
 
     def export_md(self, file_path: Path):
         puzzle = self.parse_puzzle()
@@ -1097,6 +1094,7 @@ class FourLetterBlocksWindow(QMainWindow):
 
     def choose_font(self):
         font_size = self.settings.value('font_size', 11, int)
+        assert isinstance(font_size, int)
         font_size, is_ok = QInputDialog.getInt(self,
                                                'Set Font Size',
                                                'Font size:',
@@ -1140,6 +1138,7 @@ class FourLetterBlocksWindow(QMainWindow):
 
     def update_font(self):
         font_size = self.settings.value('font_size', 11, int)
+        assert isinstance(font_size, int)
         font = self.font()
         font.setPointSize(font_size)
         # for child in self.ui.menubar.children():
@@ -1147,7 +1146,7 @@ class FourLetterBlocksWindow(QMainWindow):
         self.setFont(font)
 
         font = QFont('Monospace')
-        font.setStyleHint(QFont.TypeWriter)
+        font.setStyleHint(QFont.StyleHint.TypeWriter)
         font.setPointSize(font_size)
         for target in (self.ui.grid_text,
                        self.ui.clues_text,
@@ -1199,7 +1198,7 @@ def get_file_dialog_options():
     kwargs = {}
     if 'SNAP' in os.environ:
         # Native dialog restricts paths for snap processes to /run/user.
-        kwargs['options'] = QFileDialog.DontUseNativeDialog
+        kwargs['options'] = QFileDialog.Option.DontUseNativeDialog
     return kwargs
 
 

@@ -14,14 +14,14 @@ from four_letter_blocks.square import Square
 
 class BigPuzzlePair(PuzzlePair):
     def __init__(self,
-                 front_puzzle: Puzzle,
-                 back_puzzle: Puzzle,
+                 *puzzles: Puzzle,
                  block_packer: BlockPacker | None = None,
-                 start_hue: int = 0):
-        super().__init__(front_puzzle,
-                         back_puzzle,
-                         block_packer,
-                         start_hue=start_hue)
+                 start_hue: int = 0,
+                 set_options: dict | None = None):
+        super().__init__(*puzzles,
+                         block_packer=block_packer,
+                         start_hue=start_hue,
+                         set_options=set_options)
         self.slug_count = 2
 
     def draw_header(self,

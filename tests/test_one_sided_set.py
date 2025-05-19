@@ -1,8 +1,7 @@
-import typing
 from io import StringIO
 from textwrap import dedent
 
-import pytest
+import yaml
 from PySide6.QtGui import QPainter, QColor
 
 from four_letter_blocks.block import Block
@@ -12,7 +11,7 @@ from four_letter_blocks.square import Square
 from tests.pixmap_differ import PixmapDiffer
 
 
-def parse_puzzle_set(packing_pages: typing.IO | None = None) -> OneSidedSet:
+def parse_puzzle_set(set_options_yaml: str | None = None) -> OneSidedSet:
     puzzle1 = Puzzle.parse(StringIO(dedent("""\
         Example 1
 
@@ -82,93 +81,33 @@ def parse_puzzle_set(packing_pages: typing.IO | None = None) -> OneSidedSet:
         A#DF#
         """)))
 
-    if packing_pages is None:
-        packing_pages = StringIO(dedent("""\
-            type: OneSidedSet
-            title: Example 2
-            title: Example 3
-            title: Example 4
-            title: Example 1
-    
-            A.BCCCD.
-            ABB.ECD.
-            AABEEEDD
-            .FGGG..H
-            FFIIGJHH
-            FII.JJJH
-    
-            AABBBCCD
-            AAEB.CCD
-            FEEGGG.D
-            FFEHGIID
-            FJJHH.II
-            .JJ.H..."""))
+    if set_options_yaml is None:
+        set_options_yaml = """
+            packing_pages:
+                - |
+                    A.BCCCD.
+                    ABB.ECD.
+                    AABEEEDD
+                    .FGGG..H
+                    FFIIGJHH
+                    FII.JJJH
+                - |
+                    AABBBCCD
+                    AAEB.CCD
+                    FEEGGG.D
+                    FFEHGIID
+                    FJJHH.II
+                    .JJ.H...
+        """
+    set_options = yaml.safe_load(set_options_yaml)
 
-    puzzle_set = OneSidedSet(puzzle1,
-                             puzzle2,
+    puzzle_set = OneSidedSet(puzzle2,
                              puzzle3,
                              puzzle4,
-                             packing_pages=packing_pages,
+                             puzzle1,
+                             set_options=set_options,
                              frame_lengths=((5, 2), (5,)))
     return puzzle_set
-
-def test_bad_type():
-    packing_pages = StringIO(dedent("""\
-        type: PuzzleSet
-        title: Example 1
-        """))
-
-    with pytest.raises(
-            ValueError,
-            match=r'Expected type OneSidedSet, but found PuzzleSet'):
-        OneSidedSet(packing_pages=packing_pages)
-
-
-def test_puzzle_order():
-    puzzle_set = parse_puzzle_set()
-
-    titles = [puzzle.title for puzzle in puzzle_set.puzzles]
-    assert titles == ['Example 2', 'Example 3', 'Example 4', 'Example 1']
-
-
-def test_puzzle_order_changed():
-    packing_pages = StringIO(dedent("""\
-        type: OneSidedSet
-        title: Example 3
-        title: Example 2
-        title: Example 4
-        title: Example 1
-        """))
-    puzzle_set = parse_puzzle_set(packing_pages)
-
-    titles = [puzzle.title for puzzle in puzzle_set.puzzles]
-    assert titles == ['Example 3', 'Example 2', 'Example 4', 'Example 1']
-
-
-def test_unknown_title():
-    packing_pages = StringIO(dedent("""\
-        type: OneSidedSet
-        title: Example 3
-        title: Example 2
-        title: Mystery Puzzle
-        title: Example 1
-        """))
-    with pytest.raises(ValueError,
-                       match=r'Puzzle title not found: Mystery Puzzle'):
-        parse_puzzle_set(packing_pages)
-
-
-def test_duplicate_title():
-    packing_pages = StringIO(dedent("""\
-        type: OneSidedSet
-        title: Example 2
-        title: Example 3
-        title: Example 3
-        title: Example 2
-        """))
-    with pytest.raises(ValueError,
-                       match=r'Duplicate puzzle title: Example 3'):
-        parse_puzzle_set(packing_pages)
 
 
 def test_draw_page1(pixmap_differ: PixmapDiffer):

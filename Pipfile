@@ -8,10 +8,12 @@ four-letter-blocks = {editable = true, path = "."}
 beautifulsoup4 = "*"
 scipy = "*"
 pyside6 = "*"
+pyyaml = "*"
 
 [dev-packages]
 four-letter-blocks = {editable = true, extras = ["dev"], path = "."}
 mypy = "*"
+types-pyyaml = "*"
 
 [requires]
 python_version = "3.12"
