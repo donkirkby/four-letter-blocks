@@ -43,7 +43,7 @@ ABC -
 
     window.ui.grid_text.setPlainText(new_grid_text)
 
-    formatted_text = window.format_text()
+    formatted_text = window.format_puzzle()
 
     assert formatted_text == expected_formatted_text
 

@@ -107,6 +107,7 @@ def parse_puzzle_set(set_options_yaml: str | None = None) -> OneSidedSet:
                              puzzle1,
                              set_options=set_options,
                              frame_lengths=((5, 2), (5,)))
+    puzzle_set.pack_puzzles()
     return puzzle_set
 
 
@@ -115,8 +116,7 @@ def test_draw_page1(pixmap_differ: PixmapDiffer):
     expected: QPainter
     with pixmap_differ.create_painters(
             360,
-            180,
-            'test_draw_page1') as (actual, expected):
+            180) as (actual, expected):
         expected_puzzle_set = parse_puzzle_set()
         expected_puzzle_set.square_size = 20
         blocks1 = expected_puzzle_set.puzzles[0].blocks
@@ -194,8 +194,7 @@ def test_draw_page2(pixmap_differ: PixmapDiffer):
     expected: QPainter
     with pixmap_differ.create_painters(
             360,
-            180,
-            'test_draw_page2') as (actual, expected):
+            180) as (actual, expected):
         expected_puzzle_set = parse_puzzle_set()
         expected_puzzle_set.square_size = 20
         blocks1 = expected_puzzle_set.puzzles[2].blocks

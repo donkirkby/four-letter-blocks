@@ -54,11 +54,13 @@ def parse_puzzle_set(block_packer: BlockPacker = None):
         EEDDD
     """)))
     puzzle_set = PuzzleSet(puzzle1, puzzle2, block_packer=block_packer)
+    puzzle_set.pack_puzzles()
     return puzzle_set
 
 
 def test_empty_set():
     puzzle_set = PuzzleSet()
+    puzzle_set.pack_puzzles()
 
     assert puzzle_set.block_summary == '0 blocks'
 
@@ -131,6 +133,7 @@ def test_summary_of_three():
         EEEDD
     """)))
     set1 = PuzzleSet(puzzle1, puzzle2, puzzle3)
+    set1.pack_puzzles()
     puzzle_set = set1
     puzzle1, puzzle2, puzzle3 = puzzle_set.puzzles
 
@@ -163,6 +166,7 @@ def test_summary_no_extras():
     puzzle1 = Puzzle.parse(StringIO(squares_text))
     puzzle2 = Puzzle.parse(StringIO(squares_text))
     puzzle_set = PuzzleSet(puzzle1, puzzle2)
+    puzzle_set.pack_puzzles()
 
     set_summary = puzzle_set.block_summary
     assert set_summary == '8 blocks'
@@ -197,6 +201,7 @@ def test_shape_counts_z_only():
     puzzle1 = Puzzle.parse(StringIO(puzzle_text))
     puzzle2 = Puzzle.parse(StringIO(puzzle_text))
     puzzle_set = PuzzleSet(puzzle1, puzzle2, block_packer=None)
+    puzzle_set.pack_puzzles()
 
     shape_counts = puzzle_set.shape_counts
 
@@ -246,6 +251,7 @@ def test_blocks_fit():
     assert puzzle2.shape_counts == {'I': 3, 'O': 2, 'S': 1, 'Z': 2, 'J': 2, 'L': 2}
     assert puzzle3.shape_counts == {'I': 4, 'O': 5, 'S': 3, 'Z': 2, 'J': 6}
     puzzle_set = PuzzleSet(puzzle1, puzzle2, puzzle3)
+    puzzle_set.pack_puzzles()
 
     assert puzzle_set.shape_counts == {'I': 5, 'O': 5, 'S': 5, 'J': 8, 'T': 4}
 
@@ -399,9 +405,11 @@ def test_colours(sizes, start_hue, expected_hues):
                                        '')
         puzzles.append(puzzle)
 
-    PuzzleSet(*puzzles,
-              block_packer=BlockPacker(20, 20, tries=1000),
-              start_hue=start_hue)
+    puzzle_set = PuzzleSet(
+        *puzzles,
+        block_packer=BlockPacker(20, 20, tries=1000),
+        start_hue=start_hue)
+    puzzle_set.pack_puzzles()
 
     colours = (puzzle.face_colour for puzzle in puzzles)
     jchs = []

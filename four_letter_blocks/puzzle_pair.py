@@ -84,6 +84,7 @@ class PuzzlePair(PuzzleSet):
 
         front_puzzle.rotations_display = RotationsDisplay.OFF
         self.set_face_colours()
+        self.pack_black_positions()
 
     # noinspection DuplicatedCode
     def draw_front(self,

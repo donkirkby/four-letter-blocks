@@ -3,6 +3,7 @@ import typing
 from collections import Counter, defaultdict
 from collections.abc import Iterable
 
+import numpy as np
 from PySide6.QtCore import QPoint
 from PySide6.QtGui import QPainter, QColor, QPixmap, QPainterPath, \
     QBrush, QLinearGradient
@@ -20,8 +21,12 @@ class PuzzleSet:
     def __init__(self,
                  *puzzles: Puzzle,
                  block_packer: BlockPacker | None = None,
+                 page_packers: typing.Sequence[BlockPacker] | None = None,
                  start_hue: int = 0,
-                 set_options: dict | None = None):
+                 set_options: dict | None = None,
+                 frame_lengths: typing.Sequence[typing.Sequence[int]] = ()):
+        if frame_lengths:
+            raise NotImplementedError('Frame lengths not yet implemented.')
         set_options = set_options or {}
         self.puzzles = puzzles
         self.shape_counts: typing.Counter[str] = Counter()
@@ -36,11 +41,16 @@ class PuzzleSet:
                                                      tries=10_000,
                                                      min_tries=1))
             self.block_packer = self.page_packers[0]
+        elif page_packers:
+            self.page_packers = list(page_packers)
+            self.block_packer = self.page_packers[0]
         else:
             self.block_packer = BlockPacker(16, 20,  # Game Crafter cutout size
                                             tries=10_000,
                                             min_tries=1)
             self.page_packers.append(self.block_packer)
+        self.page_count = len(self.page_packers)
+        self.page_index = 0
         self.front_blocks: typing.Dict[
             str,
             typing.List[Block | None]] = defaultdict(list)
@@ -64,16 +74,11 @@ class PuzzleSet:
         self.count_max: typing.Dict[str, int] = {}
         self.can_rotate: bool = set_options.get('can_rotate', True)
         self.black_positions: typing.List[typing.Tuple[int, int]] = []
-        self.pack_puzzles()
-        self.pack_black_positions()
 
     def pack_black_positions(self):
-        self.black_positions.clear()
-        state = self.block_packer.display()
-        for y, line in enumerate(state.splitlines()):
-            for x, c in enumerate(line):
-                if c in '.#':
-                    self.black_positions.append((x, y))
+        black_coordinates = np.nonzero(self.block_packer.state < 2)
+        black_rows, black_columns = black_coordinates
+        self.black_positions = list(zip(black_columns, black_rows))
 
     def pack_puzzles(self):
         combos = self.combos
@@ -216,6 +221,7 @@ class PuzzleSet:
             if not is_filled:
                 raise RuntimeError("Blocks wouldn't fit.")
         self.set_face_colours()
+        self.pack_black_positions()
 
     def set_face_colours(self):
         if not self.puzzles:

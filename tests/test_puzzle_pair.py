@@ -73,6 +73,7 @@ def parse_puzzle_pair(block_packer: BlockPacker = None) -> PuzzlePair:
         #DDE#
     """)))
     pair = PuzzlePair(puzzle1, puzzle2, block_packer=block_packer)
+    pair.pack_puzzles()
     puzzle1.face_colour = QColor('transparent')
     puzzle2.face_colour = QColor('transparent')
     return pair
@@ -429,9 +430,11 @@ def test_shape_counts_differ():
 
     with pytest.raises(ValueError,
                        match=r'Extra shape counts in Example 1: 2xO, 1xZ0\.'):
-        PuzzlePair(puzzle1,
-                   puzzle2,
-                   block_packer=BlockPacker(5, 5, tries=1000))
+        puzzle_pair = PuzzlePair(
+            puzzle1,
+            puzzle2,
+            block_packer=BlockPacker(5, 5, tries=1000))
+        puzzle_pair.pack_puzzles()
 
 
 def test_prepacking():
@@ -500,6 +503,7 @@ def test_background_tile(pixmap_differ: PixmapDiffer):
         expected.drawImage(0, 0, expected_image)
 
         puzzle_pair = PuzzlePair(*parse_puzzle_pair().puzzles)
+        puzzle_pair.pack_puzzles()
 
         actual.setBackground(puzzle_pair.puzzles[0].face_colour)
         actual.eraseRect(actual.window())

@@ -16,14 +16,26 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="QTabWidget" name="main_tabs">
-      <property name="currentIndex">
-       <number>2</number>
+     <widget class="QLabel" name="main_title">
+      <property name="font">
+       <font>
+        <pointsize>22</pointsize>
+       </font>
       </property>
-      <widget class="QWidget" name="single_tab">
-       <attribute name="title">
-        <string>&amp;Single</string>
-       </attribute>
+      <property name="text">
+       <string>Main Title</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QStackedWidget" name="main_tabs">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="puzzle_tab">
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
          <widget class="QLabel" name="title_label">
@@ -90,9 +102,6 @@
        </layout>
       </widget>
       <widget class="QWidget" name="pair_tab">
-       <attribute name="title">
-        <string>&amp;Pair</string>
-       </attribute>
        <layout class="QGridLayout" name="gridLayout_2">
         <item row="9" column="3">
          <widget class="QPushButton" name="front_clear_button">
@@ -251,34 +260,25 @@
        </layout>
       </widget>
       <widget class="QWidget" name="set_tab">
-       <attribute name="title">
-        <string>Se&amp;t</string>
-       </attribute>
        <layout class="QGridLayout" name="gridLayout">
+        <item row="7" column="0">
+         <widget class="QLabel" name="puzzle_set_font_label">
+          <property name="text">
+           <string>First font</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0" colspan="8">
+         <widget class="QLabel" name="crossword_label">
+          <property name="text">
+           <string>Crossword Files</string>
+          </property>
+         </widget>
+        </item>
         <item row="2" column="4">
          <widget class="QPushButton" name="puzzle_set_clear_button">
           <property name="text">
            <string>Clear</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="6">
-         <widget class="QPushButton" name="add_button">
-          <property name="text">
-           <string>Add...</string>
-          </property>
-         </widget>
-        </item>
-        <item row="6" column="1" colspan="7">
-         <widget class="QPlainTextEdit" name="puzzle_set_blocks"/>
-        </item>
-        <item row="6" column="0">
-         <widget class="QLabel" name="puzzle_set_blocks_label">
-          <property name="text">
-           <string>Blocks</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
           </property>
          </widget>
         </item>
@@ -289,40 +289,17 @@
           </property>
          </widget>
         </item>
-        <item row="5" column="0">
-         <widget class="QLabel" name="puzzle_set_font_label">
-          <property name="text">
-           <string>First font</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0" colspan="8">
-         <widget class="QListWidget" name="crossword_files"/>
-        </item>
-        <item row="5" column="1" colspan="7">
-         <widget class="QComboBox" name="puzzle_set_font_list"/>
-        </item>
-        <item row="4" column="1" colspan="7">
-         <widget class="QSpinBox" name="background_hue">
-          <property name="suffix">
-           <string>°</string>
-          </property>
-          <property name="maximum">
-           <number>360</number>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="0">
-         <widget class="QLabel" name="background_hue_label">
-          <property name="text">
-           <string>Background hue</string>
-          </property>
-         </widget>
-        </item>
         <item row="2" column="5">
          <widget class="QPushButton" name="puzzle_set_fill_button">
           <property name="text">
            <string>Fill</string>
+          </property>
+         </widget>
+        </item>
+        <item row="6" column="0">
+         <widget class="QLabel" name="background_hue_label">
+          <property name="text">
+           <string>Background hue</string>
           </property>
          </widget>
         </item>
@@ -339,14 +316,73 @@
           </property>
          </spacer>
         </item>
-        <item row="0" column="0" colspan="8">
-         <widget class="QLabel" name="crossword_label">
+        <item row="9" column="0">
+         <widget class="QLabel" name="puzzle_set_blocks_label">
           <property name="text">
-           <string>Crossword Files</string>
+           <string>Blocks</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
           </property>
          </widget>
         </item>
-        <item row="3" column="3">
+        <item row="1" column="0" colspan="8">
+         <widget class="QListWidget" name="crossword_files"/>
+        </item>
+        <item row="2" column="6">
+         <widget class="QPushButton" name="add_button">
+          <property name="text">
+           <string>Add...</string>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="1" colspan="7">
+         <widget class="QComboBox" name="puzzle_set_font_list"/>
+        </item>
+        <item row="9" column="1" colspan="7">
+         <widget class="QPlainTextEdit" name="puzzle_set_blocks"/>
+        </item>
+        <item row="6" column="1" colspan="7">
+         <widget class="QSpinBox" name="background_hue">
+          <property name="suffix">
+           <string>°</string>
+          </property>
+          <property name="maximum">
+           <number>360</number>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="0">
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Block Type</string>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="3" colspan="5">
+         <widget class="QWidget" name="widget" native="true">
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <item>
+            <widget class="QRadioButton" name="is_packing_blocks">
+             <property name="text">
+              <string>Packing Blocks</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="is_puzzle_blocks">
+             <property name="text">
+              <string>Puzzle Blocks</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="4" column="3">
          <widget class="QCheckBox" name="one_sided_checkbox">
           <property name="text">
            <string>One Sided</string>
@@ -356,31 +392,28 @@
        </layout>
       </widget>
       <widget class="QWidget" name="fonts_tab">
-       <attribute name="title">
-        <string>Fo&amp;nts</string>
-       </attribute>
        <layout class="QGridLayout" name="gridLayout_3">
-        <item row="1" column="0">
+        <item row="2" column="0">
          <widget class="QPushButton" name="font_add_button">
           <property name="text">
            <string>&amp;Add...</string>
           </property>
          </widget>
         </item>
-        <item row="1" column="1">
-         <widget class="QPushButton" name="font_remove_button">
-          <property name="text">
-           <string>&amp;Remove</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="0" colspan="2">
+        <item row="1" column="0" colspan="2">
          <widget class="DraggableList" name="font_list">
           <property name="dragDropMode">
            <enum>QAbstractItemView::InternalMove</enum>
           </property>
           <property name="defaultDropAction">
            <enum>Qt::MoveAction</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QPushButton" name="font_remove_button">
+          <property name="text">
+           <string>&amp;Remove</string>
           </property>
          </widget>
         </item>
@@ -403,7 +436,9 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
-    <addaction name="new_action"/>
+    <addaction name="new_puzzle_action"/>
+    <addaction name="new_pair_action"/>
+    <addaction name="new_set_action"/>
     <addaction name="open_action"/>
     <addaction name="save_action"/>
     <addaction name="save_as_action"/>
@@ -412,6 +447,7 @@
     <addaction name="export_pair_action"/>
     <addaction name="export_set_action"/>
     <addaction name="separator"/>
+    <addaction name="new_fonts_action"/>
     <addaction name="exit_action"/>
    </widget>
    <widget class="QMenu" name="help_menu">
@@ -438,17 +474,6 @@
    <addaction name="help_menu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
-  <action name="new_action">
-   <property name="text">
-    <string>&amp;New</string>
-   </property>
-   <property name="statusTip">
-    <string>Start a new puzzle</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+N</string>
-   </property>
-  </action>
   <action name="open_action">
    <property name="text">
     <string>&amp;Open...</string>
@@ -489,7 +514,7 @@
   </action>
   <action name="export_action">
    <property name="text">
-    <string>&amp;Export Single...</string>
+    <string>Export Pu&amp;zzle...</string>
    </property>
    <property name="shortcut">
     <string>Alt+X</string>
@@ -523,10 +548,35 @@
   </action>
   <action name="export_pair_action">
    <property name="text">
-    <string>Export &amp;Pair...</string>
+    <string>Export Pai&amp;r...</string>
    </property>
    <property name="shortcut">
     <string>Alt+X</string>
+   </property>
+  </action>
+  <action name="actionxx">
+   <property name="text">
+    <string>xx</string>
+   </property>
+  </action>
+  <action name="new_pair_action">
+   <property name="text">
+    <string>N&amp;ew Pair</string>
+   </property>
+  </action>
+  <action name="new_puzzle_action">
+   <property name="text">
+    <string>&amp;New Puzzle</string>
+   </property>
+  </action>
+  <action name="new_set_action">
+   <property name="text">
+    <string>Ne&amp;w Set</string>
+   </property>
+  </action>
+  <action name="new_fonts_action">
+   <property name="text">
+    <string>&amp;Font Preferences</string>
    </property>
   </action>
  </widget>

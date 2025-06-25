@@ -24,6 +24,12 @@ def read_puzzle_set(file_path: Path) -> PuzzleSet:
     as other options related to the whole set of puzzles.
     """
     set_text = file_path.read_text()
+    set_lines = [line
+                 for line in set_text.splitlines()
+                 if not line.strip().startswith('#')]
+    if set_lines and not set_lines[0].strip().startswith('type:'):
+        raise ValueError('Not a puzzle set file.')
+
     set_options = yaml.safe_load(set_text)
     set_types = {cls.__name__: cls for cls in (PuzzleSet,
                                                PuzzlePair,

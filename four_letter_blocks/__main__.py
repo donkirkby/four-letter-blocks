@@ -1,3 +1,4 @@
+from enum import Enum, auto
 import os
 import re
 import sys
@@ -8,6 +9,7 @@ from functools import partial
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED, Path as ZipPath
 
+import yaml.parser
 from PySide6.QtCore import QSettings, QSize, QSizeF, QObject, QRectF, QRect, QPoint, QBuffer
 from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, \
     Qt, QCloseEvent, QPixmap, QColor, QTextDocument, QTextFormat, QTextCursor, \
@@ -22,22 +24,29 @@ from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.clue import Clue
 from four_letter_blocks.clue_overflow import ClueOverflow
 from four_letter_blocks.clue_painter import CluePainter
-from four_letter_blocks.evo_packer import PackingFitnessCalculator
+from four_letter_blocks.evo_packer import PackingFitnessCalculator, EvoPacker
 from four_letter_blocks.fill_thread import FillThread
 from four_letter_blocks.font_list_item import FontListItem
 from four_letter_blocks.line_deduper import LineDeduper
 from four_letter_blocks.main_window import Ui_MainWindow
+from four_letter_blocks.one_sided_set import OneSidedSet
+from four_letter_blocks.page_fill_thread import PageFillThread
 from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
 from four_letter_blocks.puzzle_pair import PuzzlePair
 from four_letter_blocks.puzzle_set import PuzzleSet
 
 from four_letter_blocks import four_letter_blocks_rc
+from four_letter_blocks.set_loader import write_puzzle_set, read_puzzle_set
 
 assert four_letter_blocks_rc  # Need to import this module to load resources.
 
 DIAGRAM_TEXT_FORMAT = QTextFormat.UserObject + 1  # type:ignore[attr-defined]
 DIAGRAM_DATA = 1
 OBJECT_REPLACEMENT = chr(0xfffc)
+
+class BlockType(Enum):
+    PUZZLE = auto()
+    PACKING = auto()
 
 
 def create_svg_generator(svg_buffer):
@@ -72,13 +81,17 @@ class FourLetterBlocksWindow(QMainWindow):
         ui.about_action.triggered.connect(self.about)
         ui.exit_action.triggered.connect(self.close)
 
-        ui.new_action.triggered.connect(self.new_file)
+        ui.new_puzzle_action.triggered.connect(self.new_puzzle)
+        ui.new_pair_action.triggered.connect(self.new_pair)
+        ui.new_set_action.triggered.connect(self.new_set)
+        ui.new_fonts_action.triggered.connect(self.new_fonts)
         ui.open_action.triggered.connect(self.open)
         ui.save_action.triggered.connect(self.save)
         ui.save_as_action.triggered.connect(self.save_as)
         ui.export_action.triggered.connect(self.export)
         ui.export_set_action.triggered.connect(self.export_set)
         ui.export_pair_action.triggered.connect(self.export_pair)
+        ui.main_tabs.currentChanged.connect(self.select_tab)
 
         ui.shuffle_action.triggered.connect(self.shuffle)
         ui.options_action.triggered.connect(self.choose_font)
@@ -86,17 +99,23 @@ class FourLetterBlocksWindow(QMainWindow):
         ui.crossword_files.currentRowChanged.connect(
             self.select_crossword_file)
         self.selected_crossword_file = -1
+        self.selected_puzzle: Puzzle | None = None
         self.select_crossword_file(-1)
-        self.crossword_set: typing.Dict[str, Puzzle] = {}
+        self.puzzle_set: PuzzleSet | None = None
+        self.crossword_set: typing.Dict[str, Puzzle] = {}  # {file_name: puzzle}
 
         ui.add_button.clicked.connect(self.add_crosswords)
         ui.remove_button.clicked.connect(self.remove_crossword)
         ui.puzzle_set_fill_button.clicked.connect(self.fill_puzzle_set_blocks)
         ui.puzzle_set_clear_button.clicked.connect(self.clear_puzzle_set_blocks)
 
+        ui.is_packing_blocks.clicked.connect(self.on_block_type_changed)
+        ui.is_puzzle_blocks.clicked.connect(self.on_block_type_changed)
+
         ui.font_add_button.clicked.connect(self.add_font)
         ui.font_remove_button.clicked.connect(self.remove_font)
         ui.font_list.dropped.connect(self.font_list_changed)
+        ui.one_sided_checkbox.setChecked(True)
 
         sys.excepthook = self.on_error
         self.file_path: typing.Optional[Path] = None
@@ -126,14 +145,15 @@ class FourLetterBlocksWindow(QMainWindow):
 
         ui.warnings_label.setVisible(False)
 
-        ui.front_open_button.clicked.connect(partial(self.open_pair, 0))
-        ui.back_open_button.clicked.connect(partial(self.open_pair, 1))
+        ui.front_open_button.clicked.connect(partial(self.open_pair_puzzle, 0))
+        ui.back_open_button.clicked.connect(partial(self.open_pair_puzzle, 1))
         ui.front_clear_button.clicked.connect(self.clear_front)
         ui.back_clear_button.clicked.connect(self.clear_back)
         ui.front_fill_button.clicked.connect(self.fill_front)
         ui.back_fill_button.clicked.connect(self.fill_back)
         ui.front_refill_button.clicked.connect(self.refill_front)
         self.pair_puzzles: typing.List[None | Puzzle] = [None, None]
+        self.page_packers: list[BlockPacker] = []
         ui.back_blocks_text.textChanged.connect(self.back_blocks_changed)
         ui.front_blocks_text.textChanged.connect(self.front_blocks_changed)
         self.fill_thread: FillThread | None = None
@@ -144,8 +164,8 @@ class FourLetterBlocksWindow(QMainWindow):
                              ui.blocks_text)
         self.clean_state = self.current_state = self.build_current_state()
         self.update_font()
-        ui.main_tabs.currentChanged.connect(self.select_tab)
-        self.select_tab(ui.main_tabs.currentIndex())
+        self.on_block_type_changed()
+        self.new_puzzle()
 
     def closeEvent(self, event: QCloseEvent):
         if self.can_abandon('quit'):
@@ -154,6 +174,12 @@ class FourLetterBlocksWindow(QMainWindow):
                 self.fill_thread.wait()
             return  # Default behaviour: window will close.
         event.ignore()
+
+    @property
+    def block_type(self) -> BlockType:
+        if self.ui.is_puzzle_blocks.isChecked():
+            return BlockType.PUZZLE
+        return BlockType.PACKING
 
     def can_abandon(self, action: str):
         """ Confirm with the user that it's OK to lose current changes.
@@ -233,17 +259,48 @@ class FourLetterBlocksWindow(QMainWindow):
                           'About Four-Letter Blocks',
                           f'Version {four_letter_blocks.__version__}')
 
-    def new_file(self):
-        if not self.can_abandon('start a new file'):
+    def new_puzzle(self):
+        if not self.can_abandon('start a new puzzle'):
             return
+        ui = self.ui
+        ui.main_tabs.setCurrentWidget(ui.puzzle_tab)
+        ui.main_title.setText('Puzzle')
         self.file_path = None
-        self.ui.title_text.clear()
-        self.ui.grid_text.clear()
-        self.ui.clues_text.clear()
-        self.ui.blocks_text.clear()
+        ui.title_text.clear()
+        ui.grid_text.clear()
+        ui.clues_text.clear()
+        ui.blocks_text.clear()
         self.record_clean_state()
         self.old_clues.clear()
         self.old_blocks.clear()
+
+
+    def new_pair(self):
+        if not self.can_abandon('start a new pair of puzzles'):
+            return
+        ui = self.ui
+        ui.main_tabs.setCurrentWidget(ui.pair_tab)
+        ui.main_title.setText('Puzzle Pair')
+        self.file_path = None
+        self.record_clean_state()
+
+    def new_set(self):
+        if not self.can_abandon('start a new set of puzzles'):
+            return
+        ui = self.ui
+        ui.main_tabs.setCurrentWidget(ui.set_tab)
+        ui.main_title.setText('Puzzle Set')
+        self.file_path = None
+        self.record_clean_state()
+
+    def new_fonts(self):
+        if not self.can_abandon('edit font preferences'):
+            return
+        ui = self.ui
+        ui.main_tabs.setCurrentWidget(ui.fonts_tab)
+        ui.main_title.setText('Font Preferences')
+        self.file_path = None
+        self.record_clean_state()
 
     def add_crosswords(self) -> None:
         save_dir = self.get_save_dir()
@@ -258,45 +315,37 @@ class FourLetterBlocksWindow(QMainWindow):
         if not file_names:
             return
 
+        self.settings.setValue('save_path', file_names[0])
         self.add_crossword_files(file_names)
 
-    def add_crossword_files(self, file_names: typing.Sequence[str]):
+    def add_crossword_files(self, file_names: typing.Sequence[str]) -> None:
+        puzzles = []
+        for file_name in file_names:
+            puzzle = Puzzle.parse_path(Path(file_name))
+            puzzles.append(puzzle)
+        self.add_crossword_objects(puzzles)
+
+    def add_crossword_objects(self, puzzles: typing.Sequence[Puzzle]) -> None:
         crossword_files = self.ui.crossword_files
         old_names = [((item := crossword_files.item(i)).text(), item.toolTip())
                      for i in range(crossword_files.count())]
         old_files = {file_name for text, file_name in old_names}
 
         new_names = []
-        for file_name in file_names:
+        for puzzle in puzzles:
+            file_name = str(puzzle.source_path)
             if file_name in old_files:
                 continue
-            with open(file_name) as puzzle_file:
-                puzzle = Puzzle.parse(puzzle_file)
             self.crossword_set[file_name] = puzzle
             new_names.append((puzzle.title + ' ' + puzzle.extras, file_name))
-        new_names.sort()
 
-        i = 0
         while new_names:
             new_name = new_names.pop(0)
-            while i < len(old_names):
-                old_name = old_names[i]
-                if new_name < old_name:
-                    old_names.insert(i, new_name)
-                    new_text, new_file = new_name
-                    new_item = QListWidgetItem(new_text)
-                    new_item.setToolTip(new_file)
-                    crossword_files.insertItem(i, new_item)
-                    i += 1
-                    break
-                i += 1
-            else:
-                old_names.append(new_name)
-                new_text, new_file = new_name
-                new_item = QListWidgetItem(new_text)
-                new_item.setToolTip(new_file)
-                crossword_files.addItem(new_item)
-                i += 1
+            old_names.append(new_name)
+            new_text, new_file = new_name
+            new_item = QListWidgetItem(new_text)
+            new_item.setToolTip(new_file)
+            crossword_files.addItem(new_item)
 
         self.summarize_crossword_set()
 
@@ -341,7 +390,7 @@ class FourLetterBlocksWindow(QMainWindow):
             _, description = item.text().split(' - ', 1)
             font_combo.addItem(description, userData=item.font())
 
-    def open_pair(self, puzzle_index: int):
+    def open_pair_puzzle(self, puzzle_index: int):
         side = ('front', 'back')[puzzle_index]
         save_dir = self.get_save_dir()
         kwargs = get_file_dialog_options()
@@ -355,11 +404,10 @@ class FourLetterBlocksWindow(QMainWindow):
             return
 
         self.settings.setValue('save_path', file_name)
-        self.open_pair_file(file_name, puzzle_index)
+        self.open_pair_puzzle_file(file_name, puzzle_index)
 
-    def open_pair_file(self, file_name, puzzle_index):
-        with open(file_name) as source_file:
-            puzzle = Puzzle.parse(source_file)
+    def open_pair_puzzle_file(self, file_name, puzzle_index):
+        puzzle = Puzzle.parse_path(Path(file_name))
         edit_field = (self.ui.front_name, self.ui.back_name)[puzzle_index]
         edit_field.setText(puzzle.title)
         blocks_field = (self.ui.front_blocks_text,
@@ -436,10 +484,12 @@ class FourLetterBlocksWindow(QMainWindow):
         new_blocks = blocks_text.toPlainText()
         if puzzle.format_blocks() == new_blocks:
             return None
-        return Puzzle.parse_sections(puzzle.title,
-                                     puzzle.format_grid(),
-                                     puzzle.format_clues(),
-                                     new_blocks)
+        new_puzzle = Puzzle.parse_sections(puzzle.title,
+                                           puzzle.format_grid(),
+                                           puzzle.format_clues(),
+                                           new_blocks)
+        new_puzzle.source_path = puzzle.source_path
+        return new_puzzle
 
     def clear_back(self):
         old_blocks = self.ui.back_blocks_text.toPlainText()
@@ -567,12 +617,40 @@ class FourLetterBlocksWindow(QMainWindow):
             file_name = crossword_files.item(i).toolTip()
             puzzles.append(self.crossword_set[file_name])
 
-        puzzle_set = PuzzleSet(*puzzles)
+        set_class: type[PuzzleSet]
+        if self.ui.one_sided_checkbox.isChecked():
+            page_count = (len(puzzles) + 1) // 2
+            set_class = OneSidedSet
+        else:
+            page_count = (len(puzzles) + 3) // 4
+            set_class = PuzzleSet
+        while len(self.page_packers) > page_count:
+            self.page_packers.pop()
+        while len(self.page_packers) < page_count:
+            if not self.page_packers:
+                width = 14
+                height = 18
+            else:
+                width = 15
+                height = 19
+            self.page_packers.append(BlockPacker(
+                width,
+                height,
+                tries=10_000,
+                min_tries=1))
+        puzzle_set = set_class(*puzzles,
+                               page_packers=self.page_packers,
+                               start_hue=self.ui.background_hue.value(),
+                               frame_lengths=[(9, 4), (9, 4, 2, 2)])
         return puzzle_set
 
     def summarize_crossword_set(self):
+        if self.ui.crossword_files.count() == 0:
+            self.statusBar().showMessage('Add some crossword files.')
+            return
         puzzle_set = self.build_puzzle_set()
         self.statusBar().showMessage(puzzle_set.block_summary)
+        self.puzzle_set = puzzle_set
 
     def open(self):
         if not self.can_abandon('open a file'):
@@ -592,8 +670,12 @@ class FourLetterBlocksWindow(QMainWindow):
         self.open_file(Path(file_name))
 
     def open_file(self, file_path: Path):
-        with file_path.open() as source_file:
-            puzzle = Puzzle.parse(source_file)
+        try:
+            self.open_puzzle_set_file(file_path)
+            return
+        except ValueError:
+            pass  # Not a puzzle set, so try opening a single puzzle file.
+        puzzle = Puzzle.parse_path(file_path)
         self.file_path = file_path
 
         # Clear blocks first, to avoid extra warnings.
@@ -607,6 +689,14 @@ class FourLetterBlocksWindow(QMainWindow):
         self.old_blocks.clear()
         self.record_clean_state()
 
+    def open_puzzle_set_file(self, file_path: Path):
+        ui = self.ui
+        puzzle_set = read_puzzle_set(file_path)
+        ui.main_tabs.setCurrentWidget(ui.set_tab)
+        ui.crossword_files.clear()
+        self.page_packers = puzzle_set.page_packers
+        self.add_crossword_objects(puzzle_set.puzzles)
+
     def remove_crossword(self):
         if self.selected_crossword_file >= 0:
             item = self.ui.crossword_files.takeItem(
@@ -617,21 +707,45 @@ class FourLetterBlocksWindow(QMainWindow):
             self.summarize_crossword_set()
 
     def fill_puzzle_set_blocks(self):
+        if self.fill_thread is not None:
+            self.interrupt_fill()
+            return
+
+        file_name = self.get_save_file_name(
+            'Record filled set solutions',
+            'Log files (*.log);;All files (*.*)')
+        if not file_name:
+            return
+
         self.statusBar().showMessage('Filling puzzle set...')
-        puzzle_set = self.build_puzzle_set()
-        fitness_calculator = PackingFitnessCalculator()
-        fitness_calculator.count_parities.update(puzzle_set.count_parities)
-        fitness_calculator.count_diffs.update(puzzle_set.count_diffs)
-        fitness_calculator.count_min.update(puzzle_set.count_min)
-        fitness_calculator.count_max.update(puzzle_set.count_max)
-        self.launch_fill(self.ui.puzzle_set_fill_button,
-                         is_packing_back=True,
-                         fitness_calculator=fitness_calculator)
+
+        puzzle_set = self.puzzle_set
+        page_packer = puzzle_set.page_packers[puzzle_set.page_index]
+        self.fill_thread = PageFillThread(self, page_packer, Path(file_name))
+        self.fill_thread.status_update.connect(self.on_fill_update_status)
+        self.fill_thread.completed.connect(self.on_fill_completed)
+        self.fill_thread.start()
+        self.ui.puzzle_set_fill_button.setText('Stop')
 
     def clear_puzzle_set_blocks(self):
         blocks_text = self.ui.puzzle_set_blocks.toPlainText()
         cleared_text = re.sub(r'[^#\s]', '?', blocks_text)
         self.ui.puzzle_set_blocks.setPlainText(cleared_text)
+
+    def on_block_type_changed(self):
+        ui = self.ui
+        if not ui.is_puzzle_blocks.isEnabled():
+            ui.puzzle_set_blocks.setPlainText('')
+        elif self.block_type == BlockType.PUZZLE:
+            ui.puzzle_set_blocks.setPlainText(
+                self.selected_puzzle.format_blocks())
+        else:
+            if ui.one_sided_checkbox.isChecked():
+                selected_page_index = self.selected_crossword_file // 2
+            else:
+                selected_page_index = self.selected_crossword_file // 4
+            page_packer = self.puzzle_set.page_packers[selected_page_index]
+            ui.puzzle_set_blocks.setPlainText(page_packer.display())
 
     def record_clean_state(self):
         self.clean_state = self.build_current_state()
@@ -672,11 +786,18 @@ class FourLetterBlocksWindow(QMainWindow):
             self.save_as()
             return
 
-        self.file_path.write_text(self.format_text())
+        ui = self.ui
+        current_tab = ui.main_tabs.currentWidget()
+        if current_tab is ui.puzzle_tab:
+            self.file_path.write_text(self.format_puzzle())
+        elif current_tab is ui.set_tab:
+            write_puzzle_set(self.puzzle_set, self.file_path)
+        else:
+            raise RuntimeError("Current tab doesn't support saving yet.")
         self.statusBar().showMessage(f'Saved to {self.file_path.name}.')
         self.record_clean_state()
 
-    def format_text(self) -> str:
+    def format_puzzle(self) -> str:
         sections = [self.ui.title_text.text().strip() or 'Untitled']
         sections.extend(field.toPlainText().strip() or '-'
                         for field in (self.ui.grid_text,
@@ -740,58 +861,89 @@ class FourLetterBlocksWindow(QMainWindow):
         self.export_set_file(file_name)
 
     def export_set_file(self, file_name: str):
-        packer = BlockPacker(15, 19, tries=10_000_000, min_tries=1_000)
         puzzles = list(self.crossword_set.values())
-        puzzles.sort(key=lambda p: (p.grid.width, p.title))
         start_hue = self.ui.background_hue.value()
-        puzzle_set = PuzzleSet(*puzzles,
-                               block_packer=packer,
-                               start_hue=start_hue)
+        if not self.ui.one_sided_checkbox.isChecked():
+            puzzles.sort(key=lambda p: (p.grid.width, p.title))
+            full_packer = BlockPacker(15,
+                                      19,
+                                      tries=10_000_000,
+                                      min_tries=1_000)
+            puzzle_set = PuzzleSet(*puzzles,
+                                   block_packer=full_packer,
+                                   start_hue=start_hue)
+        else:
+            frame_packer =  EvoPacker(14,
+                                      18,
+                                      tries=10_000_000,
+                                      min_tries=1_000)
+            page_count = (len(puzzles) + 1) // 2
+            page_packers = [frame_packer]
+            for _ in range(page_count - 1):
+                page_packers.append(EvoPacker(15,
+                                              19,
+                                              tries=10_000_000,
+                                              min_tries=1_000))
+            puzzle_set = OneSidedSet(*puzzles,
+                                     page_packers=page_packers,
+                                     start_hue=start_hue,
+                                     frame_lengths=((9, 4), (9, 4, 2, 2)))
         font_combo = self.ui.puzzle_set_font_list
         if font_combo.count() >= len(puzzle_set.puzzles):
             first_font = font_combo.currentIndex()
             for i, puzzle in enumerate(puzzle_set.puzzles):
                 font = font_combo.itemData((i+first_font) % font_combo.count())
                 puzzle.font = font
-        svg_buffer = QBuffer()
-        generator = create_svg_generator(svg_buffer)
-
-        deduper = LineDeduper(QPainter(generator))
-        puzzle_set.square_size = generator.width() / 16
-        nick_radius = 5  # DPI is 1000
-        puzzle_set.draw_cuts(deduper, nick_radius)
-        deduper.end()
-
-        front_buffer = QBuffer()
-        front_image = QImage(2475, 3150, QImage.Format.Format_RGB32)
-        painter = QPainter(front_image)
-        puzzle_set.square_size = round(front_image.width() / 16)
         background_colour = puzzle_set.puzzles[0].face_colour
-        tile_size = puzzle_set.square_size / 6
-        background_tile = puzzle_set.create_background_tile(round(tile_size),
-                                                            background_colour)
-        painter.setBackground(background_colour)
-        puzzle_set.draw_background_pattern(painter,
-                                           tile_size,
-                                           x_offset=puzzle_set.square_size // 2,
-                                           y_offset=puzzle_set.square_size // 2)
-        puzzle_set.draw_front(painter)
-        painter.end()
-        success = front_image.save(front_buffer, 'PNG')  # type:ignore[call-overload]
-        assert success
+        background_tile = None
+        svg_buffers = []
+        front_buffers = []
+        back_buffers = []
+        for page_index in range(puzzle_set.page_count):
+            if page_index != 0:
+                puzzle_set.page_index = page_index
+                puzzle_set.pack_puzzles()
+            svg_buffer = QBuffer()
+            generator = create_svg_generator(svg_buffer)
 
-        back_buffer = QBuffer()
-        back_image = QImage(2475, 3150, QImage.Format.Format_RGB32)
-        painter = QPainter(back_image)
-        painter.setBackground(background_colour)
-        puzzle_set.draw_background_pattern(painter,
-                                           tile_size,
-                                           x_offset=puzzle_set.square_size // 2,
-                                           y_offset=puzzle_set.square_size // 2)
-        puzzle_set.draw_back(painter)
-        painter.end()
-        success = back_image.save(back_buffer, 'PNG')  # type:ignore[call-overload]
-        assert success
+            deduper = LineDeduper(QPainter(generator))
+            puzzle_set.square_size = generator.width() / 16
+            nick_radius = 5  # DPI is 1000
+            puzzle_set.draw_cuts(deduper, nick_radius)
+            deduper.end()
+            svg_buffers.append(svg_buffer)
+
+            front_buffer = QBuffer()
+            front_image = QImage(2475, 3150, QImage.Format.Format_RGB32)
+            painter = QPainter(front_image)
+            puzzle_set.square_size = round(front_image.width() / 16)
+            tile_size = puzzle_set.square_size / 6
+            background_tile = puzzle_set.create_background_tile(round(tile_size),
+                                                                background_colour)
+            painter.setBackground(background_colour)
+            puzzle_set.draw_background_pattern(painter,
+                                               tile_size,
+                                               x_offset=puzzle_set.square_size // 2,
+                                               y_offset=puzzle_set.square_size // 2)
+            puzzle_set.draw_front(painter)
+            painter.end()
+            success = front_image.save(front_buffer, 'PNG')  # type:ignore[call-overload]
+            assert success
+            front_buffers.append(front_buffer)
+
+            back_buffer = QBuffer()
+            back_image = QImage(2475, 3150, QImage.Format.Format_RGB32)
+            painter = QPainter(back_image)
+            painter.setBackground(background_colour)
+            puzzle_set.draw_background_pattern(painter,
+                                               tile_size,
+                                               x_offset=puzzle_set.square_size // 2,
+                                               y_offset=puzzle_set.square_size // 2)
+            puzzle_set.draw_back(painter)
+            painter.end()
+            success = back_image.save(back_buffer, 'PNG')  # type:ignore[call-overload]
+            assert success
+            back_buffers.append(back_buffer)
 
         """ Booklet page images are 1575 x 2475. Safety margin is 75 pixels on
         every side. """
@@ -820,9 +972,18 @@ class FourLetterBlocksWindow(QMainWindow):
             page_buffers.append(page_buffer)
 
         with ZipFile(file_name, 'w', compression=ZIP_DEFLATED) as zip_file:
-            zip_file.writestr('cuts.svg', svg_buffer.data().data())
-            zip_file.writestr('front.png', front_buffer.data().data())
-            zip_file.writestr('back.png', back_buffer.data().data())
+            for page_number, (svg_buffer,
+                              front_buffer,
+                              back_buffer) in enumerate(zip(svg_buffers,
+                                                            front_buffers,
+                                                            back_buffers),
+                                                        start=1):
+                zip_file.writestr(f'cuts.svg{page_number}',
+                                  svg_buffer.data().data())
+                zip_file.writestr(f'front{page_number}.png',
+                                  front_buffer.data().data())
+                zip_file.writestr(f'back{page_number}.png',
+                                  back_buffer.data().data())
             for page_number, page_buffer in enumerate(page_buffers, 1):
                 zip_file.writestr(f'page{page_number}.png',
                                   page_buffer.data().data())
@@ -869,11 +1030,12 @@ class FourLetterBlocksWindow(QMainWindow):
         front_puzzle, back_puzzle = self.pair_puzzles
         assert front_puzzle is not None
         assert back_puzzle is not None
+        packing = None
         try:
             with ZipFile(file_name) as zip_file:
                 packing = ZipPath(zip_file, 'packing.txt').read_text()
         except IOError:
-            packing = None
+            pass
         grid_size = front_puzzle.grid.width
         packer = BlockPacker(grid_size,
                              grid_size,
@@ -1034,6 +1196,7 @@ class FourLetterBlocksWindow(QMainWindow):
                                        self.ui.blocks_text.toPlainText(),
                                        self.old_clues,
                                        self.old_blocks)
+        puzzle.source_path = self.file_path
         return puzzle
 
     def shuffle(self):
@@ -1069,6 +1232,8 @@ class FourLetterBlocksWindow(QMainWindow):
         blocks_text = self.ui.puzzle_set_blocks.toPlainText()
         if blocks_text == self.old_puzzle_set_blocks:
             return
+        if self.ui.is_packing_blocks.isChecked():
+            return
         if self.fill_thread is not None:
             return
         self.old_puzzle_set_blocks = blocks_text
@@ -1081,6 +1246,7 @@ class FourLetterBlocksWindow(QMainWindow):
                                            old_puzzle.format_grid(),
                                            old_puzzle.format_clues(),
                                            blocks_text)
+        new_puzzle.source_path = old_puzzle.source_path
         self.crossword_set[file_name] = new_puzzle
         self.summarize_crossword_set()
 
@@ -1104,14 +1270,12 @@ class FourLetterBlocksWindow(QMainWindow):
             self.settings.setValue('font_size', font_size)
             self.update_font()
 
-    def select_tab(self, tab_index):
-        is_single = tab_index == 0
-        is_pair = tab_index == 1
-        is_set = tab_index == 2
-        self.ui.new_action.setEnabled(is_single)
-        self.ui.open_action.setEnabled(is_single)
-        self.ui.save_action.setEnabled(is_single)
-        self.ui.save_as_action.setEnabled(is_single)
+    def select_tab(self, _tab_index: int) -> None:
+        ui = self.ui
+        current_tab = ui.main_tabs.currentWidget()
+        is_single = current_tab == ui.puzzle_tab
+        is_pair = current_tab == ui.pair_tab
+        is_set = current_tab == ui.set_tab
         self.ui.shuffle_action.setEnabled(is_single)
         self.ui.export_action.setEnabled(is_single)
         self.ui.export_pair_action.setEnabled(is_pair)
@@ -1128,13 +1292,20 @@ class FourLetterBlocksWindow(QMainWindow):
     def select_crossword_file(self, file_index):
         self.selected_crossword_file = file_index
         is_enabled = file_index >= 0
-        self.ui.remove_button.setEnabled(is_enabled)
+        ui = self.ui
+        for widget in (ui.remove_button,
+                       ui.puzzle_set_clear_button,
+                       ui.puzzle_set_fill_button,
+                       ui.is_packing_blocks,
+                       ui.is_puzzle_blocks,
+                       ui.puzzle_set_blocks):
+            widget.setEnabled(is_enabled)
         if not is_enabled:
-            self.ui.puzzle_set_blocks.setPlainText('')
+            self.selected_puzzle = None
         else:
-            file_name = self.ui.crossword_files.item(file_index).toolTip()
-            puzzle = self.crossword_set[file_name]
-            self.ui.puzzle_set_blocks.setPlainText(puzzle.format_blocks())
+            file_name = ui.crossword_files.item(file_index).toolTip()
+            self.selected_puzzle = self.crossword_set[file_name]
+        self.on_block_type_changed()
 
     def update_font(self):
         font_size = self.settings.value('font_size', 11, int)
@@ -1148,13 +1319,18 @@ class FourLetterBlocksWindow(QMainWindow):
         font = QFont('Monospace')
         font.setStyleHint(QFont.StyleHint.TypeWriter)
         font.setPointSize(font_size)
-        for target in (self.ui.grid_text,
-                       self.ui.clues_text,
-                       self.ui.blocks_text,
-                       self.ui.back_blocks_text,
-                       self.ui.front_blocks_text,
-                       self.ui.puzzle_set_blocks):
+        ui = self.ui
+        for target in (ui.grid_text,
+                       ui.clues_text,
+                       ui.blocks_text,
+                       ui.back_blocks_text,
+                       ui.front_blocks_text,
+                       ui.puzzle_set_blocks):
             target.setFont(font)
+
+        font_size = round(font_size * 1.5)
+        font.setPointSize(font_size)
+        ui.main_title.setFont(font)
 
 
 class BlockDiagram(QPyTextObject):
@@ -1239,8 +1415,8 @@ def main():
 
     if args.pair is not None:
         back_file, front_file = args.pair
-        window.open_pair_file(back_file, 1)
-        window.open_pair_file(front_file, 0)
+        window.open_pair_puzzle_file(back_file, 1)
+        window.open_pair_puzzle_file(front_file, 0)
         window.export_pair_file(args.output)
         done = True
 

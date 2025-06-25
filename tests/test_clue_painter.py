@@ -295,6 +295,7 @@ def test_draw_page_with_background(pixmap_differ: PixmapDiffer):
     puzzle = parse_basic_puzzle()
     puzzle.down_clues[1].text_with_reference = "Run between 1 Across"
     puzzle_set = PuzzleSet(puzzle)
+    puzzle_set.pack_puzzles()
 
     width = 740
     height = 190
@@ -706,6 +707,7 @@ def test_draw_clues_intro(pixmap_differ: PixmapDiffer):
 def test_draw_clues_intro_and_tile(pixmap_differ: PixmapDiffer):
     puzzle = parse_basic_puzzle()
     puzzle_set = PuzzleSet(puzzle)
+    puzzle_set.pack_puzzles()
 
     width = 740
     height = 200

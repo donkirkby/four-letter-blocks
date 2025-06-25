@@ -259,8 +259,9 @@ class PackingFitnessCalculator:
         self.summaries: typing.List[str] = []
         self.count_parities: typing.Dict[str, int] = {}
         self.count_diffs: typing.Dict[str, int] = {}  # {ab: diff}
-        self.count_min: typing.Dict[str, int] = {}  # {shapes: min}
-        self.count_max: typing.Dict[str, int] = {}  # {shapes: max}
+        self.count_min: typing.Dict[str, int] = {}  # {shape: min}
+        self.count_max: typing.Dict[str, int] = {}  # {shape: max}
+        self.count_targets: typing.Dict[str, int] = {}  # {shape: target}
 
     def format_summaries(self):
         display = '\n'.join(self.summaries)

@@ -22,6 +22,7 @@ def test_draw_front_slug1(pixmap_differ: PixmapDiffer) -> None:
         back_puzzle = Puzzle.parse(f)
     packer = BlockPacker(width=11, height=11, split_row=5, tries=100)
     pair = BigPuzzlePair(front_puzzle, back_puzzle, block_packer=packer)
+    pair.pack_puzzles()
     pair.margin = 10
     front_puzzle.face_colour = QColor('transparent')
     front_puzzle.square_size = 25
@@ -138,6 +139,7 @@ def test_draw_front_slug2(pixmap_differ: PixmapDiffer) -> None:
         back_puzzle = Puzzle.parse(f)
     packer = BlockPacker(width=11, height=11, split_row=5, tries=100)
     pair = BigPuzzlePair(front_puzzle, back_puzzle, block_packer=packer)
+    pair.pack_puzzles()
     front_puzzle.face_colour = QColor('transparent')
     pair.margin = 10
     front_puzzle.square_size = 25

@@ -14,6 +14,7 @@ class OneSidedSet(PuzzleSet):
     def __init__(self,
                  *puzzles: Puzzle,
                  block_packer: BlockPacker | None = None,
+                 page_packers: typing.Sequence[BlockPacker] | None = None,
                  start_hue: int = 0,
                  set_options: dict | None = None,
                  frame_lengths: typing.Sequence[typing.Sequence[int]] = ()):
@@ -21,19 +22,16 @@ class OneSidedSet(PuzzleSet):
 
         :param puzzles: The puzzles to pack.
         :param block_packer: The block packer to use.
+        :param page_packers: The block packers to use for each page.
         :param start_hue: The hue of the first puzzle's face colour.
         :param set_options: Other options that can be set in a puzzle set file.
         :param frame_lengths: The number of squares in the frame segments:
             ((top, top, ...), (right, right, ...)).
         """
         self.frame_lengths = frame_lengths
-        self.page_count = math.ceil(len(puzzles) / 2)
-        self.page_index = 0
-        self.page_packers: list[BlockPacker] = []
-        if block_packer is None and self.page_packers:
-            block_packer = self.page_packers[0]
         super().__init__(*puzzles,
                          block_packer=block_packer,
+                         page_packers=page_packers,
                          start_hue=start_hue,
                          set_options=set_options)
 
@@ -54,7 +52,7 @@ class OneSidedSet(PuzzleSet):
         self.block_packer.are_partials_saved = False
         # Current success is either use all shape counts or fill all space.
         # Distinguish between target shape counts and required shape counts.
-        # self.block_packer.is_tracing = True
+        self.block_packer.is_logging = True
         is_filled = self.block_packer.fill()
         self.block_packer.sort_blocks()
         # print()
