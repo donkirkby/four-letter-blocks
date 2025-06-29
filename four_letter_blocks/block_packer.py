@@ -87,6 +87,10 @@ class BlockPacker:
         self.slot_coverage = self.state
 
     @property
+    def min_tries(self) -> int:
+        return self.tries - self.stop_tries
+
+    @property
     def positions(self):
         result = defaultdict(list)
         shape_map = shape_rotations()
@@ -120,7 +124,7 @@ class BlockPacker:
         input_shape_counts = (self.target_shape_counts or
                               self.required_shape_counts or
                               {})
-        can_rotate = all(len(shape) == 0 for shape in input_shape_counts)
+        can_rotate = all(len(shape) == 1 for shape in input_shape_counts)
         shape_counts = Counter()
         for shape, shape_positions in self.positions.items():
             for x, y, rotation in shape_positions:

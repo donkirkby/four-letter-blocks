@@ -1,16 +1,16 @@
+from collections import Counter
 from enum import Enum, auto
 import os
 import re
 import sys
 import traceback
 import typing
-from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, ONE_OR_MORE
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, OPTIONAL
 from functools import partial
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED, Path as ZipPath
 
-import yaml.parser
-from PySide6.QtCore import QSettings, QSize, QSizeF, QObject, QRectF, QRect, QPoint, QBuffer
+from PySide6.QtCore import QSettings, QSize, QSizeF, QObject, QRectF, QRect, QPoint, QBuffer, QThread
 from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, \
     Qt, QCloseEvent, QPixmap, QColor, QTextDocument, QTextFormat, QTextCursor, \
     QTextCharFormat, QPyTextObject, QImage
@@ -156,7 +156,7 @@ class FourLetterBlocksWindow(QMainWindow):
         self.page_packers: list[BlockPacker] = []
         ui.back_blocks_text.textChanged.connect(self.back_blocks_changed)
         ui.front_blocks_text.textChanged.connect(self.front_blocks_changed)
-        self.fill_thread: FillThread | None = None
+        self.fill_thread: QThread | None = None
 
         self.state_fields = (ui.title_text,
                              ui.grid_text,
@@ -717,11 +717,26 @@ class FourLetterBlocksWindow(QMainWindow):
         if not file_name:
             return
 
-        self.statusBar().showMessage('Filling puzzle set...')
+        self.fill_puzzle_set_blocks_with_log(Path(file_name))
 
+    def fill_puzzle_set_blocks_with_log(self, log_path: Path):
+        self.statusBar().showMessage('Filling puzzle set...')
         puzzle_set = self.puzzle_set
+        assert puzzle_set is not None
         page_packer = puzzle_set.page_packers[puzzle_set.page_index]
-        self.fill_thread = PageFillThread(self, page_packer, Path(file_name))
+        evo_packer = EvoPacker(start_text=page_packer.display(),
+                               tries=page_packer.tries,
+                               min_tries=page_packer.min_tries)
+        packed_shape_counts = evo_packer.packed_shape_counts
+        puzzle_shape_counts: Counter[str] = Counter()
+        page_puzzles = puzzle_set.page_puzzles[puzzle_set.page_index]
+        for puzzle in page_puzzles:
+            puzzle.rotations_display = RotationsDisplay.FRONT
+            puzzle_shape_counts += puzzle.shape_counts
+        puzzle_shape_counts -= packed_shape_counts
+        evo_packer.required_shape_counts = puzzle_shape_counts
+        evo_packer.target_shape_counts = Counter(puzzle_shape_counts)
+        self.fill_thread = PageFillThread(self, evo_packer, log_path)
         self.fill_thread.status_update.connect(self.on_fill_update_status)
         self.fill_thread.completed.connect(self.on_fill_completed)
         self.fill_thread.start()
@@ -1381,25 +1396,22 @@ def get_file_dialog_options():
 def parse_args():
     parser = ArgumentParser(description='Edit and export puzzles.',
                             formatter_class=ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--pair',
-                        nargs=2,
-                        help='Back and front puzzle files to export as a pair.')
-    parser.add_argument('--set',
-                        nargs=ONE_OR_MORE,
-                        help='Set of puzzles to export together.')
-    parser.add_argument('--hue',
-                        type=int,
-                        default=0,
-                        help='Background hue.')
-    parser.add_argument('--font',
-                        type=int,
-                        default=0,
-                        help='First font.')
-    parser.add_argument('-o', '--output',
+    parser.add_argument('file',
+                        nargs=OPTIONAL,
+                        type=Path,
+                        help='File to open: puzzle or set')
+    parser.add_argument('command',
+                        choices=('open', 'fill', 'export'),
+                        nargs=OPTIONAL,
+                        default='open',
+                        help='What to do with the file')
+    parser.add_argument('output',
+                        nargs=OPTIONAL,
+                        type=Path,
                         help='Output file to export to.')
     args = parser.parse_args()
-    if args.pair is not None and args.output is None:
-        parser.error('Output is required when pair is given.')
+    if args.command != 'open' and args.output is None:
+        parser.error(f'Output is required for {args.command} command.')
     return args
 
 
@@ -1408,22 +1420,13 @@ def main():
     app = QApplication()
     window = FourLetterBlocksWindow()
     done = False
-    window.ui.background_hue.setValue(args.hue)
-    window.ui.front_hue.setValue(args.hue)
-    if args.font:
-        window.ui.puzzle_set_font_list.setCurrentIndex(args.font)
-
-    if args.pair is not None:
-        back_file, front_file = args.pair
-        window.open_pair_puzzle_file(back_file, 1)
-        window.open_pair_puzzle_file(front_file, 0)
-        window.export_pair_file(args.output)
-        done = True
-
-    if args.set is not None:
-        window.add_crossword_files(args.set)
-        window.export_set_file(args.output)
-        done = True
+    if args.file is not None:
+        window.open_file(args.file)
+        if args.command == 'fill':
+            window.fill_puzzle_set_blocks_with_log(args.output)
+        elif args.command == 'export':
+            window.export_set_file(args.output)
+            done = True
 
     if not done:
         window.show()

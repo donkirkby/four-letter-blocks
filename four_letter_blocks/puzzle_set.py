@@ -24,11 +24,14 @@ class PuzzleSet:
                  page_packers: typing.Sequence[BlockPacker] | None = None,
                  start_hue: int = 0,
                  set_options: dict | None = None,
-                 frame_lengths: typing.Sequence[typing.Sequence[int]] = ()):
+                 frame_lengths: typing.Sequence[typing.Sequence[int]] = (),
+                 puzzles_per_page: int = 4):
         if frame_lengths:
             raise NotImplementedError('Frame lengths not yet implemented.')
         set_options = set_options or {}
         self.puzzles = puzzles
+        self.page_puzzles: list[tuple[Puzzle]] = list(
+            zip(*([iter(puzzles)]*puzzles_per_page)))
         self.shape_counts: typing.Counter[str] = Counter()
         packing_pages = set_options.get('packing_pages', [])
         self.page_packers: list[BlockPacker] = []

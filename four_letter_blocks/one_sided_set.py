@@ -17,7 +17,8 @@ class OneSidedSet(PuzzleSet):
                  page_packers: typing.Sequence[BlockPacker] | None = None,
                  start_hue: int = 0,
                  set_options: dict | None = None,
-                 frame_lengths: typing.Sequence[typing.Sequence[int]] = ()):
+                 frame_lengths: typing.Sequence[typing.Sequence[int]] = (),
+                 puzzles_per_page: int = 2):
         """ Initialise a set of puzzles.
 
         :param puzzles: The puzzles to pack.
@@ -33,7 +34,8 @@ class OneSidedSet(PuzzleSet):
                          block_packer=block_packer,
                          page_packers=page_packers,
                          start_hue=start_hue,
-                         set_options=set_options)
+                         set_options=set_options,
+                         puzzles_per_page=puzzles_per_page)
 
     def pack_puzzles(self):
         page_puzzles = self.puzzles[self.page_index * 2: self.page_index * 2 + 2]
