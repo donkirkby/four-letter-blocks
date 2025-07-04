@@ -1,6 +1,7 @@
 import typing
 from pathlib import Path
 
+import numpy as np
 from PySide6.QtCore import QThread, Signal, QObject
 
 from four_letter_blocks.evo_packer import EvoPacker, PackingFitnessCalculator, FitnessScore
@@ -19,13 +20,22 @@ class PageFillThread(QThread):
         self.page_packer = page_packer
         self.report_path = report_path
         fitness_calculator = PackingFitnessCalculator()
+        total_block_count = 0
         if page_packer.required_shape_counts:
             fitness_calculator.count_min.update(page_packer.required_shape_counts)
+            total_block_count = page_packer.required_shape_counts.total()
         if page_packer.target_shape_counts:
             fitness_calculator.count_targets.update(page_packer.target_shape_counts)
+            total_block_count = page_packer.target_shape_counts.total()
         self.fitness_calculator = PackingFitnessCalculator()
-        self.attempt_count = 0
-        self.top_fitness = FitnessScore(-100, -1)
+        empty_coords: tuple[np.ndarray] = np.nonzero(
+            page_packer.state == 0)  # type: ignore
+        empty_spaces = empty_coords[0].size
+        self.fitness_calculator.min_empty_spaces = (empty_spaces -
+                                                    total_block_count*4)
+
+        self.attempt_count: int = 0
+        self.top_fitness: FitnessScore = FitnessScore(-100, -1)
 
         # [(packing, fitness)]
         self.solutions: typing.List[typing.Tuple[str, FitnessScore]] = []
@@ -40,6 +50,7 @@ class PageFillThread(QThread):
             print(start_blocks, file=f)
             print(file=f)
 
+        # noinspection PyUnresolvedReferences
         while not self.isInterruptionRequested():
             self.attempt_count += 1
 

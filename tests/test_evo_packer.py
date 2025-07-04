@@ -212,12 +212,49 @@ def test_fitness():
         ..#AA
         BBCCC
         BB##C""")).state
-    packing = Packing(dict(state=start_state, shape_counts={'O': 3}))
+    expected_summaries = ('FitnessScore(empty_spaces=-8, empty_area=-0.6, '
+                          'missed_targets=0, warning_count=0)')
+    packing = Packing(dict(state=start_state))
     calculator = PackingFitnessCalculator()
 
     fitness = calculator.calculate(packing)
 
     assert fitness == FitnessScore(empty_spaces=-8, empty_area=-0.6)
+    assert calculator.format_summaries() == expected_summaries
+
+
+def test_fitness_min_empty_spaces():
+    start_state = EvoPacker(start_text=dedent("""\
+        .##..
+        ...AA
+        ..#AA
+        BBCCC
+        BB##C""")).state
+    packing = Packing(dict(state=start_state))
+    calculator = PackingFitnessCalculator()
+    calculator.min_empty_spaces = 4
+
+    fitness = calculator.calculate(packing)
+
+    assert fitness == FitnessScore(empty_spaces=-4, empty_area=-0.6)
+
+
+def test_fitness_min_empty_spaces_reached():
+    start_state = EvoPacker(start_text=dedent("""\
+        .##..
+        ...AA
+        ..#AA
+        BBCCC
+        BB##C""")).state
+    packing = Packing(dict(state=start_state))
+    calculator = PackingFitnessCalculator()
+    calculator.min_empty_spaces = 8
+    calculator.ignore_warnings = True
+
+    fitness = calculator.calculate(packing)
+
+    assert fitness == FitnessScore(empty_spaces=0,
+                                   empty_area=0)
 
 
 def test_fitness_parity():

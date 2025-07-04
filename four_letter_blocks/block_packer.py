@@ -20,7 +20,13 @@ class BlockPacker:
     """
     UNUSED = 0
     GAP = 1
-
+    BLOCK_CHARS = {i: ((i == 0 and '.') or
+                       (i == 1 and '#') or
+                       (i < 29 and chr(i + 63)) or  # The first block is A.
+                       (i < 63 and chr(i + 64)) or  # Backslash breaks copy/paste.
+                       (chr(i - 16)))  # Extra chars: mostly digits
+                   for i in range(81)}
+    CHAR_BLOCKS = {c: i for i, c in BLOCK_CHARS.items()}
     def __init__(self,
                  width=0,
                  height=0,
@@ -51,15 +57,7 @@ class BlockPacker:
             self.height = height
             self.state = np.zeros((height, width), np.uint8)
         else:
-            lines = start_text.splitlines()
-            self.height = len(lines)
-            self.width = self.height and len(lines[0])
-            self.state = np.ndarray((self.height, self.width), np.int8)
-            for row, line in enumerate(lines):
-                for col, char in enumerate(line):
-                    self.state[row, col] = (0 if char == '.'
-                                            else 1 if char == '#'
-                                            else ord(char) - 63)
+            self.load_start_text(start_text)
         self.split_row = split_row
         self.force_fours = False
         self.tries = tries
@@ -85,6 +83,15 @@ class BlockPacker:
         self.extra_gaps = -1
         self.fewest_unused: int | None = None
         self.slot_coverage = self.state
+
+    def load_start_text(self, start_text):
+        lines = start_text.splitlines()
+        self.height = len(lines)
+        self.width = self.height and len(lines[0])
+        self.state = np.ndarray((self.height, self.width), np.int8)
+        for row, line in enumerate(lines):
+            for col, char in enumerate(line):
+                self.state[row, col] = self.CHAR_BLOCKS[char]
 
     @property
     def min_tries(self) -> int:
@@ -234,13 +241,12 @@ class BlockPacker:
         if state is None:
             state = self.state
         assert state is not None
-        ascii_offset = 63  # Displays first block as A.
-        last_block = np.amax(state) + ascii_offset
-        if last_block >= 127:
+        last_block = np.amax(state)
+        if last_block not in self.BLOCK_CHARS:
             raise RuntimeError('Too many blocks for text display.')
 
         return '\n'.join(
-            ''.join(chr(ascii_offset+c) if c > 1 else c and '#' or '.'
+            ''.join(self.BLOCK_CHARS[c]
                     for c in row)
             for row in state)
 

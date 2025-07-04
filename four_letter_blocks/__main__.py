@@ -709,6 +709,7 @@ class FourLetterBlocksWindow(QMainWindow):
     def fill_puzzle_set_blocks(self):
         if self.fill_thread is not None:
             self.interrupt_fill()
+            self.puzzle_set_blocks_changed()
             return
 
         file_name = self.get_save_file_name(
@@ -735,7 +736,6 @@ class FourLetterBlocksWindow(QMainWindow):
             puzzle_shape_counts += puzzle.shape_counts
         puzzle_shape_counts -= packed_shape_counts
         evo_packer.required_shape_counts = puzzle_shape_counts
-        evo_packer.target_shape_counts = Counter(puzzle_shape_counts)
         self.fill_thread = PageFillThread(self, evo_packer, log_path)
         self.fill_thread.status_update.connect(self.on_fill_update_status)
         self.fill_thread.completed.connect(self.on_fill_completed)
@@ -755,12 +755,17 @@ class FourLetterBlocksWindow(QMainWindow):
             ui.puzzle_set_blocks.setPlainText(
                 self.selected_puzzle.format_blocks())
         else:
-            if ui.one_sided_checkbox.isChecked():
-                selected_page_index = self.selected_crossword_file // 2
-            else:
-                selected_page_index = self.selected_crossword_file // 4
-            page_packer = self.puzzle_set.page_packers[selected_page_index]
+            page_packer = self.selected_page_packer()
             ui.puzzle_set_blocks.setPlainText(page_packer.display())
+
+    def selected_page_packer(self) -> BlockPacker:
+        if self.ui.one_sided_checkbox.isChecked():
+            selected_page_index = self.selected_crossword_file // 2
+        else:
+            selected_page_index = self.selected_crossword_file // 4
+        assert self.puzzle_set is not None
+        page_packer = self.puzzle_set.page_packers[selected_page_index]
+        return page_packer
 
     def record_clean_state(self):
         self.clean_state = self.build_current_state()
@@ -1247,11 +1252,13 @@ class FourLetterBlocksWindow(QMainWindow):
         blocks_text = self.ui.puzzle_set_blocks.toPlainText()
         if blocks_text == self.old_puzzle_set_blocks:
             return
-        if self.ui.is_packing_blocks.isChecked():
-            return
         if self.fill_thread is not None:
             return
         self.old_puzzle_set_blocks = blocks_text
+        if self.ui.is_packing_blocks.isChecked():
+            page_packer = self.selected_page_packer()
+            page_packer.load_start_text(blocks_text)
+            return
         current_item = self.ui.crossword_files.currentItem()
         if current_item is None:
             return

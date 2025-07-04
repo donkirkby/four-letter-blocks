@@ -41,7 +41,7 @@ class Puzzle:
     use_suits: bool = False
     is_packed: bool = False
     rotations_display: RotationsDisplay = RotationsDisplay.OFF
-    source_path: Path | None = None
+    _source_path: Path | None = None
 
     @staticmethod
     def parse(source_file: typing.IO) -> 'Puzzle':
@@ -52,7 +52,7 @@ class Puzzle:
     def parse_path(source_path: Path) -> 'Puzzle':
         with source_path.open() as source_file:
             puzzle = Puzzle.parse(source_file)
-            puzzle.source_path = source_path
+            puzzle.source_path = source_path.absolute()
             return puzzle
 
     @staticmethod
@@ -88,6 +88,16 @@ class Puzzle:
         self.down_clues = []
         self.use_suits = 121 < self.grid.width * self.grid.height
         self.number_clues()
+
+    @property
+    def source_path(self) -> Path | None:
+        return self._source_path
+
+    @source_path.setter
+    def source_path(self, source_path: Path):
+        if source_path is not None and not source_path.is_absolute():
+            raise ValueError('source_path must be an absolute path.')
+        self._source_path = source_path
 
     def number_clues(self) -> None:
         self.across_clues.clear()

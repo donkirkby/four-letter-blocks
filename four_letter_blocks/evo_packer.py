@@ -257,11 +257,13 @@ class PackingFitnessCalculator:
     def __init__(self) -> None:
         self.details: typing.List[str] = []
         self.summaries: typing.List[str] = []
+        self.min_empty_spaces = 0
         self.count_parities: typing.Dict[str, int] = {}
         self.count_diffs: typing.Dict[str, int] = {}  # {ab: diff}
         self.count_min: typing.Dict[str, int] = {}  # {shape: min}
         self.count_max: typing.Dict[str, int] = {}  # {shape: max}
         self.count_targets: typing.Dict[str, int] = {}  # {shape: target}
+        self.ignore_warnings = False
 
     def format_summaries(self):
         display = '\n'.join(self.summaries)
@@ -281,7 +283,6 @@ class PackingFitnessCalculator:
             return fitness_x
         state = value['state']
         fitness = self.calculate_from_state(state)
-        self.summaries.append(str(fitness))
 
         value['fitness'] = fitness
         return fitness
@@ -289,20 +290,23 @@ class PackingFitnessCalculator:
     def calculate_from_state(self, state) -> FitnessScore:
         # noinspection PyTypeChecker
         empty = np.nonzero(state == 0)
-        empty_spaces = empty[0].size
+        empty_spaces = empty[0].size - self.min_empty_spaces
         missed_targets = 0
 
         if empty_spaces == 0:
-            empty_fraction = 0
+            empty_fraction: float = 0
             packer = BlockPacker(start_state=state)
             display = packer.display()
             puzzle = Puzzle.parse_sections('',
                                            display,
                                            '',
                                            display)
-            warning_count = sum(1
-                                for warning in puzzle.check_word_length()
-                                if warning.startswith('complete word'))
+            if self.ignore_warnings:
+                warning_count = 0
+            else:
+                warning_count = sum(1
+                                    for warning in puzzle.check_word_length()
+                                    if warning.startswith('complete word'))
             # Required features to balance the puzzle set.
             shape_counts = puzzle.shape_counts
             for shape, parity in self.count_parities.items():
@@ -330,7 +334,7 @@ class PackingFitnessCalculator:
             max_col = max(empty[1])
             total_area = state.shape[0] * state.shape[1]
             empty_area = (max_row-min_row+1) * (max_col-min_col+1)
-            empty_fraction = round(empty_area / total_area, 3)
+            empty_fraction = round(float(empty_area / total_area), 3)
         fitness = FitnessScore(empty_spaces=-empty_spaces,
                                empty_area=-empty_fraction,
                                missed_targets=-missed_targets,

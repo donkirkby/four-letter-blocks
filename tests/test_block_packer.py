@@ -33,14 +33,14 @@ def test_empty_display():
 
 
 def test_display_max_ascii():
-    shape_counts = Counter({'O': 62})
+    shape_counts = Counter({'O': 79})
     expected_display_end = dedent("""\
-        }}
-        }}
-        ~~
-        ~~""")
+        ??
+        ??
+        @@
+        @@""")
 
-    packer = BlockPacker(2, 124, tries=500)
+    packer = BlockPacker(2, 158, tries=500)
     packer.required_shape_counts = shape_counts
     packer.fill()
 
@@ -48,18 +48,31 @@ def test_display_max_ascii():
     display_lines = display.splitlines()
     display_end = '\n'.join(display_lines[-4:])
 
+    assert '\\' not in display
+    assert '.' not in display
     assert display_end == expected_display_end
 
 
 def test_display_beyond_ascii():
-    shape_counts = Counter({'O': 63})
+    shape_counts = Counter({'O': 80})
 
-    packer = BlockPacker(2, 126, tries=500)
+    packer = BlockPacker(2, 160, tries=500)
     packer.required_shape_counts = shape_counts
     packer.fill()
 
     with pytest.raises(RuntimeError, match='Too many blocks for text display'):
         packer.display()
+
+
+def test_block_ranges():
+    start_text = dedent("""\
+        0000
+        AAAA""")
+
+    packer = BlockPacker(start_text=start_text)
+    display = packer.display()
+
+    assert display == start_text
 
 
 def test_sort_blocks():

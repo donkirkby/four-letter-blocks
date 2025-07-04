@@ -67,6 +67,8 @@ class DoubleBlockPacker:
         back_slots = self.back_packer.find_slots()
         front_coverage = self.front_packer.slot_coverage
         back_coverage = self.back_packer.slot_coverage
+        assert front_coverage is not None
+        assert back_coverage is not None
         front_min = front_coverage.min()
         back_min = back_coverage.min()
         if front_min == 0 or back_min == 0:

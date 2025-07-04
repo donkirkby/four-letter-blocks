@@ -173,10 +173,12 @@ def test_read_puzzle_below(tmp_path: Path) -> None:
 def test_read_puzzle_above(tmp_path: Path) -> None:
     child_path = tmp_path / 'child'
     child_path.mkdir()
+    puzzle_paths = []
     for file_name, puzzle_text in (('child/example2.txt', PUZZLE_TEXT2),
                                    ('example3.txt', PUZZLE_TEXT3)):
         file_path = tmp_path / file_name
         file_path.write_text(puzzle_text)
+        puzzle_paths.append(file_path)
 
     set_path = tmp_path / 'child/pair.flb'
     set_path.write_text('''\
@@ -192,6 +194,7 @@ def test_read_puzzle_above(tmp_path: Path) -> None:
     assert len(puzzle_set.puzzles) == 2
     assert puzzle_set.puzzles[0].title == 'Example 2'
     assert puzzle_set.puzzles[1].title == 'Example 3'
+    assert puzzle_set.puzzles[0].source_path == puzzle_paths[0]
 
 def test_write(tmp_path: Path) -> None:
     puzzles = []
