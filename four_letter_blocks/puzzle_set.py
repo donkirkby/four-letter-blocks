@@ -388,15 +388,25 @@ class PuzzleSet:
                 painter.translate(-j*size/2, -i*size/2)
 
     @staticmethod
-    def get_target_colours(start, shift):
-        rgb = start.toRgb().toTuple()[:3]
+    def get_target_colours(start: QColor, shift: float) -> tuple[QColor, QColor]:
+        rgb = start.toRgb().toTuple()[:3]  # type: ignore
         lightness, chroma, hue = cspace_convert(rgb, 'sRGB255', 'JCh')
-        light_jch = [lightness+shift, chroma, hue]
-        dark_jch = [lightness-shift, chroma, hue]
+        high_lightness = lightness + shift
+        if high_lightness > 100:
+            raise ValueError(
+                f'Start colour is too light, with lightness {lightness:0.2f}.')
+        light_jch = [high_lightness, chroma, hue]
+        low_lightness = lightness - shift
+        if low_lightness < 0:
+            raise ValueError(
+                f'Start colour is too dark, with lightness {lightness:0.2f}.')
+        dark_jch = [low_lightness, chroma, hue]
         light_rgb = cspace_convert(light_jch, 'JCh', 'sRGB255')
         dark_rgb = cspace_convert(dark_jch, 'JCh', 'sRGB255')
         light = QColor.fromRgb(*light_rgb)
         dark = QColor.fromRgb(*dark_rgb)
+        if not (dark.isValid() and light.isValid()):
+            raise ValueError('Start colour is invalid after shift.')
         return dark, light
 
     def draw_background_pattern(self,

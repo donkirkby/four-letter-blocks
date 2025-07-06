@@ -53,6 +53,7 @@ def write_puzzle_set(puzzle_set: PuzzleSet, file_path: Path) -> None:
         packing_pages.append(block_packer.display())
     set_options = {'type': type(puzzle_set).__name__,
                    'puzzles': puzzles,
+                   'start_hue': puzzle_set.start_hue,
                    'packing_pages': packing_pages}
 
     file_path.write_text(yaml.dump(set_options, sort_keys=False))

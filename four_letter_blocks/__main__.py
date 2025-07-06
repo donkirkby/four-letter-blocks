@@ -764,6 +764,7 @@ class FourLetterBlocksWindow(QMainWindow):
         else:
             selected_page_index = self.selected_crossword_file // 4
         assert self.puzzle_set is not None
+        self.puzzle_set.page_index = selected_page_index
         page_packer = self.puzzle_set.page_packers[selected_page_index]
         return page_packer
 
@@ -881,33 +882,9 @@ class FourLetterBlocksWindow(QMainWindow):
         self.export_set_file(file_name)
 
     def export_set_file(self, file_name: str):
-        puzzles = list(self.crossword_set.values())
-        start_hue = self.ui.background_hue.value()
-        if not self.ui.one_sided_checkbox.isChecked():
-            puzzles.sort(key=lambda p: (p.grid.width, p.title))
-            full_packer = BlockPacker(15,
-                                      19,
-                                      tries=10_000_000,
-                                      min_tries=1_000)
-            puzzle_set = PuzzleSet(*puzzles,
-                                   block_packer=full_packer,
-                                   start_hue=start_hue)
-        else:
-            frame_packer =  EvoPacker(14,
-                                      18,
-                                      tries=10_000_000,
-                                      min_tries=1_000)
-            page_count = (len(puzzles) + 1) // 2
-            page_packers = [frame_packer]
-            for _ in range(page_count - 1):
-                page_packers.append(EvoPacker(15,
-                                              19,
-                                              tries=10_000_000,
-                                              min_tries=1_000))
-            puzzle_set = OneSidedSet(*puzzles,
-                                     page_packers=page_packers,
-                                     start_hue=start_hue,
-                                     frame_lengths=((9, 4), (9, 4, 2, 2)))
+        puzzle_set = self.puzzle_set
+        assert puzzle_set is not None
+        puzzle_set.pack_puzzles()
         font_combo = self.ui.puzzle_set_font_list
         if font_combo.count() >= len(puzzle_set.puzzles):
             first_font = font_combo.currentIndex()
@@ -970,7 +947,7 @@ class FourLetterBlocksWindow(QMainWindow):
         page_buffers = []
         paper = QPixmap(':/paper.jpg')
         clue_painter = CluePainter(
-            *puzzles,
+            *puzzle_set.puzzles,
             font_size=56,
             margin=75,
             intro_text='Solve each set of crossword clues with the pieces that '

@@ -107,6 +107,8 @@ class BlockPacker:
             # noinspection PyTypeChecker
             y_coordinates, x_coordinates = np.nonzero(self.state == block)
             coordinates = list(zip(x_coordinates, y_coordinates))
+            if not coordinates:
+                continue
             norm_coordinates = normalize_coordinates(coordinates)  # type: ignore
             shape_name, rotation = shape_map[norm_coordinates]
             result[shape_name].append((min(x_coordinates),
@@ -127,12 +129,12 @@ class BlockPacker:
         return rotated_positions
 
     @property
-    def packed_shape_counts(self):
-        input_shape_counts = (self.target_shape_counts or
-                              self.required_shape_counts or
-                              {})
+    def packed_shape_counts(self) -> Counter[str]:
+        input_shape_counts: dict[str, int] = (self.target_shape_counts or
+                                              self.required_shape_counts or
+                                              {})
         can_rotate = all(len(shape) == 1 for shape in input_shape_counts)
-        shape_counts = Counter()
+        shape_counts: Counter[str] = Counter()
         for shape, shape_positions in self.positions.items():
             for x, y, rotation in shape_positions:
                 if shape == 'O' or can_rotate:

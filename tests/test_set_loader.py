@@ -213,7 +213,9 @@ def test_write(tmp_path: Path) -> None:
         FFFGGH
         .FIIIH
         ...IHH"""))
-    puzzle_set = PuzzleSet(*puzzles, block_packer=block_packer)
+    puzzle_set = PuzzleSet(*puzzles,
+                           block_packer=block_packer,
+                           start_hue=30)
 
     set_path = tmp_path / 'set.flb'
     expected_set_text = dedent('''\
@@ -222,6 +224,7 @@ def test_write(tmp_path: Path) -> None:
         - example2.txt
         - example3.txt
         - example1.txt
+        start_hue: 30
         packing_pages:
         - |-
           AA.BB.
@@ -267,6 +270,7 @@ def test_write_below_puzzle(tmp_path: Path) -> None:
         - ../example2.txt
         - ../example3.txt
         - example1.txt
+        start_hue: 0
         packing_pages:
         - |-
           AA.BB.

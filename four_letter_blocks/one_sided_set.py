@@ -1,4 +1,3 @@
-import math
 import typing
 from collections import Counter
 
@@ -74,6 +73,7 @@ class OneSidedSet(PuzzleSet):
             source_block.x = block.x
             source_block.y = block.y
             self.front_blocks[rotated_shape].append(source_block)
+        self.set_face_colours()
         self.pack_black_positions()
 
     def draw_cuts(self, painter, nick_radius=0):

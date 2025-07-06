@@ -9,7 +9,6 @@ from colorspacious import cspace_convert
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
-from four_letter_blocks.evo_packer import EvoPacker
 from four_letter_blocks.puzzle import Puzzle
 from four_letter_blocks.puzzle_set import PuzzleSet
 from four_letter_blocks import four_letter_blocks_rc
@@ -256,20 +255,6 @@ def test_blocks_fit():
     assert puzzle_set.shape_counts == {'I': 5, 'O': 5, 'S': 5, 'J': 8, 'T': 4}
 
 
-def pack_puzzle(puzzle: Puzzle):
-    block_count = puzzle.grid.letter_count // 4
-    shape_counts = Counter({shape_name: block_count
-                            for shape_name in Block.shape_names()})
-    start_text = puzzle.format_blocks().replace('?', '.')
-    packer = EvoPacker(start_text=start_text, tries=100)
-    packer.fill(shape_counts)
-    blocks = packer.display()
-    return Puzzle.parse_sections(puzzle.title,
-                                 puzzle.format_grid(),
-                                 puzzle.format_clues(),
-                                 blocks)
-
-
 def test_draw_background(pixmap_differ: PixmapDiffer):
     actual: QPainter
     expected: QPainter
@@ -423,3 +408,27 @@ def test_colours(sizes, start_hue, expected_hues):
             decrease = (expected_element - actual_element) % 360
             if min(increase, decrease) > 1:
                 assert jchs == expected_jchs
+
+
+def test_target_colours_too_dark():
+    start_colour = QColor.fromRgb(0, 0, 0)
+    shift = 4.0
+
+    with pytest.raises(ValueError, match=r'Start colour is too dark'):
+        PuzzleSet.get_target_colours(start_colour, shift)
+
+
+def test_target_colours_too_light():
+    start_colour = QColor.fromRgb(255, 255, 255)
+    shift = 4.0
+
+    with pytest.raises(ValueError, match=r'Start colour is too light'):
+        PuzzleSet.get_target_colours(start_colour, shift)
+
+
+def test_target_colours():
+    start_colour = QColor.fromRgb(0, 0, 255)
+    shift = 4.0
+
+    with pytest.raises(ValueError, match=r'Start colour is invalid after shift'):
+        PuzzleSet.get_target_colours(start_colour, shift)
