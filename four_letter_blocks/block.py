@@ -224,7 +224,10 @@ class Block:
         divider_pen = QPen(self.divider_colour)
         divider_pen.setWidth(size // 33)
         for square in self.squares:
-            square.draw(painter, is_packed=is_packed, face_offset=face_offset)
+            square.draw(painter,
+                        is_packed=is_packed,
+                        face_offset=face_offset,
+                        number_font=old_font)
             x = square.x
             y = square.y
             scaled_x = round((x-x0)/size)
