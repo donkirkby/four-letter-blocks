@@ -18,7 +18,7 @@ def parse_puzzle_set(set_options_yaml: str | None = None) -> OneSidedSet:
         #ABC#
         DEFGH
         IJ#KL
-        MNOPQ
+        MNOWQ
         #RST#
         
         -
@@ -35,7 +35,7 @@ def parse_puzzle_set(set_options_yaml: str | None = None) -> OneSidedSet:
         #A#BC
         DEFGH
         IJ#KL
-        MNOPQ
+        MNOXQ
         RS#T#
 
         -
@@ -52,7 +52,7 @@ def parse_puzzle_set(set_options_yaml: str | None = None) -> OneSidedSet:
         #ABCD
         EFGHI
         #J#K#
-        LMNOP
+        LMNOY
         QRST#
 
         -
@@ -67,7 +67,7 @@ def parse_puzzle_set(set_options_yaml: str | None = None) -> OneSidedSet:
         Example 4
 
         #AB#C
-        DEFGH
+        DEFZH
         IJ#KL
         MNOPQ
         R#ST#
