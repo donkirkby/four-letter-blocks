@@ -70,7 +70,7 @@ class PuzzleSet:
             first, last = pair  # type:ignore[misc]
             self.pairs[first] = last
             self.pairs[last] = first
-        self.start_hue = set_options.get('start_hue', start_hue)
+        self.start_hue: int = set_options.get('start_hue', start_hue)
         self.count_parities: typing.Dict[str, int] = {}
         self.count_diffs: typing.Dict[str, int] = {}
         self.count_min: typing.Dict[str, int] = {}
