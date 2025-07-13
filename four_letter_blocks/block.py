@@ -14,11 +14,12 @@ from four_letter_blocks.square import Square
 
 
 def create_tab_path(path, square_size, nick_radius: int = 0):
-    curved_portion = 0.9 * square_size
+    curved_portion = 0.75 * square_size
     tab_width = 0.34 * square_size
     stem_width = 0.23 * square_size
     stem_length = 0.33 * square_size
-    path.lineTo(-curved_portion / 2 - 2*nick_radius, 0)  # E
+    path.lineTo(-curved_portion / 2 - nick_radius, 0)  # E
+    path.moveTo(-curved_portion / 2 + nick_radius, 0)
     path.cubicTo(-curved_portion / 3, 0,  # inner E
                  -1.25 * stem_width, -.05 * stem_length,  # outer D
                  -.781 * stem_width, -.05 * stem_length)  # D
