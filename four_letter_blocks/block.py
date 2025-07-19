@@ -149,8 +149,8 @@ class Block:
             while len(old_row) < len(line):
                 old_row.append(Block.UNUSED)
             for x, marker in enumerate(line):
-                if marker == '?':
-                    old_row[x] = marker
+                if marker in ' ?.':
+                    old_row[x] = '?'
                     continue
                 if marker == '#':
                     marker = old_row[x]

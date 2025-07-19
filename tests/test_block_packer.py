@@ -33,14 +33,14 @@ def test_empty_display():
 
 
 def test_display_max_ascii():
-    shape_counts = Counter({'O': 79})
+    shape_counts = Counter({'O': 77})
     expected_display_end = dedent("""\
-        ??
-        ??
-        @@
-        @@""")
+        ==
+        ==
+        >>
+        >>""")
 
-    packer = BlockPacker(2, 158, tries=500)
+    packer = BlockPacker(2, 154, tries=500)
     packer.required_shape_counts = shape_counts
     packer.fill()
 
@@ -54,9 +54,9 @@ def test_display_max_ascii():
 
 
 def test_display_beyond_ascii():
-    shape_counts = Counter({'O': 80})
+    shape_counts = Counter({'O': 78})
 
-    packer = BlockPacker(2, 160, tries=500)
+    packer = BlockPacker(2, 156, tries=500)
     packer.required_shape_counts = shape_counts
     packer.fill()
 
@@ -143,6 +143,25 @@ def test_fill_two_blocks():
         .....
         .....""")
     packer = BlockPacker(width, height)
+    packer.required_shape_counts = shape_counts
+    packer.fill()
+
+    assert packer.display() == expected_display
+
+
+def test_fill_to_replace_question_marks():
+    shape_counts = Counter('LO')
+    start_text = dedent("""\
+        ?????
+        ?????
+        ?????
+        ?????""")
+    expected_display = dedent("""\
+        AA..B
+        AABBB
+        .....
+        .....""")
+    packer = BlockPacker(start_text=start_text)
     packer.required_shape_counts = shape_counts
     packer.fill()
 

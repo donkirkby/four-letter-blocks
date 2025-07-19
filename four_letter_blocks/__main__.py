@@ -10,7 +10,8 @@ from functools import partial
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED, Path as ZipPath
 
-from PySide6.QtCore import QSettings, QSize, QSizeF, QObject, QRectF, QRect, QPoint, QBuffer, QThread
+from PySide6.QtCore import QSettings, QSize, QSizeF, QObject, QRectF, QRect, \
+    QPoint, QBuffer, QThread, QTimer
 from PySide6.QtGui import QFont, QPdfWriter, QPageSize, QPainter, QKeyEvent, \
     Qt, QCloseEvent, QPixmap, QColor, QTextDocument, QTextFormat, QTextCursor, \
     QTextCharFormat, QPyTextObject, QImage
@@ -75,6 +76,10 @@ class FourLetterBlocksWindow(QMainWindow):
         super().__init__()
         ui = self.ui = Ui_MainWindow()
         ui.setupUi(self)
+        self.timer = QTimer()
+        self.timer.setSingleShot(True)
+        self.timer.setInterval(100)  # milliseconds
+        self.timer.timeout.connect(self.blocks_timer_expired)
 
         ui.main_tabs.setCurrentIndex(0)
 
@@ -458,24 +463,21 @@ class FourLetterBlocksWindow(QMainWindow):
         return needed_counts
 
     def back_blocks_changed(self):
-        new_puzzle = self.update_pair_blocks(self.pair_puzzles[1],
-                                             self.ui.back_blocks_text)
-        if new_puzzle is not None:
-            self.pair_puzzles[1] = new_puzzle
-            self.summarize_crossword_pair()
+        self.ui.back_blocks_text.document().setModified(True)
+        self.timer.start()
+
+
 
     def front_blocks_changed(self):
-        new_puzzle = self.update_pair_blocks(self.pair_puzzles[0],
-                                             self.ui.front_blocks_text)
-        if new_puzzle is not None:
-            self.pair_puzzles[0] = new_puzzle
-            self.summarize_crossword_pair()
+        self.ui.front_blocks_text.document().setModified(True)
+        self.timer.start()
 
     def update_pair_blocks(self,
-                           puzzle: Puzzle | None,
+                           puzzle_index: int,
                            blocks_text: QPlainTextEdit) -> Puzzle | None:
         if self.fill_thread is not None:
             return None
+        puzzle = self.pair_puzzles[puzzle_index]
         if puzzle is None:
             return None
         new_blocks = blocks_text.toPlainText()
@@ -486,6 +488,14 @@ class FourLetterBlocksWindow(QMainWindow):
                                            puzzle.format_clues(),
                                            new_blocks)
         new_puzzle.source_path = puzzle.source_path
+        if new_puzzle is not None:
+            self.pair_puzzles[puzzle_index] = new_puzzle
+            self.summarize_crossword_pair()
+            cursor = blocks_text.textCursor()
+            old_position = cursor.position()
+            blocks_text.setPlainText(new_puzzle.format_blocks())
+            cursor.setPosition(old_position)
+            blocks_text.setTextCursor(cursor)
         return new_puzzle
 
     def clear_back(self):
@@ -513,7 +523,7 @@ class FourLetterBlocksWindow(QMainWindow):
 
         file_name = self.get_save_file_name(
             'Save refilled solutions',
-            'Text files (*.txt);;All files (*.*)')
+            'Log files (*.log);;All files (*.*)')
         if not file_name:
             return
         self.statusBar().showMessage('Refilling blocks...')
@@ -1268,6 +1278,15 @@ class FourLetterBlocksWindow(QMainWindow):
         new_puzzle.source_path = old_puzzle.source_path
         self.crossword_set[file_name] = new_puzzle
         self.summarize_crossword_set()
+
+    def blocks_timer_expired(self):
+        ui = self.ui
+        if ui.front_blocks_text.document().isModified():
+            ui.front_blocks_text.document().setModified(False)
+            self.update_pair_blocks(0, ui.front_blocks_text)
+        if ui.back_blocks_text.document().isModified():
+            ui.back_blocks_text.document().setModified(False)
+            self.update_pair_blocks(1, ui.back_blocks_text)
 
     def clues_changed(self):
         if not self.is_state_changed():

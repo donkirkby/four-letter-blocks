@@ -15,6 +15,7 @@ from PySide6.QtCore import QRectF
 from PySide6.QtGui import QPainter, QTextDocument, QTextCursor, QPixmap, \
     QTransform, QFont
 
+from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.clue import Clue
 from four_letter_blocks.grid import Grid
 from four_letter_blocks.block import Block
@@ -302,9 +303,13 @@ class Puzzle:
         rows = []
         for y in range(self.grid.height):
             rows.append(['#'] * self.grid.width)
-        ascii_start = ord('A')
-        for i, block in enumerate(self.blocks, ascii_start):
-            block_letter = '?' if block.marker == Block.UNUSED else chr(i)
+        unused_markers = (Block.UNUSED,
+                          BlockPacker.BLOCK_CHARS[BlockPacker.UNUSED])
+        for i, block in enumerate(self.blocks, start=BlockPacker.GAP + 1):
+            if block.marker in unused_markers:
+                block_letter = '?'
+            else:
+                block_letter = BlockPacker.BLOCK_CHARS[i]
             for square in block.squares:
                 x = square.x
                 y = square.y

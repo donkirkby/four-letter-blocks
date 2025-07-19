@@ -76,8 +76,12 @@ class FillThread(QThread):
                                 self.front_puzzle)
 
     def pack_until_interrupted(self):
-        back_start_blocks = self.back_puzzle.format_blocks()
-        front_start_blocks = self.front_puzzle.format_blocks()
+        back_start_blocks = self.back_puzzle.format_blocks().replace(
+            '?',
+            '.')
+        front_start_blocks = self.front_puzzle.format_blocks().replace(
+            '?',
+            '.')
         with open(self.report_path, 'w') as f:
             print('No solutions found.', file=f)
             print(self.back_puzzle.title, file=f)

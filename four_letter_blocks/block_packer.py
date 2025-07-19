@@ -25,7 +25,7 @@ class BlockPacker:
                        (i < 29 and chr(i + 63)) or  # The first block is A.
                        (i < 63 and chr(i + 64)) or  # Backslash breaks copy/paste.
                        (chr(i - 16)))  # Extra chars: mostly digits
-                   for i in range(81)}
+                   for i in range(79)}
     CHAR_BLOCKS = {c: i for i, c in BLOCK_CHARS.items()}
     def __init__(self,
                  width=0,
@@ -85,6 +85,7 @@ class BlockPacker:
         self.slot_coverage = self.state
 
     def load_start_text(self, start_text):
+        start_text = start_text.replace('?', '.')
         lines = start_text.splitlines()
         self.height = len(lines)
         self.width = self.height and len(lines[0])

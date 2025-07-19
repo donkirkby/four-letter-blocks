@@ -1036,6 +1036,7 @@ EACH
 -
 
 AAAA
+ ...
 """)
     puzzle = Puzzle.parse(source_file)
     expected_text = """\
