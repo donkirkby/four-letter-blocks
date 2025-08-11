@@ -33,7 +33,12 @@ class Individual(ABC):
 class Population:
     def __init__(self, size, fitness, individual_class, init_params):
         self.fitness = fitness
-        self.individuals = [individual_class(init_params=init_params) for _ in range(size)]
+        print('.' * size + '\b' * size, end='')
+        self.individuals = []
+        for _ in range(size):
+            self.individuals.append(individual_class(init_params=init_params))
+            print(':', end='')
+        print()
         self.sort()
         self.replace_count = 0
         self.unimproved_count = 0  # Number of times replace() didn't improve.
@@ -111,6 +116,7 @@ class Evolution:
             mothers, fathers = pool.get_parents(self.n_offsprings)
             offsprings = []
 
+            print('.' * self.n_offsprings + '\b' * self.n_offsprings, end='')
             for mother, father in zip(mothers, fathers):
                 offspring = mother.pair(father, self.pair_params)
                 mother_fitness = pool.fitness(mother)
@@ -142,6 +148,8 @@ class Evolution:
                     print(block_packer.display())
                     print()
                 offsprings.append(offspring)
+                print(':', end='')
+            print()
 
             pool.replace(offsprings)
             is_stale = is_stale or pool.is_stale

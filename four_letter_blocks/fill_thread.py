@@ -1,11 +1,12 @@
 import typing
-from collections import Counter
 from pathlib import Path
 
 from PySide6.QtCore import QThread, Signal, QObject
 
-from four_letter_blocks.block import Block
-from four_letter_blocks.evo_packer import EvoPacker, PackingFitnessCalculator, FitnessScore
+from four_letter_blocks.double_evo_packer import DoubleEvoPacker, \
+    DoublePackingFitnessCalculator
+from four_letter_blocks.evo_packer import EvoPacker, PackingFitnessCalculator, \
+    FitnessScore
 from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
 
 
@@ -36,10 +37,10 @@ class FillThread(QThread):
                 front_puzzle.format_blocks())
         self.is_packing_back = is_packing_back
         self.report_path = report_path
-        if fitness_calculator is None:
-            self.fitness_calculator = PackingFitnessCalculator()
-        else:
+        if fitness_calculator is not None:
             self.fitness_calculator = fitness_calculator
+        else:
+            self.fitness_calculator = DoublePackingFitnessCalculator()
         self.attempt_count = 0
         self.top_fitness = FitnessScore(-100, -1)
 
@@ -98,8 +99,6 @@ class FillThread(QThread):
                 self.back_puzzle.format_clues(),
                 back_start_blocks)
             self.back_puzzle.rotations_display = RotationsDisplay.BACK
-            if not self.pack_back_puzzle():
-                continue
 
             self.front_puzzle = Puzzle.parse_sections(
                 self.front_puzzle.title,
@@ -108,8 +107,12 @@ class FillThread(QThread):
                 front_start_blocks)
             self.back_puzzle.rotations_display = RotationsDisplay.BACK
             self.front_puzzle.rotations_display = RotationsDisplay.FRONT
-            if not self.pack_front_puzzle():
+            packed_puzzles = self.pack_both_sides(
+                self.front_puzzle,
+                self.back_puzzle)
+            if packed_puzzles is None:
                 continue
+            self.front_puzzle, self.back_puzzle = packed_puzzles
 
             self.solutions.append((self.back_puzzle.format_blocks(),
                                    self.front_puzzle.format_blocks(),
@@ -130,17 +133,11 @@ class FillThread(QThread):
 
     def pack_back_puzzle(self) -> bool:
         back_puzzle = self.back_puzzle
-        block_count = back_puzzle.grid.letter_count // 4
-        back_shapes = Counter({shape_name: block_count
-                               for shape_name in Block.shape_names()})
         if self.front_puzzle is None:
             front_blocks = '...'
         else:
             front_blocks = self.front_puzzle.format_blocks()
-        packed_puzzle = self.run_epochs(
-            back_puzzle,
-            back_shapes,
-            front_blocks=front_blocks)
+        packed_puzzle = self.run_epochs(back_puzzle, front_blocks=front_blocks)
         if packed_puzzle is None:
             return False
         self.back_puzzle = packed_puzzle
@@ -157,10 +154,7 @@ class FillThread(QThread):
             raise RuntimeError('Cannot fill with negative counts.')
 
         back_blocks = packed_back_puzzle.format_blocks()
-        packed_puzzle = self.run_epochs(
-            front_puzzle,
-            needed_counts,
-            back_blocks=back_blocks)
+        packed_puzzle = self.run_epochs(front_puzzle, back_blocks=back_blocks)
         if packed_puzzle is None:
             return False
         self.front_puzzle = packed_puzzle
@@ -168,7 +162,6 @@ class FillThread(QThread):
 
     def run_epochs(self,
                    puzzle: Puzzle,
-                   shape_counts: typing.Counter[str],
                    back_blocks: str | None = None,
                    front_blocks: str | None = None) -> Puzzle | None:
         start_text = puzzle.format_blocks().replace('?', '.')
@@ -207,3 +200,49 @@ class FillThread(QThread):
                                      puzzle.format_grid(),
                                      puzzle.format_clues(),
                                      packer.display())
+
+    def pack_both_sides(self,
+                        front_puzzle: Puzzle,
+                        back_puzzle: Puzzle) -> tuple[Puzzle, Puzzle] | None:
+        """ Pack front and back puzzles together.
+
+        :return: packed_front_puzzle, packed_back_puzzle or None if packing
+            failed.
+        """
+        front_text = front_puzzle.format_blocks().replace('?', '.')
+        back_text = back_puzzle.format_blocks().replace('?', '.')
+
+        packer = DoubleEvoPacker(front_text, back_text, tries=400)
+        packer.setup(self.fitness_calculator)
+        packer.is_logging = True
+        new_front = new_back = ''
+        while packer.current_epoch < 1000:
+            is_found = packer.run_epoch()
+            if self.isInterruptionRequested():
+                return None
+            new_front, new_back = packer.top_blocks.split('\n\n')
+
+            status = f'Packing epoch {packer.current_epoch}, ' \
+                     f'{packer.top_fitness}'
+
+            # noinspection PyUnresolvedReferences
+            self.status_update.emit(status, new_back, new_front)
+            self.top_fitness = packer.top_fitness
+            if is_found:
+                break
+        else:
+            if not packer.find_usable_packing():
+                return None
+
+        new_front_puzzle = Puzzle.parse_sections(
+            front_puzzle.title,
+            front_puzzle.format_grid(),
+            front_puzzle.format_clues(),
+            new_front)
+        new_back_puzzle = Puzzle.parse_sections(
+            back_puzzle.title,
+            back_puzzle.format_grid(),
+            back_puzzle.format_clues(),
+            new_back)
+        return new_front_puzzle, new_back_puzzle
+

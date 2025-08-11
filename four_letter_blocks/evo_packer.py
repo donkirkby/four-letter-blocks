@@ -437,7 +437,7 @@ class EvoPacker(BlockPacker):
             if packer_display not in self.top_choices:
                 self.top_choices.add(packer_display)
                 if self.is_logging:
-                    print(f'Packing {len(self.top_choices)}:')
+                    print(f'Packing {len(self.top_choices)}, {top_fitness}:')
                     print(packer_display)
         if (top_fitness.empty_spaces == 0 and
                 top_fitness.missed_targets == 0 and
