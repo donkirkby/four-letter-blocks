@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
+    <width>805</width>
     <height>600</height>
    </rect>
   </property>
@@ -33,7 +33,7 @@
     <item>
      <widget class="QStackedWidget" name="main_tabs">
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="puzzle_tab">
        <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -103,21 +103,168 @@
       </widget>
       <widget class="QWidget" name="pair_tab">
        <layout class="QGridLayout" name="gridLayout_2">
-        <item row="9" column="3">
-         <widget class="QPushButton" name="front_clear_button">
+        <item row="13" column="0" colspan="8">
+         <widget class="QLabel" name="needed_shapes_label">
           <property name="text">
-           <string>Clear</string>
+           <string>Needed Shapes:</string>
           </property>
          </widget>
         </item>
-        <item row="9" column="2">
+        <item row="5" column="6">
+         <widget class="QPushButton" name="back_save_button">
+          <property name="text">
+           <string>S&amp;ave</string>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="5">
+         <widget class="QPushButton" name="front_fill_button">
+          <property name="text">
+           <string>Fill</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1" colspan="7">
+         <widget class="QLineEdit" name="back_name">
+          <property name="focusPolicy">
+           <enum>Qt::ClickFocus</enum>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="0">
+         <widget class="QLabel" name="front_label">
+          <property name="text">
+           <string>Front Puzzle</string>
+          </property>
+         </widget>
+        </item>
+        <item row="11" column="0">
+         <widget class="QLabel" name="front_hue_label">
+          <property name="text">
+           <string>Front Hue</string>
+          </property>
+         </widget>
+        </item>
+        <item row="11" column="1" colspan="7">
+         <widget class="QSpinBox" name="front_hue">
+          <property name="suffix">
+           <string>°</string>
+          </property>
+          <property name="maximum">
+           <number>360</number>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="7">
+         <widget class="QPushButton" name="front_refill_button">
+          <property name="text">
+           <string>Refill...</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="0">
+         <widget class="QLabel" name="back_blocks_label">
+          <property name="text">
+           <string>Back Blocks</string>
+          </property>
+         </widget>
+        </item>
+        <item row="10" column="0" colspan="8">
+         <widget class="QPlainTextEdit" name="front_blocks_text"/>
+        </item>
+        <item row="9" column="3">
          <widget class="QPushButton" name="front_open_button">
           <property name="text">
            <string>Ope&amp;n...</string>
           </property>
          </widget>
         </item>
-        <item row="5" column="1">
+        <item row="9" column="4">
+         <widget class="QPushButton" name="front_clear_button">
+          <property name="text">
+           <string>Clear</string>
+          </property>
+         </widget>
+        </item>
+        <item row="6" column="0" colspan="8">
+         <widget class="QPlainTextEdit" name="back_blocks_text"/>
+        </item>
+        <item row="9" column="1">
+         <widget class="QRadioButton" name="is_pair_travel_blocks">
+          <property name="text">
+           <string>Travel Blocks</string>
+          </property>
+          <property name="checked">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="back_label">
+          <property name="text">
+           <string>Back Puzzle</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="5">
+         <widget class="QPushButton" name="back_fill_button">
+          <property name="text">
+           <string>Fill</string>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="0">
+         <widget class="QLabel" name="front_blocks_label">
+          <property name="text">
+           <string>Front Blocks</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="3">
+         <widget class="QPushButton" name="back_open_button">
+          <property name="text">
+           <string>&amp;Open...</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="4">
+         <widget class="QPushButton" name="back_clear_button">
+          <property name="text">
+           <string>Clear</string>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="6">
+         <widget class="QPushButton" name="front_save_button">
+          <property name="text">
+           <string>S&amp;ave</string>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="1" colspan="7">
+         <widget class="QLineEdit" name="front_name">
+          <property name="focusPolicy">
+           <enum>Qt::ClickFocus</enum>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="2">
+         <widget class="QRadioButton" name="is_pair_puzzle_blocks">
+          <property name="text">
+           <string>Puzzle Blocks</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="1" colspan="2">
          <spacer name="horizontal_spacer">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -129,133 +276,6 @@
            </size>
           </property>
          </spacer>
-        </item>
-        <item row="5" column="0">
-         <widget class="QLabel" name="back_blocks_label">
-          <property name="text">
-           <string>Back Blocks</string>
-          </property>
-         </widget>
-        </item>
-        <item row="6" column="0" colspan="7">
-         <widget class="QPlainTextEdit" name="back_blocks_text"/>
-        </item>
-        <item row="9" column="0">
-         <widget class="QLabel" name="front_blocks_label">
-          <property name="text">
-           <string>Front Blocks</string>
-          </property>
-         </widget>
-        </item>
-        <item row="13" column="0" colspan="7">
-         <widget class="QLabel" name="needed_shapes_label">
-          <property name="text">
-           <string>Needed Shapes:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="2">
-         <widget class="QPushButton" name="back_open_button">
-          <property name="text">
-           <string>&amp;Open...</string>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="3">
-         <widget class="QPushButton" name="back_clear_button">
-          <property name="text">
-           <string>Clear</string>
-          </property>
-         </widget>
-        </item>
-        <item row="7" column="0">
-         <widget class="QLabel" name="front_label">
-          <property name="text">
-           <string>Front Puzzle</string>
-          </property>
-         </widget>
-        </item>
-        <item row="9" column="4">
-         <widget class="QPushButton" name="front_fill_button">
-          <property name="text">
-           <string>Fill</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="back_label">
-          <property name="text">
-           <string>Back Puzzle</string>
-          </property>
-         </widget>
-        </item>
-        <item row="9" column="5">
-         <widget class="QPushButton" name="front_save_button">
-          <property name="text">
-           <string>S&amp;ave</string>
-          </property>
-         </widget>
-        </item>
-        <item row="9" column="6">
-         <widget class="QPushButton" name="front_refill_button">
-          <property name="text">
-           <string>Refill...</string>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="4">
-         <widget class="QPushButton" name="back_fill_button">
-          <property name="text">
-           <string>Fill</string>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="5">
-         <widget class="QPushButton" name="back_save_button">
-          <property name="text">
-           <string>S&amp;ave</string>
-          </property>
-         </widget>
-        </item>
-        <item row="11" column="0">
-         <widget class="QLabel" name="front_hue_label">
-          <property name="text">
-           <string>Front Hue</string>
-          </property>
-         </widget>
-        </item>
-        <item row="10" column="0" colspan="7">
-         <widget class="QPlainTextEdit" name="front_blocks_text"/>
-        </item>
-        <item row="2" column="1" colspan="6">
-         <widget class="QLineEdit" name="back_name">
-          <property name="focusPolicy">
-           <enum>Qt::ClickFocus</enum>
-          </property>
-          <property name="readOnly">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="7" column="1" colspan="6">
-         <widget class="QLineEdit" name="front_name">
-          <property name="focusPolicy">
-           <enum>Qt::ClickFocus</enum>
-          </property>
-          <property name="readOnly">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="11" column="1" colspan="6">
-         <widget class="QSpinBox" name="front_hue">
-          <property name="suffix">
-           <string>°</string>
-          </property>
-          <property name="maximum">
-           <number>360</number>
-          </property>
-         </widget>
         </item>
        </layout>
       </widget>
@@ -363,9 +383,9 @@
          <widget class="QWidget" name="widget" native="true">
           <layout class="QHBoxLayout" name="horizontalLayout">
            <item>
-            <widget class="QRadioButton" name="is_packing_blocks">
+            <widget class="QRadioButton" name="is_travel_blocks">
              <property name="text">
-              <string>Packing Blocks</string>
+              <string>Travel Blocks</string>
              </property>
              <property name="checked">
               <bool>true</bool>
@@ -428,7 +448,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>805</width>
      <height>22</height>
     </rect>
    </property>

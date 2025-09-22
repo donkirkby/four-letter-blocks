@@ -50,5 +50,7 @@ class DoublePackingFitnessCalculator(PackingFitnessCalculator):
         back_state = state[height:]
         front_score = super().calculate_from_state(front_state)
         back_score = super().calculate_from_state(back_state)
-        front_score.warning_count += back_score.warning_count
-        return front_score
+        return FitnessScore(front_score.empty_spaces,
+                            front_score.empty_area,
+                            front_score.missed_targets,
+                            front_score.warning_count + back_score.warning_count)

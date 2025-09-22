@@ -98,6 +98,23 @@ def test_start_text():
     assert display == start
 
 
+def test_trim_start_text():
+    start = dedent("""\
+        BB.A##
+        BB.AAA""")
+    width = height = 4
+    expected_display = dedent("""\
+        BB.A
+        BB.A
+        ....
+        ....""")
+    block_packer = BlockPacker(width, height)
+
+    block_packer.load_start_text(start)
+
+    assert block_packer.display() == expected_display
+
+
 def test_is_full_true():
     start = dedent("""\
         BBACCC

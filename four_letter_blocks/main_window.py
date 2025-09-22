@@ -30,7 +30,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(800, 600)
+        MainWindow.resize(805, 600)
         self.open_action = QAction(MainWindow)
         self.open_action.setObjectName(u"open_action")
         self.save_action = QAction(MainWindow)
@@ -133,114 +133,126 @@ class Ui_MainWindow(object):
         self.pair_tab.setObjectName(u"pair_tab")
         self.gridLayout_2 = QGridLayout(self.pair_tab)
         self.gridLayout_2.setObjectName(u"gridLayout_2")
-        self.front_clear_button = QPushButton(self.pair_tab)
-        self.front_clear_button.setObjectName(u"front_clear_button")
-
-        self.gridLayout_2.addWidget(self.front_clear_button, 9, 3, 1, 1)
-
-        self.front_open_button = QPushButton(self.pair_tab)
-        self.front_open_button.setObjectName(u"front_open_button")
-
-        self.gridLayout_2.addWidget(self.front_open_button, 9, 2, 1, 1)
-
-        self.horizontal_spacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-
-        self.gridLayout_2.addItem(self.horizontal_spacer, 5, 1, 1, 1)
-
-        self.back_blocks_label = QLabel(self.pair_tab)
-        self.back_blocks_label.setObjectName(u"back_blocks_label")
-
-        self.gridLayout_2.addWidget(self.back_blocks_label, 5, 0, 1, 1)
-
-        self.back_blocks_text = QPlainTextEdit(self.pair_tab)
-        self.back_blocks_text.setObjectName(u"back_blocks_text")
-
-        self.gridLayout_2.addWidget(self.back_blocks_text, 6, 0, 1, 7)
-
-        self.front_blocks_label = QLabel(self.pair_tab)
-        self.front_blocks_label.setObjectName(u"front_blocks_label")
-
-        self.gridLayout_2.addWidget(self.front_blocks_label, 9, 0, 1, 1)
-
         self.needed_shapes_label = QLabel(self.pair_tab)
         self.needed_shapes_label.setObjectName(u"needed_shapes_label")
 
-        self.gridLayout_2.addWidget(self.needed_shapes_label, 13, 0, 1, 7)
-
-        self.back_open_button = QPushButton(self.pair_tab)
-        self.back_open_button.setObjectName(u"back_open_button")
-
-        self.gridLayout_2.addWidget(self.back_open_button, 5, 2, 1, 1)
-
-        self.back_clear_button = QPushButton(self.pair_tab)
-        self.back_clear_button.setObjectName(u"back_clear_button")
-
-        self.gridLayout_2.addWidget(self.back_clear_button, 5, 3, 1, 1)
-
-        self.front_label = QLabel(self.pair_tab)
-        self.front_label.setObjectName(u"front_label")
-
-        self.gridLayout_2.addWidget(self.front_label, 7, 0, 1, 1)
-
-        self.front_fill_button = QPushButton(self.pair_tab)
-        self.front_fill_button.setObjectName(u"front_fill_button")
-
-        self.gridLayout_2.addWidget(self.front_fill_button, 9, 4, 1, 1)
-
-        self.back_label = QLabel(self.pair_tab)
-        self.back_label.setObjectName(u"back_label")
-
-        self.gridLayout_2.addWidget(self.back_label, 2, 0, 1, 1)
-
-        self.front_save_button = QPushButton(self.pair_tab)
-        self.front_save_button.setObjectName(u"front_save_button")
-
-        self.gridLayout_2.addWidget(self.front_save_button, 9, 5, 1, 1)
-
-        self.front_refill_button = QPushButton(self.pair_tab)
-        self.front_refill_button.setObjectName(u"front_refill_button")
-
-        self.gridLayout_2.addWidget(self.front_refill_button, 9, 6, 1, 1)
-
-        self.back_fill_button = QPushButton(self.pair_tab)
-        self.back_fill_button.setObjectName(u"back_fill_button")
-
-        self.gridLayout_2.addWidget(self.back_fill_button, 5, 4, 1, 1)
+        self.gridLayout_2.addWidget(self.needed_shapes_label, 13, 0, 1, 8)
 
         self.back_save_button = QPushButton(self.pair_tab)
         self.back_save_button.setObjectName(u"back_save_button")
 
-        self.gridLayout_2.addWidget(self.back_save_button, 5, 5, 1, 1)
+        self.gridLayout_2.addWidget(self.back_save_button, 5, 6, 1, 1)
 
-        self.front_hue_label = QLabel(self.pair_tab)
-        self.front_hue_label.setObjectName(u"front_hue_label")
+        self.front_fill_button = QPushButton(self.pair_tab)
+        self.front_fill_button.setObjectName(u"front_fill_button")
 
-        self.gridLayout_2.addWidget(self.front_hue_label, 11, 0, 1, 1)
-
-        self.front_blocks_text = QPlainTextEdit(self.pair_tab)
-        self.front_blocks_text.setObjectName(u"front_blocks_text")
-
-        self.gridLayout_2.addWidget(self.front_blocks_text, 10, 0, 1, 7)
+        self.gridLayout_2.addWidget(self.front_fill_button, 9, 5, 1, 1)
 
         self.back_name = QLineEdit(self.pair_tab)
         self.back_name.setObjectName(u"back_name")
         self.back_name.setFocusPolicy(Qt.ClickFocus)
         self.back_name.setReadOnly(True)
 
-        self.gridLayout_2.addWidget(self.back_name, 2, 1, 1, 6)
+        self.gridLayout_2.addWidget(self.back_name, 2, 1, 1, 7)
+
+        self.front_label = QLabel(self.pair_tab)
+        self.front_label.setObjectName(u"front_label")
+
+        self.gridLayout_2.addWidget(self.front_label, 7, 0, 1, 1)
+
+        self.front_hue_label = QLabel(self.pair_tab)
+        self.front_hue_label.setObjectName(u"front_hue_label")
+
+        self.gridLayout_2.addWidget(self.front_hue_label, 11, 0, 1, 1)
+
+        self.front_hue = QSpinBox(self.pair_tab)
+        self.front_hue.setObjectName(u"front_hue")
+        self.front_hue.setMaximum(360)
+
+        self.gridLayout_2.addWidget(self.front_hue, 11, 1, 1, 7)
+
+        self.front_refill_button = QPushButton(self.pair_tab)
+        self.front_refill_button.setObjectName(u"front_refill_button")
+
+        self.gridLayout_2.addWidget(self.front_refill_button, 9, 7, 1, 1)
+
+        self.back_blocks_label = QLabel(self.pair_tab)
+        self.back_blocks_label.setObjectName(u"back_blocks_label")
+
+        self.gridLayout_2.addWidget(self.back_blocks_label, 5, 0, 1, 1)
+
+        self.front_blocks_text = QPlainTextEdit(self.pair_tab)
+        self.front_blocks_text.setObjectName(u"front_blocks_text")
+
+        self.gridLayout_2.addWidget(self.front_blocks_text, 10, 0, 1, 8)
+
+        self.front_open_button = QPushButton(self.pair_tab)
+        self.front_open_button.setObjectName(u"front_open_button")
+
+        self.gridLayout_2.addWidget(self.front_open_button, 9, 3, 1, 1)
+
+        self.front_clear_button = QPushButton(self.pair_tab)
+        self.front_clear_button.setObjectName(u"front_clear_button")
+
+        self.gridLayout_2.addWidget(self.front_clear_button, 9, 4, 1, 1)
+
+        self.back_blocks_text = QPlainTextEdit(self.pair_tab)
+        self.back_blocks_text.setObjectName(u"back_blocks_text")
+
+        self.gridLayout_2.addWidget(self.back_blocks_text, 6, 0, 1, 8)
+
+        self.is_pair_travel_blocks = QRadioButton(self.pair_tab)
+        self.is_pair_travel_blocks.setObjectName(u"is_pair_travel_blocks")
+        self.is_pair_travel_blocks.setChecked(False)
+
+        self.gridLayout_2.addWidget(self.is_pair_travel_blocks, 9, 1, 1, 1)
+
+        self.back_label = QLabel(self.pair_tab)
+        self.back_label.setObjectName(u"back_label")
+
+        self.gridLayout_2.addWidget(self.back_label, 2, 0, 1, 1)
+
+        self.back_fill_button = QPushButton(self.pair_tab)
+        self.back_fill_button.setObjectName(u"back_fill_button")
+
+        self.gridLayout_2.addWidget(self.back_fill_button, 5, 5, 1, 1)
+
+        self.front_blocks_label = QLabel(self.pair_tab)
+        self.front_blocks_label.setObjectName(u"front_blocks_label")
+
+        self.gridLayout_2.addWidget(self.front_blocks_label, 9, 0, 1, 1)
+
+        self.back_open_button = QPushButton(self.pair_tab)
+        self.back_open_button.setObjectName(u"back_open_button")
+
+        self.gridLayout_2.addWidget(self.back_open_button, 5, 3, 1, 1)
+
+        self.back_clear_button = QPushButton(self.pair_tab)
+        self.back_clear_button.setObjectName(u"back_clear_button")
+
+        self.gridLayout_2.addWidget(self.back_clear_button, 5, 4, 1, 1)
+
+        self.front_save_button = QPushButton(self.pair_tab)
+        self.front_save_button.setObjectName(u"front_save_button")
+
+        self.gridLayout_2.addWidget(self.front_save_button, 9, 6, 1, 1)
 
         self.front_name = QLineEdit(self.pair_tab)
         self.front_name.setObjectName(u"front_name")
         self.front_name.setFocusPolicy(Qt.ClickFocus)
         self.front_name.setReadOnly(True)
 
-        self.gridLayout_2.addWidget(self.front_name, 7, 1, 1, 6)
+        self.gridLayout_2.addWidget(self.front_name, 7, 1, 1, 7)
 
-        self.front_hue = QSpinBox(self.pair_tab)
-        self.front_hue.setObjectName(u"front_hue")
-        self.front_hue.setMaximum(360)
+        self.is_pair_puzzle_blocks = QRadioButton(self.pair_tab)
+        self.is_pair_puzzle_blocks.setObjectName(u"is_pair_puzzle_blocks")
+        self.is_pair_puzzle_blocks.setChecked(True)
 
-        self.gridLayout_2.addWidget(self.front_hue, 11, 1, 1, 6)
+        self.gridLayout_2.addWidget(self.is_pair_puzzle_blocks, 9, 2, 1, 1)
+
+        self.horizontal_spacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.gridLayout_2.addItem(self.horizontal_spacer, 5, 1, 1, 2)
 
         self.main_tabs.addWidget(self.pair_tab)
         self.set_tab = QWidget()
@@ -322,11 +334,11 @@ class Ui_MainWindow(object):
         self.widget.setObjectName(u"widget")
         self.horizontalLayout = QHBoxLayout(self.widget)
         self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.is_packing_blocks = QRadioButton(self.widget)
-        self.is_packing_blocks.setObjectName(u"is_packing_blocks")
-        self.is_packing_blocks.setChecked(True)
+        self.is_travel_blocks = QRadioButton(self.widget)
+        self.is_travel_blocks.setObjectName(u"is_travel_blocks")
+        self.is_travel_blocks.setChecked(True)
 
-        self.horizontalLayout.addWidget(self.is_packing_blocks)
+        self.horizontalLayout.addWidget(self.is_travel_blocks)
 
         self.is_puzzle_blocks = QRadioButton(self.widget)
         self.is_puzzle_blocks.setObjectName(u"is_puzzle_blocks")
@@ -370,7 +382,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 800, 22))
+        self.menubar.setGeometry(QRect(0, 0, 805, 22))
         self.file_menu = QMenu(self.menubar)
         self.file_menu.setObjectName(u"file_menu")
         self.help_menu = QMenu(self.menubar)
@@ -490,22 +502,24 @@ class Ui_MainWindow(object):
         self.clues_label.setText(QCoreApplication.translate("MainWindow", u"Clues", None))
         self.blocks_label.setText(QCoreApplication.translate("MainWindow", u"Blocks", None))
         self.warnings_label.setText(QCoreApplication.translate("MainWindow", u"Warnings", None))
-        self.front_clear_button.setText(QCoreApplication.translate("MainWindow", u"Clear", None))
-        self.front_open_button.setText(QCoreApplication.translate("MainWindow", u"Ope&n...", None))
-        self.back_blocks_label.setText(QCoreApplication.translate("MainWindow", u"Back Blocks", None))
-        self.front_blocks_label.setText(QCoreApplication.translate("MainWindow", u"Front Blocks", None))
         self.needed_shapes_label.setText(QCoreApplication.translate("MainWindow", u"Needed Shapes:", None))
-        self.back_open_button.setText(QCoreApplication.translate("MainWindow", u"&Open...", None))
-        self.back_clear_button.setText(QCoreApplication.translate("MainWindow", u"Clear", None))
-        self.front_label.setText(QCoreApplication.translate("MainWindow", u"Front Puzzle", None))
-        self.front_fill_button.setText(QCoreApplication.translate("MainWindow", u"Fill", None))
-        self.back_label.setText(QCoreApplication.translate("MainWindow", u"Back Puzzle", None))
-        self.front_save_button.setText(QCoreApplication.translate("MainWindow", u"S&ave", None))
-        self.front_refill_button.setText(QCoreApplication.translate("MainWindow", u"Refill...", None))
-        self.back_fill_button.setText(QCoreApplication.translate("MainWindow", u"Fill", None))
         self.back_save_button.setText(QCoreApplication.translate("MainWindow", u"S&ave", None))
+        self.front_fill_button.setText(QCoreApplication.translate("MainWindow", u"Fill", None))
+        self.front_label.setText(QCoreApplication.translate("MainWindow", u"Front Puzzle", None))
         self.front_hue_label.setText(QCoreApplication.translate("MainWindow", u"Front Hue", None))
         self.front_hue.setSuffix(QCoreApplication.translate("MainWindow", u"\u00b0", None))
+        self.front_refill_button.setText(QCoreApplication.translate("MainWindow", u"Refill...", None))
+        self.back_blocks_label.setText(QCoreApplication.translate("MainWindow", u"Back Blocks", None))
+        self.front_open_button.setText(QCoreApplication.translate("MainWindow", u"Ope&n...", None))
+        self.front_clear_button.setText(QCoreApplication.translate("MainWindow", u"Clear", None))
+        self.is_pair_travel_blocks.setText(QCoreApplication.translate("MainWindow", u"Travel Blocks", None))
+        self.back_label.setText(QCoreApplication.translate("MainWindow", u"Back Puzzle", None))
+        self.back_fill_button.setText(QCoreApplication.translate("MainWindow", u"Fill", None))
+        self.front_blocks_label.setText(QCoreApplication.translate("MainWindow", u"Front Blocks", None))
+        self.back_open_button.setText(QCoreApplication.translate("MainWindow", u"&Open...", None))
+        self.back_clear_button.setText(QCoreApplication.translate("MainWindow", u"Clear", None))
+        self.front_save_button.setText(QCoreApplication.translate("MainWindow", u"S&ave", None))
+        self.is_pair_puzzle_blocks.setText(QCoreApplication.translate("MainWindow", u"Puzzle Blocks", None))
         self.puzzle_set_font_label.setText(QCoreApplication.translate("MainWindow", u"First font", None))
         self.crossword_label.setText(QCoreApplication.translate("MainWindow", u"Crossword Files", None))
         self.puzzle_set_clear_button.setText(QCoreApplication.translate("MainWindow", u"Clear", None))
@@ -516,7 +530,7 @@ class Ui_MainWindow(object):
         self.add_button.setText(QCoreApplication.translate("MainWindow", u"Add...", None))
         self.background_hue.setSuffix(QCoreApplication.translate("MainWindow", u"\u00b0", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"Block Type", None))
-        self.is_packing_blocks.setText(QCoreApplication.translate("MainWindow", u"Packing Blocks", None))
+        self.is_travel_blocks.setText(QCoreApplication.translate("MainWindow", u"Travel Blocks", None))
         self.is_puzzle_blocks.setText(QCoreApplication.translate("MainWindow", u"Puzzle Blocks", None))
         self.one_sided_checkbox.setText(QCoreApplication.translate("MainWindow", u"One Sided", None))
         self.font_add_button.setText(QCoreApplication.translate("MainWindow", u"&Add...", None))

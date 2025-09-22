@@ -44,7 +44,7 @@ def read_puzzle_set(file_path: Path) -> PuzzleSet:
 
 
 def write_puzzle_set(puzzle_set: PuzzleSet, file_path: Path) -> None:
-    puzzles = [str(puzzle.source_path.relative_to(file_path.parent,
+    puzzles = [str(puzzle.source_path.relative_to(file_path.parent.absolute(),
                                                   walk_up=True))
                for puzzle in puzzle_set.puzzles
                if puzzle.source_path is not None]

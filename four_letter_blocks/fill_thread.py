@@ -1,4 +1,5 @@
 import typing
+from dataclasses import dataclass
 from pathlib import Path
 
 from PySide6.QtCore import QThread, Signal, QObject
@@ -9,72 +10,108 @@ from four_letter_blocks.evo_packer import EvoPacker, PackingFitnessCalculator, \
     FitnessScore
 from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
 
+@dataclass(frozen=True)
+class PackingProgress:
+    summary: str
+    target_texts: tuple[str, ...]
+    source_texts: tuple[str, ...]
+    score: FitnessScore
+    is_success: bool = False
+
 
 class FillThread(QThread):
-    status_update = Signal(str, str, str)  # status, back_blocks, front_blocks
-    completed = Signal(bool, str, Puzzle, Puzzle)  # success, summary, back, front
+    """ Run evolutionary packing in a background thread. """
+    status_update = Signal(PackingProgress)
+    completed = Signal(PackingProgress)
 
     def __init__(self,
-                 parent: QObject | None,
-                 back_puzzle: Puzzle,
-                 front_puzzle: Puzzle | None,
-                 is_packing_back: bool,
+                 target_texts: typing.Sequence[str],
+                 source_texts: typing.Sequence[str] = (),
                  report_path: Path | None = None,
-                 fitness_calculator: PackingFitnessCalculator | None = None):
+                 parent: QObject | None = None):
+        """ Initialize.
+
+        :param target_texts: grids to pack with blocks, may be puzzle grids with
+            black squares, or travel grids with no black squares that you can
+            add black squares to.
+        :param source_texts: either packed puzzle grids to use for required
+            shape counts, or unpacked puzzle grids to pack at the same time
+            with flipped shape counts. If target_texts are puzzle grids with
+            black squares, then flip the shape counts.
+        :param report_path: path to write report to as solutions are found. If
+            it's not None, then the thread keeps running forever, otherwise it
+            stops at the first solution.
+
+        Possible scenarios:
+        1. Pack one puzzle's grid. inputs: target_texts[0]
+           (black squares, unpacked)
+        2. Pack one puzzle's grid with the flipped shape counts from another
+           puzzle's packing. inputs: target_texts[0] (black_squares, unpacked),
+           source_texts[0] (black squares, packed), is_flipped = True
+        3. Pack a travel grid with the shape counts from a puzzle. inputs:
+           target_texts[0] (no black squares, unpacked),
+           source_texts[0] (black squares, packed)
+        4. Pack a travel grid with the shape counts from multiple puzzles. inputs:
+           target_texts[0] (no black squares, unpacked),
+           source_texts (black squares, packed)
+        5. Pack front and back puzzles with flipped shape counts. inputs:
+           target_texts[0] (black squares, unpacked),
+           source_texts[0] (black squares, packed), is_flipped = True
+        6. Pack front and back sets of puzzles with flipped shape counts. inputs:
+           target_texts (black squares, unpacked),
+           source_texts (black squares, unpacked) , is_flipped = True
+        """
         super().__init__(parent)
-        # copy puzzles, so we don't access them from two threads.
-        self.back_puzzle = Puzzle.parse_sections(back_puzzle.title,
-                                                 back_puzzle.format_grid(),
-                                                 back_puzzle.format_clues(),
-                                                 back_puzzle.format_blocks())
-        if front_puzzle is None:
-            self.front_puzzle = None
-        else:
-            self.front_puzzle = Puzzle.parse_sections(
-                front_puzzle.title,
-                front_puzzle.format_grid(),
-                front_puzzle.format_clues(),
-                front_puzzle.format_blocks())
-        self.is_packing_back = is_packing_back
+        self.target_texts = list(target_texts)
         self.report_path = report_path
-        if fitness_calculator is not None:
-            self.fitness_calculator = fitness_calculator
-        else:
-            self.fitness_calculator = DoublePackingFitnessCalculator()
+        start_text = self.target_texts[0].replace('.', '?')
+        self.packer = EvoPacker(start_text=start_text)
         self.attempt_count = 0
         self.top_fitness = FitnessScore(-100, -1)
+        self.solutions: list[PackingProgress] = []
 
-        # [(back, front, fitness)]
-        self.solutions: typing.List[typing.Tuple[str, str, FitnessScore]] = []
+        gap_count = sum(c == '.' for c in self.target_texts[0])
+        block_count = gap_count // 4
+
+        self.source_texts = list(source_texts)
+        if not source_texts:
+            target_shape_counts = EvoPacker.calculate_target_shape_counts(
+                block_count)
+        else:
+            source_puzzle = Puzzle.parse_sections('',
+                                                  source_texts[0],
+                                                  '',
+                                                  source_texts[0])
+            source_puzzle.rotations_display = RotationsDisplay.BACK
+            target_shape_counts = source_puzzle.shape_counts
+        self.packer.target_shape_counts = target_shape_counts
 
     def run(self):
         if self.report_path is not None:
             self.pack_until_interrupted()
             return
 
-        if self.is_packing_back:
-            is_packed = self.pack_back_puzzle()
-            if is_packed:
-                status = 'Filled back.'
-            else:
-                status = 'Filling back failed.'
+        try:
+            is_packed = self.run_epochs()
+        except RuntimeError as ex:
+            status = f'Filling failed: {ex}'
+            is_packed = False
         else:
-            try:
-                is_packed = self.pack_front_puzzle()
-            except RuntimeError as ex:
-                status = f'Filling front failed: {ex}'
-                is_packed = False
+            if is_packed:
+                status = 'Filled.'
             else:
-                if is_packed:
-                    status = 'Filled front.'
-                else:
-                    status = 'Filling front failed.'
+                status = 'Filling failed.'
         if not self.isInterruptionRequested():
-            # noinspection PyUnresolvedReferences
-            self.completed.emit(is_packed,
-                                status,
-                                self.back_puzzle,
-                                self.front_puzzle)
+            if self.source_texts is None:
+                source_texts = None
+            else:
+                source_texts = tuple(self.source_texts)
+            progress = PackingProgress(status,
+                                       tuple(self.target_texts),
+                                       source_texts,
+                                       self.packer.top_fitness,
+                                       is_packed)
+            self.completed.emit(progress)
 
     def pack_until_interrupted(self):
         back_start_blocks = self.back_puzzle.format_blocks().replace(
@@ -137,18 +174,31 @@ class FillThread(QThread):
             front_blocks = '...'
         else:
             front_blocks = self.front_puzzle.format_blocks()
-        packed_puzzle = self.run_epochs(back_puzzle, front_blocks=front_blocks)
-        if packed_puzzle is None:
-            return False
-        self.back_puzzle = packed_puzzle
+        self.start_text = back_puzzle.format_blocks()
+        # packed_puzzle = self.run_epochs(back_puzzle, front_blocks=front_blocks)
+        # if packed_puzzle is None:
+        #     return False
+        # self.back_puzzle = packed_puzzle
         return True
 
     def pack_front_puzzle(self) -> bool:
         packed_back_puzzle = self.back_puzzle
         front_puzzle = self.front_puzzle
         assert front_puzzle is not None
+        if self.packing_blocks is None:
+            packed_shape_counts = front_puzzle.shape_counts
+            self.start_text = front_puzzle.format_blocks()
+        else:
+            dummy_puzzle = Puzzle.parse_sections(title='Dummy',
+                                                 grid_text=self.packing_blocks,
+                                                 clues_text='',
+                                                 blocks_text=self.packing_blocks)
+            dummy_puzzle.rotations_display = RotationsDisplay.FRONT
+            packed_shape_counts = dummy_puzzle.shape_counts
+            self.start_text = self.packing_blocks
+
         needed_counts = packed_back_puzzle.shape_counts
-        needed_counts.subtract(front_puzzle.shape_counts)
+        needed_counts.subtract(packed_shape_counts)
         min_count = min(needed_counts.values())
         if min_count < 0:
             raise RuntimeError('Cannot fill with negative counts.')
@@ -160,46 +210,33 @@ class FillThread(QThread):
         self.front_puzzle = packed_puzzle
         return True
 
-    def run_epochs(self,
-                   puzzle: Puzzle,
-                   back_blocks: str | None = None,
-                   front_blocks: str | None = None) -> Puzzle | None:
-        start_text = puzzle.format_blocks().replace('?', '.')
-
-        packer = EvoPacker(start_text=start_text)
-        packer.setup(self.fitness_calculator)
-        while packer.current_epoch < 1000:
+    def run_epochs(self) -> bool:
+        packer = self.packer
+        packer.setup()
+        while (packer.current_epoch < packer.epochs and
+               not self.isInterruptionRequested()):
             is_found = packer.run_epoch()
-            if self.isInterruptionRequested():
-                return None
-            if front_blocks is None:
-                side = 'front'
-                new_back = back_blocks
-                new_front = packer.top_blocks
-            else:
-                side = 'back'
-                new_back = packer.top_blocks
-                new_front = front_blocks
+            new_target = packer.top_blocks
             if self.attempt_count:
                 prefix = f'found {len(self.solutions)}/{self.attempt_count-1}, '
             else:
                 prefix = ''
-            status = f'Packing {side}: {prefix}epoch {packer.current_epoch}, ' \
+            status = f'Packing: {prefix}epoch {packer.current_epoch}, ' \
                      f'{packer.top_fitness}'
 
+            self.target_texts[0] = new_target
+            progress = PackingProgress(status,
+                                       tuple(self.target_texts),
+                                       tuple(self.source_texts),
+                                       packer.top_fitness,
+                                       is_found)
             # noinspection PyUnresolvedReferences
-            self.status_update.emit(status, new_back, new_front)
+            self.status_update.emit(progress)
             self.top_fitness = packer.top_fitness
             if is_found:
-                break
-        else:
-            if not packer.find_usable_packing():
-                return None
-
-        return Puzzle.parse_sections(puzzle.title,
-                                     puzzle.format_grid(),
-                                     puzzle.format_clues(),
-                                     packer.display())
+                self.solutions.append(progress)
+                return True
+        return False
 
     def pack_both_sides(self,
                         front_puzzle: Puzzle,
@@ -245,4 +282,3 @@ class FillThread(QThread):
             back_puzzle.format_clues(),
             new_back)
         return new_front_puzzle, new_back_puzzle
-

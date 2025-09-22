@@ -9,6 +9,13 @@ from four_letter_blocks.puzzle import Puzzle
 
 
 class PageFillThread(QThread):
+    """ Run evolutionary packing in a background thread.
+
+    Possible scenarios: pack one puzzle's grid, pack another puzzle's grid with
+    the flipped shape counts from the first puzzle's packing, pack a travel grid
+    with the shape counts from a puzzle, pack front and back puzzles with the
+    same shape counts.
+    """
     status_update = Signal(str, str, str)  # status, back_blocks, front_blocks
     completed = Signal(bool, str, Puzzle, Puzzle)  # success, summary, back, front
 

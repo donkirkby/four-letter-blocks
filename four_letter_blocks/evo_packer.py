@@ -219,8 +219,12 @@ class Packing(Individual):
 
     def _random_init(self, init_params: dict):
         start_state = init_params['start_state']
-        required_shape_counts = Counter(init_params['required_shape_counts'])
-        target_shape_counts = Counter(init_params['target_shape_counts'])
+        required_shape_counts = init_params['required_shape_counts']
+        if required_shape_counts is not None:
+            required_shape_counts = Counter(required_shape_counts)
+        target_shape_counts = init_params['target_shape_counts']
+        if target_shape_counts is not None:
+            target_shape_counts = Counter(target_shape_counts)
         can_rotate = all(
             len(shape) == 1
             for shape in required_shape_counts or target_shape_counts)
@@ -245,7 +249,7 @@ class Packing(Individual):
                     tries=tries)
 
 
-@dataclass(order=True)
+@dataclass(order=True, frozen=True)
 class FitnessScore:
     empty_spaces: int  # negative
     empty_area: float  # negative, bounding rect of empties as fraction of grid
@@ -358,7 +362,7 @@ class EvoPacker(BlockPacker):
                          start_text,
                          start_state)
         self.is_logging = False
-        self.epochs = 100
+        self.epochs = 1000
         self.pool_size = 1000
         self.current_epoch = 0
         self.evo: Evolution | None = None
@@ -374,6 +378,8 @@ class EvoPacker(BlockPacker):
         init_params = self.create_init_params()
         if fitness_calculator is None:
             fitness_calculator = PackingFitnessCalculator()
+            if self.target_shape_counts:
+                fitness_calculator.count_targets = Counter(self.target_shape_counts)
         fitness_calculator.summaries.clear()
 
         self.evo = Evolution(

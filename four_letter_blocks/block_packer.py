@@ -57,6 +57,8 @@ class BlockPacker:
             self.height = height
             self.state = np.zeros((height, width), np.uint8)
         else:
+            self.width = width
+            self.height = height
             self.load_start_text(start_text)
         self.split_row = split_row
         self.force_fours = False
@@ -87,11 +89,12 @@ class BlockPacker:
     def load_start_text(self, start_text):
         start_text = start_text.replace('?', '.')
         lines = start_text.splitlines()
-        self.height = len(lines)
-        self.width = self.height and len(lines[0])
-        self.state = np.ndarray((self.height, self.width), np.int8)
-        for row, line in enumerate(lines):
-            for col, char in enumerate(line):
+        if not (self.width or self.height):
+            self.height = len(lines)
+            self.width = self.height and len(lines[0])
+        self.state = np.zeros((self.height, self.width), np.uint8)
+        for row, line in enumerate(lines[:self.height]):
+            for col, char in enumerate(line[:self.width]):
                 self.state[row, col] = self.CHAR_BLOCKS[char]
 
     @property
@@ -161,6 +164,10 @@ class BlockPacker:
         # noinspection PyUnresolvedReferences
         block_count = (self.state == 0).sum() // 4
         block_count += 7  # Add flexibility to make packing easier.
+        return self.calculate_target_shape_counts(block_count)
+
+    @staticmethod
+    def calculate_target_shape_counts(block_count: int):
         multiplier = {'O': 4, 'S': 2, 'Z': 2, 'I': 2}
         shape_names = Block.shape_rotation_names()
         return Counter({
