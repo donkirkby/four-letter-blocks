@@ -1,7 +1,10 @@
 import numpy as np
-from xcover import covers
+from miniexact import miniexacts_x
 
 from four_letter_blocks.block_packer import BlockPacker, build_masks
+
+SOLUTION_FOUND = 10
+SOLUTION_NOT_FOUND = 20
 
 
 class XPacker(BlockPacker):
@@ -33,14 +36,17 @@ class XPacker(BlockPacker):
         # items are spaces in the grid, converted to an integer as
         # row*width + column.
         # Each option is a slot taking up four spaces.
+        solver = miniexacts_x()
         open_spaces = [
-            (int(i2), int(j2))
-            for i2, j2 in zip(*np.where(self.state == self.UNUSED))]
-        items = [i2 * width + j2
-                 for i2, j2 in open_spaces]
+            (int(i), int(j))
+            for i, j in zip(*np.where(self.state == self.UNUSED))]
+        for i, j in open_spaces:
+            item_name = f'{i},{j}'
+            solver.primary(item_name)
+
         slots = self.find_slots()
+        option_masks = {}  # { option_num: [[flag]] }
         all_masks = build_masks(width, height)
-        options = []
         for shape_name, shape_slots in slots.items():
             shape_masks = all_masks[shape_name]
             for i, row in enumerate(shape_slots):
@@ -50,17 +56,19 @@ class XPacker(BlockPacker):
                         covered_spaces = [
                             (int(i2), int(j2))
                             for i2, j2 in zip(*np.where(coverage_flags))]
-                        covered_items = [i2*width + j2
-                                         for i2, j2 in covered_spaces]
-                        options.append(covered_items)
+                        for i2, j2 in covered_spaces:
+                            item_name = f'{i2},{j2}'
+                            solver.add(item_name)
+                        option_num = solver.add(0)  # Finish option
+                        option_masks[option_num] = coverage_flags
+        result = solver.solve()
+        if result == SOLUTION_NOT_FOUND:
+            return False
+        assert result == SOLUTION_FOUND
+        selected_options = solver.selected_options()
         start_block = max(int(self.state.max()), self.GAP) + 1
-        for solution in covers(options, items):
-            for block_num, option_num in enumerate(solution, start_block):
-                option = options[option_num]
-                for item in option:
-                    i = item // width
-                    j = item % width
-                    self.state[i, j] = block_num
-            return True
-        return False
+        for block_num, option_num in enumerate(selected_options, start_block):
+            coverage_flags = option_masks[option_num][:width, :height]
+            self.state += np.uint8(block_num) * coverage_flags
+        return True
 
