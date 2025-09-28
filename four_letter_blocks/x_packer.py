@@ -1,4 +1,5 @@
 import typing
+from collections import Counter
 
 import numpy as np
 from miniexact import miniexacts_m
@@ -11,6 +12,39 @@ SOLUTION_NOT_FOUND = 20
 
 
 class XPacker(BlockPacker):
+    def __init__(self,
+                 width=0,
+                 height=0,
+                 tries=-1,
+                 min_tries=-1,
+                 start_text: str | None = None,
+                 start_state: np.ndarray | None = None,
+                 split_row=0):
+        """ Create an instance of BlockPacker.
+
+        :param width: Width of the grid to pack
+        :param height: Height of the grid to pack
+        :param tries: Maximum number of cycles to try finding a block that will
+            fit
+        :param min_tries: Minimum number of cycles to try finding a block that
+            will fit
+        :param start_text: Text grid to start filling from
+        :param start_state: Initial grid state to start filling from
+        :param split_row: Index of the first row of the second section, when you
+            don't want any blocks to cross between two sections
+        """
+        super().__init__(width,
+                         height,
+                         tries,
+                         min_tries,
+                         start_text,
+                         start_state,
+                         split_row)
+        self.max_shape_counts = self.calculate_max_shape_counts()
+        self.min_shape_counts: Counter[str] = Counter()
+        for shape_name, max_shape_count in self.max_shape_counts.items():
+            self.min_shape_counts[shape_name] = max((max_shape_count-1) // 2, 0)
+
     def fill(self) -> bool:
         """ Fill in the current state with the given shapes.
 
@@ -51,15 +85,17 @@ class XPacker(BlockPacker):
         for i, j in open_spaces:
             item_name = f'{i},{j}'
             solver.primary(item_name)
-        max_shape_counts = self.calculate_max_shape_counts()
-        for shape_name, max_shape_count in max_shape_counts.items():
-            min_shape_count = max((max_shape_count-1) // 2, 0)
-            solver.primary(shape_name, min_shape_count, max_shape_count)
+        for shape_name, max_shape_count in self.max_shape_counts.items():
+            min_shape_count = self.min_shape_counts[shape_name]
+            if max_shape_count > 0:
+                solver.primary(shape_name, min_shape_count, max_shape_count)
 
         slots = self.find_slots()
         option_masks = {}  # { option_num: [[flag]] }
         all_masks = build_masks(width, height)
         for shape_name, shape_slots in slots.items():
+            if self.max_shape_counts[shape_name] == 0:
+                continue
             shape_masks = all_masks[shape_name]
             for i, row in enumerate(shape_slots):
                 for j, is_available in enumerate(row):
