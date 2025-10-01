@@ -1,5 +1,6 @@
 import typing
 from collections import Counter
+from datetime import datetime
 
 import numpy as np
 from miniexact import miniexacts_m
@@ -40,6 +41,8 @@ class XPacker(BlockPacker):
                          start_text,
                          start_state,
                          split_row)
+        self.is_logging = False
+        self.force_fours = True
         self.max_shape_counts = self.calculate_max_shape_counts()
         self.min_shape_counts: Counter[str] = Counter()
         for shape_name, max_shape_count in self.max_shape_counts.items():
@@ -118,12 +121,22 @@ class XPacker(BlockPacker):
                         solver.add(shape_name)
                         option_num = solver.add(0)  # Finish option
                         option_masks[option_num] = coverage_flags
-        while solver.solve() == SOLUTION_FOUND:
+        solution_count = 0
+        while True:
+            solution_count += 1
+            if self.is_logging:
+                print(datetime.now(), f'Finding solution {solution_count}...')
+            if solver.solve() != SOLUTION_FOUND:
+                if self.is_logging:
+                    print(datetime.now(), f'Solution {solution_count} not found.')
+                break
+            if self.is_logging:
+                print(datetime.now(), f'Found solution {solution_count}.')
             selected_options = solver.selected_options()
             new_state = start_state.copy()
             start_block = max(int(new_state.max()), self.GAP) + 1
             for block_num, option_num in enumerate(selected_options, start_block):
-                coverage_flags = option_masks[option_num][:width, :height]
+                coverage_flags = option_masks[option_num][:height, :width]
                 new_state += np.uint8(block_num) * coverage_flags
             yield new_state
 

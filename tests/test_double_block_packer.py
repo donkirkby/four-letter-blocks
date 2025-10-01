@@ -24,7 +24,7 @@ def test_different_space_count():
         ...#...
         #.....#""")
     with pytest.raises(ValueError, match=r'Different space counts: 40 and 36\.'):
-        DoubleBlockPacker(front_text, back_text, tries=100)
+        DoubleBlockPacker(front_text, back_text)
 
 
 def test_fill():
@@ -68,7 +68,7 @@ def test_fill():
         .....#...
         .....#...
         .....#...""")
-    packer = DoubleBlockPacker(front_text, back_text, tries=40_000)
+    packer = DoubleBlockPacker(front_text, back_text)
     is_filled = packer.fill()
 
     assert is_filled
@@ -93,7 +93,7 @@ def test_state():
                                [2, 1, 3],
                                [2, 3, 3]])
 
-    packer = DoubleBlockPacker(front_text, back_text, tries=400)
+    packer = DoubleBlockPacker(front_text, back_text)
 
     double_state = packer.state
 
@@ -101,15 +101,15 @@ def test_state():
 
 
 # noinspection DuplicatedCode
-def test_start_state():
-    packer1 = DoubleBlockPacker(
-        front_text=dedent("""\
+def test_display():
+    packer = DoubleBlockPacker(
+        dedent("""\
             #..#.
             ...B.
             AA#B.
             AA.BB
             .#..#"""),
-        back_text=dedent("""\
+        dedent("""\
             #AA.#
             .AA..
             ..#B.
@@ -128,10 +128,7 @@ def test_start_state():
         ...B.
         #.BB#""")
 
-    start_state = packer1.state.copy()
-    packer2 = DoubleBlockPacker(start_state=start_state)
-
-    assert packer2.display() == expected_display
+    assert packer.display() == expected_display
 
 
 def test_sort_blocks():
@@ -172,5 +169,123 @@ def test_sort_blocks():
     packer = DoubleBlockPacker(front_text, back_text)
 
     packer.sort_blocks()
+
+    assert packer.display() == expected_display
+
+
+def test_group_start_texts():
+    # 40 spaces
+    start_text7x7 = dedent("""\
+        #.....#
+        ...#...
+        .......
+        .#.#.#.
+        .......
+        ...#...
+        #.....#""")
+
+    # 96 spaces
+    start_text11x11 = dedent("""\
+        #....#.....
+        .....#...#.
+        .........#.
+        .##.##.....
+        .#.....#...
+        #....#....#
+        ...#.....#.
+        .....##.##.
+        .#.........
+        .#....#....
+        ......#...#""")
+
+    # 144 spaces
+    start_text13x13 = dedent("""\
+        ......#......
+        ....#........
+        ......#......
+        .##....#.....
+        .....#....##.
+        ...#....#....
+        #.....#.....#
+        ....#....#...
+        .##....#.....
+        .....#....##.
+        .......#.....
+        .........#...
+        .......#.....""")
+
+    # 200 spaces
+    start_text15x15 = dedent("""\
+        ......#........
+        ......#........
+        ......#........
+        ...#...#.......
+        ....#.....#....
+        .........#.....
+        ........#......
+        ###....#....###
+        ......#........
+        .....#.........
+        ....#.....#....
+        .......#...#...
+        ........#......
+        ........#......
+        ........#......""")
+
+    expected_display = dedent("""\
+        #.....#########
+        ...#...########
+        .......########
+        .#.#.#.########
+        .......########
+        ...#...########
+        #.....#########
+        ###############
+        ......#........
+        ......#........
+        ......#........
+        ...#...#.......
+        ....#.....#....
+        .........#.....
+        ........#......
+        ###....#....###
+        ......#........
+        .....#.........
+        ....#.....#....
+        .......#...#...
+        ........#......
+        ........#......
+        ........#......
+
+        #....#.....####
+        .....#...#.####
+        .........#.####
+        .##.##.....####
+        .#.....#...####
+        #....#....#####
+        ...#.....#.####
+        .....##.##.####
+        .#.........####
+        .#....#....####
+        ......#...#####
+        ###############
+        ......#......##
+        ....#........##
+        ......#......##
+        .##....#.....##
+        .....#....##.##
+        ...#....#....##
+        #.....#.....###
+        ....#....#...##
+        .##....#.....##
+        .....#....##.##
+        .......#.....##
+        .........#...##
+        .......#.....##""")
+
+    packer = DoubleBlockPacker(start_text7x7,
+                               start_text11x11,
+                               start_text13x13,
+                               start_text15x15)
 
     assert packer.display() == expected_display

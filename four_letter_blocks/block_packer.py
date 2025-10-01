@@ -155,6 +155,10 @@ class BlockPacker:
         # noinspection PyUnresolvedReferences
         return not (self.state == 0).any()
 
+    @property
+    def unused_count(self):
+        return int(np.count_nonzero(self.state == BlockPacker.UNUSED))
+
     def calculate_max_shape_counts(self):
         """ Calculate how many of each shape and rotation should be packed.
 

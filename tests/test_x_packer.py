@@ -1,4 +1,3 @@
-from collections import Counter
 from textwrap import dedent
 
 from four_letter_blocks.x_packer import XPacker
@@ -14,13 +13,13 @@ def test_fill_grid():
         ...#...
         #.....#""")
     expected_display = dedent("""\
-        #AACCC#
-        BAA#CJJ
-        BBFFJJI
-        B#F#G#I
-        DDFGGII
-        DDE#GHH
-        #EEEHH#""")
+        #AAABB#
+        GGA#BBC
+        HGGFFCC
+        H#J#F#C
+        HHJJFDD
+        IIJ#EDD
+        #IIEEE#""")
     packer = XPacker(start_text=start_text)
     is_filled = packer.fill()
 
@@ -46,21 +45,21 @@ def test_fill_big_grid():
         ...##.....##...
         .#...........#.""")
     expected_display = dedent("""\
-        A#CCEEEE]IIII#F
-        ACC##ZZ[]]##HHF
-        AADD#ZZ[^]#HHFF
-        BBBDS#[[^#__GGG
-        B##DSSS#^^__##G
-        #TWWWffeedddbb#
-        TTV#Wff#eed#`bb
-        TUVV#g###j#```a
-        UUV#Xgh#ijj#caa
-        #UXXXghiiijcca#
-        K##YYgh#kkkc##O
-        KKKYY#hmk#QQOOO
-        JJLL#nmmll#QQNN
-        JLL##nnmll##PPN
-        J#MMMMnRRRRPP#N""")
+        A#EEVVVVaHHHH#C
+        AEE##__`aa##GGC
+        AAFF#__`ba#GGCC
+        BBBFU#``b#[[DDD
+        B##FUUU#bb[[##D
+        #QTTTddcc]]]XX#
+        QQS#Tdd#cc]#YXX
+        QRSS#h###k#YYYW
+        RRS#fhi#jkk#ZWW
+        #RfffhijjjkZZW#
+        J##eehi#lllZ##N
+        JJJee#iml#PPNNN
+        IIKK#nmmgg#PPMM
+        IKK##nnmgg##OOM
+        I#LLLLn^^^^OO#M""")
     packer = XPacker(start_text=start_text)
     is_filled = packer.fill()
 
