@@ -1,18 +1,26 @@
 import typing
-from collections import Counter
+from dataclasses import dataclass
 from datetime import datetime
 
 import numpy as np
 from miniexact import miniexacts_m
 
+from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker, build_masks
 from four_letter_blocks.puzzle import Puzzle
 
-SOLUTION_FOUND = 10
-SOLUTION_NOT_FOUND = 20
+
+@dataclass
+class PackingOption:
+    rotated_shape_name: str
+    space_items: list[str]  # 4 item names
+    mask: np.ndarray  # 1s in the 4 covered spaces
 
 
 class XPacker(BlockPacker):
+    SOLUTION_FOUND = 10
+    SOLUTION_NOT_FOUND = 20
+
     def __init__(self,
                  width=0,
                  height=0,
@@ -43,10 +51,6 @@ class XPacker(BlockPacker):
                          split_row)
         self.is_logging = False
         self.force_fours = True
-        self.max_shape_counts = self.calculate_max_shape_counts()
-        self.min_shape_counts: Counter[str] = Counter()
-        for shape_name, max_shape_count in self.max_shape_counts.items():
-            self.min_shape_counts[shape_name] = max((max_shape_count-1) // 2, 0)
 
     def fill(self) -> bool:
         """ Fill in the current state with the given shapes.
@@ -77,56 +81,30 @@ class XPacker(BlockPacker):
         width = self.width
         height = self.height
         start_state = self.state
-        all_word_items: list[set[str]] = self.find_word_items()
-        # items are spaces in the grid, converted to an integer as
-        # row*width + column.
-        # Each option is a slot taking up four spaces.
+
+        # space items are spaces in the grid, named 'i_j' for row i, column j.
         solver = miniexacts_m()
-        open_spaces = [
-            (int(i), int(j))
-            for i, j in zip(*np.where(self.state == self.UNUSED))]
-        for i, j in open_spaces:
-            item_name = f'{i},{j}'
+        for item_name in self.find_open_space_items():
             solver.primary(item_name)
-        for shape_name, max_shape_count in self.max_shape_counts.items():
-            min_shape_count = self.min_shape_counts[shape_name]
-            if max_shape_count > 0:
-                solver.primary(shape_name, min_shape_count, max_shape_count)
 
-        slots = self.find_slots()
+        self.add_shape_items(solver)
+
+        # Each option is a slot taking up four spaces, plus a shape name.
         option_masks = {}  # { option_num: [[flag]] }
-        all_masks = build_masks(width, height)
-        for shape_name, shape_slots in slots.items():
-            if self.max_shape_counts[shape_name] == 0:
-                continue
-            shape_masks = all_masks[shape_name]
-            for i, row in enumerate(shape_slots):
-                for j, is_available in enumerate(row):
-                    if is_available:
-                        coverage_flags = shape_masks[i, j]
-                        covered_spaces = [
-                            (int(i2), int(j2))
-                            for i2, j2 in zip(*np.where(coverage_flags))]
-                        block_items = {f'{i2},{j2}'
-                                       for i2, j2 in covered_spaces}
-                        has_complete_word = any(
-                            word_items.issubset(block_items)
-                            for word_items in all_word_items
-                        )
-                        if has_complete_word:
-                            continue
+        for option in self.find_options():
+            solver.add(option.rotated_shape_name[0])
+            for item in option.space_items:
+                solver.add(item)
+            option_num = solver.add(0)
 
-                        for item_name in block_items:
-                            solver.add(item_name)
-                        solver.add(shape_name)
-                        option_num = solver.add(0)  # Finish option
-                        option_masks[option_num] = coverage_flags
+            # Save option mask to assemble state from solution.
+            option_masks[option_num] = option.mask
         solution_count = 0
         while True:
             solution_count += 1
             if self.is_logging:
                 print(datetime.now(), f'Finding solution {solution_count}...')
-            if solver.solve() != SOLUTION_FOUND:
+            if solver.solve() != self.SOLUTION_FOUND:
                 if self.is_logging:
                     print(datetime.now(), f'Solution {solution_count} not found.')
                 break
@@ -139,6 +117,57 @@ class XPacker(BlockPacker):
                 coverage_flags = option_masks[option_num][:height, :width]
                 new_state += np.uint8(block_num) * coverage_flags
             yield new_state
+
+    def add_shape_items(self, solver: miniexacts_m):
+        space_count = self.unused_count
+        block_count = space_count // 4
+        max_shape_count = block_count # // 7 + 2
+        min_shape_count = 0
+
+        # Shape items use the shape name, plus minimum and maximum counts.
+        # Shape items ignore rotation.
+        for shape_name in Block.shape_names():
+            solver.primary(shape_name, min_shape_count, max_shape_count)
+
+    def find_open_space_items(self):
+        open_spaces = [
+            (int(i), int(j))
+            for i, j in zip(*np.where(self.state == self.UNUSED))]
+        for i, j in open_spaces:
+            yield f'{i}_{j}'
+
+    def find_options(self) -> typing.Iterator[PackingOption]:
+        """ Yields all options for this packer. """
+
+        # a list of the items in each word of up to four letters, used to
+        # eliminate options that cover a complete word.
+        all_word_items: list[set[str]] = self.find_word_items()
+
+        # Each option is a slot taking up four spaces, plus a shape name.
+        slots = self.find_slots()
+        all_masks = build_masks(self.width, self.height)
+        for shape_name, shape_slots in slots.items():
+            shape_masks = all_masks[shape_name]
+            for i, row in enumerate(shape_slots):
+                for j, is_available in enumerate(row):
+                    if is_available:
+                        coverage_flags = shape_masks[i, j]
+                        covered_spaces = [
+                            (int(i2), int(j2))
+                            for i2, j2 in zip(*np.where(coverage_flags))]
+                        block_items = {f'{i2}_{j2}'
+                                       for i2, j2 in covered_spaces}
+                        has_complete_word = any(
+                            word_items.issubset(block_items)
+                            for word_items in all_word_items
+                        )
+                        if has_complete_word:
+                            continue
+
+                        yield PackingOption(shape_name,
+                                            list(block_items),
+                                            coverage_flags)
+
 
     def find_word_items(self) -> list[set[str]]:
         all_word_items: list[set[str]] = []
@@ -164,7 +193,7 @@ class XPacker(BlockPacker):
                     for k in range(len(word)):
                         i2 = i + k*di
                         j2 = j + k*dj
-                        item_name = f'{i2},{j2}'
+                        item_name = f'{i2}_{j2}'
                         word_items.append(item_name)
                     word_item_set = set(word_items)
                     all_word_items.append(word_item_set)

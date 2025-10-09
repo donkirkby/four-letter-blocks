@@ -13,13 +13,13 @@ def test_fill_grid():
         ...#...
         #.....#""")
     expected_display = dedent("""\
-        #AAABB#
-        GGA#BBC
-        HGGFFCC
-        H#J#F#C
-        HHJJFDD
-        IIJ#EDD
-        #IIEEE#""")
+        #AABBB#
+        CAA#GBH
+        CEEEGGH
+        C#E#G#H
+        CDDJJJH
+        DDF#JII
+        #FFFII#""")
     packer = XPacker(start_text=start_text)
     is_filled = packer.fill()
 
@@ -45,21 +45,21 @@ def test_fill_big_grid():
         ...##.....##...
         .#...........#.""")
     expected_display = dedent("""\
-        A#EEVVVVaHHHH#C
-        AEE##__`aa##GGC
-        AAFF#__`ba#GGCC
-        BBBFU#``b#[[DDD
-        B##FUUU#bb[[##D
-        #QTTTddcc]]]XX#
-        QQS#Tdd#cc]#YXX
-        QRSS#h###k#YYYW
-        RRS#fhi#jkk#ZWW
-        #RfffhijjjkZZW#
-        J##eehi#lllZ##N
-        JJJee#iml#PPNNN
-        IIKK#nmmgg#PPMM
-        IKK##nnmgg##OOM
-        I#LLLLn^^^^OO#M""")
+        A#EEQQQQjHHHH#C
+        AEE##hhijj##GGC
+        AAFF#hhikj#GGCC
+        BBBFV#iik#mmDDD
+        B##FVVV#klmm##D
+        #UUUUXXXklnnnY#
+        RRT#WWX#lln#[YY
+        RRTT#W###`#[[ZY
+        SST#cWa#``]#[ZZ
+        #SScccaaa`]]]Z#
+        J##bbdd#^^^P##N
+        JJJbb#dgg#^PNNN
+        IIKK#edgff#PPMM
+        IKK##eegff##OOM
+        I#LLLLe____OO#M""")
     packer = XPacker(start_text=start_text)
     is_filled = packer.fill()
 

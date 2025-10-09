@@ -601,7 +601,7 @@ class FourLetterBlocksWindow(QMainWindow):
         self.statusBar().showMessage(status.summary)
         ui = self.ui
         if ui.puzzle_set_fill_button.isEnabled():
-            ui.puzzle_set_blocks.setPlainText(back_blocks)
+            ui.puzzle_set_blocks.setPlainText(status.source_texts[0])
         elif ui.back_fill_button.isEnabled():
             ui.back_blocks_text.setPlainText(status.target_texts[0])
         else:

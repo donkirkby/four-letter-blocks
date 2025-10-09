@@ -45,21 +45,14 @@ class FillThread(QThread):
         Possible scenarios:
         1. Pack one puzzle's grid. inputs: target_texts[0]
            (black squares, unpacked)
-        2. Pack one puzzle's grid with the flipped shape counts from another
-           puzzle's packing. inputs: target_texts[0] (black_squares, unpacked),
-           source_texts[0] (black squares, packed), is_flipped = True
-        3. Pack a travel grid with the shape counts from a puzzle. inputs:
+        2. Pack a travel grid with the shape counts from a puzzle. inputs:
            target_texts[0] (no black squares, unpacked),
            source_texts[0] (black squares, packed)
-        4. Pack a travel grid with the shape counts from multiple puzzles. inputs:
+        3. Pack a travel grid with the shape counts from multiple puzzles. inputs:
            target_texts[0] (no black squares, unpacked),
            source_texts (black squares, packed)
-        5. Pack front and back puzzles with flipped shape counts. inputs:
-           target_texts[0] (black squares, unpacked),
-           source_texts[0] (black squares, packed), is_flipped = True
-        6. Pack front and back sets of puzzles with flipped shape counts. inputs:
-           target_texts (black squares, unpacked),
-           source_texts (black squares, unpacked) , is_flipped = True
+        4. Pack front and back puzzles with flipped shape counts. inputs:
+           target_texts (black squares, unpacked)
         """
         super().__init__(parent)
         self.target_texts = list(target_texts)
