@@ -1,6 +1,8 @@
 import typing
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 import numpy as np
 from miniexact import miniexacts_m
@@ -77,28 +79,14 @@ class XPacker(BlockPacker):
             return True
         return False
 
-    def find_fillings(self) -> typing.Iterator[np.ndarray]:
+    def find_fillings(self,
+                      yield_states = True) -> typing.Iterator[np.ndarray | None]:
+        start_state = self.state
+        assert start_state is not None
+        option_masks: dict[int, np.ndarray] = {}  # { option_num: [[flag]] }
+        solver = self.prepare_solver(option_masks)
         width = self.width
         height = self.height
-        start_state = self.state
-
-        # space items are spaces in the grid, named 'i_j' for row i, column j.
-        solver = miniexacts_m()
-        for item_name in self.find_open_space_items():
-            solver.primary(item_name)
-
-        self.add_shape_items(solver)
-
-        # Each option is a slot taking up four spaces, plus a shape name.
-        option_masks = {}  # { option_num: [[flag]] }
-        for option in self.find_options():
-            solver.add(option.rotated_shape_name[0])
-            for item in option.space_items:
-                solver.add(item)
-            option_num = solver.add(0)
-
-            # Save option mask to assemble state from solution.
-            option_masks[option_num] = option.mask
         solution_count = 0
         while True:
             solution_count += 1
@@ -110,31 +98,90 @@ class XPacker(BlockPacker):
                 break
             if self.is_logging:
                 print(datetime.now(), f'Found solution {solution_count}.')
-            selected_options = solver.selected_options()
-            new_state = start_state.copy()
-            start_block = max(int(new_state.max()), self.GAP) + 1
-            for block_num, option_num in enumerate(selected_options, start_block):
-                coverage_flags = option_masks[option_num][:height, :width]
-                new_state += np.uint8(block_num) * coverage_flags
-            yield new_state
+            if not yield_states:
+                yield None
+            else:
+                selected_options = solver.selected_options()
+                new_state = start_state.copy()
+                start_block = max(int(new_state.max()), self.GAP) + 1
+                for block_num, option_num in enumerate(selected_options, start_block):
+                    coverage_flags = option_masks[option_num][:height, :width]
+                    new_state += np.uint8(block_num) * coverage_flags
+                yield new_state
 
-    def add_shape_items(self, solver: miniexacts_m):
-        space_count = self.unused_count
-        block_count = space_count // 4
-        max_shape_count = block_count # // 7 + 2
-        min_shape_count = 0
+    def prepare_solver(
+            self,
+            option_masks: dict[int, np.ndarray]|None = None) -> miniexacts_m:
+        # space items are spaces in the grid, named 'i_j' for row i, column j.
+        solver = miniexacts_m()
+        for item_name in self.find_open_space_items():
+            solver.primary(item_name)
 
-        # Shape items use the shape name, plus minimum and maximum counts.
-        # Shape items ignore rotation.
-        for shape_name in Block.shape_names():
-            solver.primary(shape_name, min_shape_count, max_shape_count)
+        self.add_shape_items(solver)
+
+        # Each option is a slot taking up four spaces, plus a shape name.
+        for option in self.find_options():
+            solver.add(option.rotated_shape_name[0])
+            for item in option.space_items:
+                solver.add(item)
+            option_num = solver.add(0)
+            assert option_num != 0
+
+            # Save option mask to assemble state from solution.
+            if option_masks is not None:
+                option_masks[option_num] = option.mask
+        return solver
+
+    def format_dlx(self, sorted_options: bool = False) -> str:
+        solver = self.prepare_solver()
+        with NamedTemporaryFile(suffix='.dlx', delete_on_close=False) as tmp:
+            tmp.close()
+            filename = tmp.name
+            solver.write_to_dlx(filename)
+            dlx_text = Path(filename).read_text()
+            if not sorted_options:
+                return dlx_text
+            dlx_lines = dlx_text.splitlines()
+            sorted_lines = []
+            for i, line in enumerate(dlx_lines):
+                if i == 0:
+                    sorted_lines.append(line)
+                else:
+                    items = line.split()
+                    items.sort()
+                    sorted_line = ' '.join(items)
+                    sorted_lines.append(sorted_line)
+            return '\n'.join(sorted_lines)
+
+    def add_shape_items(self, solver: miniexacts_m) -> None:
+        """ Add an item to the solver for each shape.
+
+        If self.required_shape_counts is set, then exact multiplicities will
+        be set for rotated shape names.
+        Otherwise, plain shape names will be set with multiplicity ranges.
+        :param solver: receives the items with multiplicity
+        :return: the set of used rotated shape names
+        """
+
+        if self.required_shape_counts:
+            for shape_name, shape_count in self.required_shape_counts.items():
+                solver.primary(shape_name, shape_count, shape_count)
+        else:
+            space_count = self.unused_count
+            block_count = space_count // 4
+            max_shape_count = block_count # // 7 + 2
+            min_shape_count = 0
+            # Shape items use the shape name, plus minimum and maximum counts.
+            # Shape items ignore rotation.
+            for shape_name in Block.shape_names():
+                solver.primary(shape_name, min_shape_count, max_shape_count)
 
     def find_open_space_items(self):
         open_spaces = [
             (int(i), int(j))
             for i, j in zip(*np.where(self.state == self.UNUSED))]
         for i, j in open_spaces:
-            yield f'{i}_{j}'
+            yield f's{i}_{j}'
 
     def find_options(self) -> typing.Iterator[PackingOption]:
         """ Yields all options for this packer. """
@@ -155,7 +202,7 @@ class XPacker(BlockPacker):
                         covered_spaces = [
                             (int(i2), int(j2))
                             for i2, j2 in zip(*np.where(coverage_flags))]
-                        block_items = {f'{i2}_{j2}'
+                        block_items = {f's{i2}_{j2}'
                                        for i2, j2 in covered_spaces}
                         has_complete_word = any(
                             word_items.issubset(block_items)
@@ -193,7 +240,7 @@ class XPacker(BlockPacker):
                     for k in range(len(word)):
                         i2 = i + k*di
                         j2 = j + k*dj
-                        item_name = f'{i2}_{j2}'
+                        item_name = f's{i2}_{j2}'
                         word_items.append(item_name)
                     word_item_set = set(word_items)
                     all_word_items.append(word_item_set)

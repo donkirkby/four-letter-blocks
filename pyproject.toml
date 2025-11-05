@@ -1,3 +1,12 @@
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta:__legacy__"
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    'ignore:builtin type swigvarlink'
+]
+
+[[tool.mypy.overrides]]
+module = ["miniexact.*"]
+ignore_missing_imports = true

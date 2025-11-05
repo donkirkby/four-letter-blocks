@@ -38,7 +38,7 @@ class PackingResponse:
     scenario: PackingScenario
     target_texts: tuple[str, ...] = ()
     source_texts: tuple[str, ...] = ()
-    sides: tuple[tuple[int, ...], tuple[int, ...]] = ()  # target_texts indexes
+    sides: tuple[tuple[int, ...], tuple[int, ...]] = ((), ())  # target_texts indexes
 
 
 class PackingManager:

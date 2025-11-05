@@ -88,7 +88,7 @@ class DoubleBlockPacker:
 
         self.back_packer.add_shape_items(solver)
 
-        back_options: dict[str, list[PackingOption]] = {}
+        back_options: dict[str, list[PackingOption]] = defaultdict(list)
         for rotated_shape_name, shape_options in groupby(
                 self.back_packer.find_options(),
                 attrgetter('rotated_shape_name')):
@@ -99,16 +99,18 @@ class DoubleBlockPacker:
         back_masks: dict[int, np.ndarray] = {}
 
         for front_option in self.front_packer.find_options():
+            front_shape_name = front_option.rotated_shape_name
             back_shape_name = flipped_shape_names[front_option.rotated_shape_name]
             back_shape_options = back_options[back_shape_name]
             for back_option in back_shape_options:
-                solver.add(front_option.rotated_shape_name[0])
+                solver.add(front_shape_name[0])
                 for prefix, items in (('b_', back_option.space_items),
                                       ('f_', front_option.space_items)):
                     for space_name in items:
                         item_name = prefix + space_name
                         solver.add(item_name)
                 option_num = solver.add(0)
+                assert option_num != 0
 
                 # Save option mask to assemble state from solution.
                 front_masks[option_num] = front_option.mask
@@ -121,7 +123,9 @@ class DoubleBlockPacker:
 
         for packer, masks in ((self.back_packer, back_masks),
                               (self.front_packer, front_masks)):
-            new_state = packer.state.copy()
+            start_state = packer.state
+            assert start_state is not None
+            new_state = start_state.copy()
             start_block = max(int(new_state.max()), packer.GAP) + 1
             for block_num, option_num in enumerate(selected_options, start_block):
                 coverage_flags = masks[option_num][:packer.height, :packer.width]

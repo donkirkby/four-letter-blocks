@@ -1,4 +1,3 @@
-from collections import Counter
 from enum import Enum, auto
 import os
 import re
@@ -25,13 +24,11 @@ from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.clue import Clue
 from four_letter_blocks.clue_overflow import ClueOverflow
 from four_letter_blocks.clue_painter import CluePainter
-from four_letter_blocks.evo_packer import PackingFitnessCalculator, EvoPacker
 from four_letter_blocks.fill_thread import FillThread, PackingProgress
 from four_letter_blocks.font_list_item import FontListItem
 from four_letter_blocks.line_deduper import LineDeduper
 from four_letter_blocks.main_window import Ui_MainWindow
 from four_letter_blocks.one_sided_set import OneSidedSet
-from four_letter_blocks.page_fill_thread import PageFillThread
 from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
 from four_letter_blocks.puzzle_pair import PuzzlePair
 from four_letter_blocks.puzzle_set import PuzzleSet
@@ -552,8 +549,8 @@ class FourLetterBlocksWindow(QMainWindow):
             return
         self.statusBar().showMessage('Refilling blocks...')
 
-        self.launch_fill(self.ui.front_refill_button,
-                         report_path=Path(file_name))
+        # self.launch_fill(self.ui.front_refill_button,
+        #                  report_path=Path(file_name))
 
     def interrupt_fill(self):
         self.fill_thread.requestInterruption()
@@ -736,26 +733,27 @@ class FourLetterBlocksWindow(QMainWindow):
         self.fill_puzzle_set_blocks_with_log(Path(file_name))
 
     def fill_puzzle_set_blocks_with_log(self, log_path: Path):
-        self.statusBar().showMessage('Filling puzzle set...')
-        puzzle_set = self.puzzle_set
-        assert puzzle_set is not None
-        page_packer = puzzle_set.page_packers[puzzle_set.page_index]
-        evo_packer = EvoPacker(start_text=page_packer.display(),
-                               tries=page_packer.tries,
-                               min_tries=page_packer.min_tries)
-        packed_shape_counts = evo_packer.packed_shape_counts
-        puzzle_shape_counts: Counter[str] = Counter()
-        page_puzzles = puzzle_set.page_puzzles[puzzle_set.page_index]
-        for puzzle in page_puzzles:
-            puzzle.rotations_display = RotationsDisplay.FRONT
-            puzzle_shape_counts += puzzle.shape_counts
-        puzzle_shape_counts -= packed_shape_counts
-        evo_packer.required_shape_counts = puzzle_shape_counts
-        self.fill_thread = PageFillThread(self, evo_packer, log_path)
-        self.fill_thread.status_update.connect(self.on_fill_update_status)
-        self.fill_thread.completed.connect(self.on_fill_completed)
-        self.fill_thread.start()
-        self.ui.puzzle_set_fill_button.setText('Stop')
+        raise NotImplementedError()
+        # self.statusBar().showMessage('Filling puzzle set...')
+        # puzzle_set = self.puzzle_set
+        # assert puzzle_set is not None
+        # page_packer = puzzle_set.page_packers[puzzle_set.page_index]
+        # evo_packer = EvoPacker(start_text=page_packer.display(),
+        #                        tries=page_packer.tries,
+        #                        min_tries=page_packer.min_tries)
+        # packed_shape_counts = evo_packer.packed_shape_counts
+        # puzzle_shape_counts: Counter[str] = Counter()
+        # page_puzzles = puzzle_set.page_puzzles[puzzle_set.page_index]
+        # for puzzle in page_puzzles:
+        #     puzzle.rotations_display = RotationsDisplay.FRONT
+        #     puzzle_shape_counts += puzzle.shape_counts
+        # puzzle_shape_counts -= packed_shape_counts
+        # evo_packer.required_shape_counts = puzzle_shape_counts
+        # self.fill_thread = PageFillThread(self, evo_packer, log_path)
+        # self.fill_thread.status_update.connect(self.on_fill_update_status)
+        # self.fill_thread.completed.connect(self.on_fill_completed)
+        # self.fill_thread.start()
+        # self.ui.puzzle_set_fill_button.setText('Stop')
 
     def clear_puzzle_set_blocks(self):
         blocks_text = self.ui.puzzle_set_blocks.toPlainText()

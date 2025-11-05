@@ -273,7 +273,7 @@ class BlockPacker:
         state = np.zeros(self.state.shape, np.uint8)
         gap_spaces = self.state == 1
         state += gap_spaces
-        for row in range(state.shape[0]):
+        for row in range(state.shape[0]):  # type: ignore
             for col in range(state.shape[1]):  # type: ignore
                 new_block = state[row, col]
                 if new_block != 0:
@@ -419,7 +419,7 @@ class BlockPacker:
                                                       target_col,
                                                       next_block):
                         self.state = new_state
-                        unused_count = np.count_nonzero(self.state == self.UNUSED)
+                        unused_count = int(np.count_nonzero(self.state == self.UNUSED))
                         if (self.fewest_unused is None or
                                 unused_count < self.fewest_unused):
                             self.fewest_unused = unused_count
