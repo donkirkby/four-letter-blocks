@@ -121,7 +121,13 @@ class XPacker(BlockPacker):
 
         # Each option is a slot taking up four spaces, plus a shape name.
         for option in self.find_options():
-            solver.add(option.rotated_shape_name[0])
+            if self.required_shape_counts:
+                shape_item = option.rotated_shape_name
+                if shape_item not in self.required_shape_counts:
+                    continue
+            else:
+                shape_item = option.rotated_shape_name[0]
+            solver.add(shape_item)
             for item in option.space_items:
                 solver.add(item)
             option_num = solver.add(0)

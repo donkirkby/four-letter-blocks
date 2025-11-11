@@ -32,8 +32,8 @@ def test_different_space_count():
 
 def test_fill():
     expected_display = dedent("""\
-        AAB#CCCDD
-        AAB#CEEDD
+        AAB#CCDDD
+        AAB#CCDEE
         FBB#GHEEI
         FFFGGHIII
         ###G#H###
@@ -42,15 +42,15 @@ def test_fill():
         MNNPK#OQQ
         MMPPP#OQQ
         
-        AAH#NNJJJ
-        AAH#MNNJF
+        AAH#EEJJJ
+        AAH#MEEJF
         KKH#MBFFF
         KIHMMB###
-        KIII#BBDD
-        ###GCCCDD
-        LLLGG#COO
-        LEEPG#QQO
-        EEPPP#QQO""")
+        KIII#BBCC
+        ###GDDDCC
+        LLLGG#DOO
+        LPNNG#QQO
+        PPPNN#QQO""")
     front_text = dedent("""\
         ...#.....
         ...#.....
@@ -85,17 +85,17 @@ def test_fill():
 
 def test_tiny_fill():
     expected_display = dedent("""\
-        #ABB#
-        AAABB
+        #AAB#
+        AABBB
         CCCCD
         EEEDD
         #E#D#
 
-        #A#D#
-        AAADD
+        #B#D#
+        BBBDD
         CCCCD
-        EEEBB
-        #EBB#""")
+        AAEEE
+        #AAE#""")
     front_text = dedent("""\
         #...#
         .....

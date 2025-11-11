@@ -1,13 +1,12 @@
 from collections import Counter, defaultdict
-from itertools import permutations, groupby
-from operator import attrgetter
+from datetime import datetime
+from itertools import permutations
 
 import numpy as np
-from miniexact import miniexacts_m
 
 from four_letter_blocks.block import flipped_shapes
 from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
-from four_letter_blocks.x_packer import XPacker, PackingOption
+from four_letter_blocks.x_packer import XPacker
 
 
 class DoubleBlockPacker:
@@ -76,63 +75,38 @@ class DoubleBlockPacker:
 
         :return: True if no gaps remain, False otherwise.
         """
-        self.back_packer.is_logging = self.is_logging
-        self.front_packer.is_logging = self.is_logging
-
-        solver = miniexacts_m()
-
-        for prefix, packer in (('b_', self.back_packer),
-                               ('f_', self.front_packer)):
-            for item_name in packer.find_open_space_items():
-                solver.primary(prefix + item_name)
-
-        self.back_packer.add_shape_items(solver)
-
-        back_options: dict[str, list[PackingOption]] = defaultdict(list)
-        for rotated_shape_name, shape_options in groupby(
-                self.back_packer.find_options(),
-                attrgetter('rotated_shape_name')):
-            back_options[rotated_shape_name] = list(shape_options)
-
-        flipped_shape_names = flipped_shapes()
-        front_masks: dict[int, np.ndarray] = {}
-        back_masks: dict[int, np.ndarray] = {}
-
-        for front_option in self.front_packer.find_options():
-            front_shape_name = front_option.rotated_shape_name
-            back_shape_name = flipped_shape_names[front_option.rotated_shape_name]
-            back_shape_options = back_options[back_shape_name]
-            for back_option in back_shape_options:
-                solver.add(front_shape_name[0])
-                for prefix, items in (('b_', back_option.space_items),
-                                      ('f_', front_option.space_items)):
-                    for space_name in items:
-                        item_name = prefix + space_name
-                        solver.add(item_name)
-                option_num = solver.add(0)
-                assert option_num != 0
-
-                # Save option mask to assemble state from solution.
-                front_masks[option_num] = front_option.mask
-                back_masks[option_num] = back_option.mask
-
-        if solver.solve() != XPacker.SOLUTION_FOUND:
-            return False
-
-        selected_options = solver.selected_options()
-
-        for packer, masks in ((self.back_packer, back_masks),
-                              (self.front_packer, front_masks)):
-            start_state = packer.state
-            assert start_state is not None
-            new_state = start_state.copy()
-            start_block = max(int(new_state.max()), packer.GAP) + 1
-            for block_num, option_num in enumerate(selected_options, start_block):
-                coverage_flags = masks[option_num][:packer.height, :packer.width]
-                new_state += np.uint8(block_num) * coverage_flags
-            packer.state = new_state
-
-        return True
+        assert self.back_packer.state is not None
+        start_shape_counts = self.count_back_shapes(self.back_packer.state)
+        if self.is_logging:
+            print(datetime.now(), 'Filling back...')
+            print(self.back_packer.display())
+        seen_counts = set()
+        # display_packer = XPacker(self.back_packer.width, self.back_packer.height)
+        for back_state in self.back_packer.find_fillings():
+            assert back_state is not None
+            shape_counts = (self.count_back_shapes(back_state) -
+                            start_shape_counts)
+            shape_counts_text = ', '.join(
+                f'{shape}: {n}' for shape, n in sorted(shape_counts.items()))
+            if shape_counts_text in seen_counts:
+                if self.is_logging:
+                    print('.', end='', flush=True)
+                continue
+            seen_counts.add(shape_counts_text)
+            if self.is_logging:
+                print()
+                # display_packer.state = back_state
+                # display_packer.sort_blocks()
+                # sorted_display = display_packer.display()
+                # print(sorted_display)
+                print(datetime.now(), shape_counts_text)
+            self.front_packer.required_shape_counts = shape_counts
+            if self.front_packer.fill():
+                self.back_packer.state = back_state
+                return True
+            # if self.is_logging:
+            #     print("Couldn't fill.")
+        return False
 
     def count_back_shapes(self, back_state: np.ndarray) -> Counter[str]:
         block_text = self.back_packer.display(back_state)

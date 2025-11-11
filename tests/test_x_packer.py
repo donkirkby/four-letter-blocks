@@ -1,3 +1,4 @@
+from collections import Counter
 from textwrap import dedent
 
 from four_letter_blocks.x_packer import XPacker
@@ -27,6 +28,68 @@ def test_fill_grid():
     assert packer.display() == expected_display
 
 
+def xtest_fill_slow_11x11x2():
+    start_text = dedent("""\
+        BAAA#......
+        BAK#...#...
+        BKK.#......
+        BK.........
+        .##...#...#
+        .....#.....
+        #...#...##.
+        ...........
+        ......#....
+        ...#...#...
+        ......#....
+        ###########
+        bb....#....
+        b..#.......
+        b.....#....
+        .......#...
+        .##...#...#
+        .....#.....
+        #...#...##.
+        ...#.......
+        ....#......
+        .......#...
+        ....#......""")
+    # Adding block G from the following solution speeds it way up.
+    # Solving with Knuth's DLX3 and random order speeds it way up.
+    """
+        BAAA#DDIIII
+        BAK#DDO#VUU
+        BKKL#OOVVUU
+        BKLLLNORVWW
+        C##MNN#RWW#
+        CCCMN#RRHHH
+        #ZZM#QQS##H
+        ZZYMPQQSSSG
+        XXYYPP#TTTG
+        XXY#PEE#TFG
+        JJJJEE#FFFG
+        ###########
+        bb]]]]#fggg
+        baa#`[fffig
+        ba```[#hhii
+        caddd[[#hhi
+        c##d^^#kkj#
+        cc_^^#lkkjj
+        #e__#mll##j
+        ee_#mmnlpqq
+        ettt#mnpppq
+        utsssnn#rrq
+        uuus#oooorr
+    """
+    packer = XPacker(start_text=start_text)
+    dlx_text = packer.format_dlx(sorted_options=True)
+    print('======')
+    print(dlx_text)
+    print('======')
+    is_filled = packer.fill()
+
+    assert is_filled
+
+
 def test_fill_tiny_grid():
     start_text = dedent("""\
         #...#
@@ -44,6 +107,35 @@ def test_fill_tiny_grid():
     is_filled = packer.fill()
 
     assert is_filled
+    assert packer.display() == expected_display
+
+
+def test_fill_with_required_counts():
+    start_text = dedent("""\
+        #...#
+        .....
+        .....
+        .....
+        ##..#""")
+    required_counts = Counter({'T1': 1,
+                               'S1': 1,
+                               'J1': 1,
+                               'O': 1,
+                               'J3': 1})
+    expected_display = dedent("""\
+        #AAB#
+        CAABB
+        CCCDB
+        EEEDD
+        ##ED#""")
+
+    packer = XPacker(start_text=start_text)
+    packer.required_shape_counts = required_counts
+
+    is_filled = packer.fill()
+
+    assert is_filled
+    packer.sort_blocks()
     assert packer.display() == expected_display
 
 
