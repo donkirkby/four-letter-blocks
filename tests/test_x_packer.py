@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from textwrap import dedent
 
 from four_letter_blocks.x_packer import XPacker
@@ -105,3 +106,47 @@ s3_2 s3_3 s3_4 s4_1 s4_2 s4_3 I:10;5 J:10;5 L:10;5 O:10;5 S:10;5 T:10;5 Z:10;5
 
     dlx_start = dlx_text[:len(expected_dlx_start)]
     assert dlx_start == expected_dlx_start
+
+
+def test_filter_tiny_grid():
+    start_text = dedent("""\
+        #...#
+        .....
+        .....
+        .....
+        ##..#""")
+    packer = XPacker(start_text=start_text)
+
+    all_options = list(packer.find_options())
+    filtered_options = packer.filter_options()
+
+    assert len(all_options) == 75
+    assert len(filtered_options) == 21
+
+
+def test_filter_big_grid():
+    start_text = dedent("""\
+        ....#...#....
+        ....#...#....
+        ....#...#....
+        ....#......##
+        .........#...
+        ###....#.....
+        ......#......
+        .....#....###
+        ...#.........
+        ##......#....
+        ....#...#....
+        ....#...#....
+        ....#...#....""")
+    packer = XPacker(start_text=start_text)
+    all_options = list(packer.find_options())
+    now = datetime.now()
+    deadline = now + timedelta(milliseconds=1000)
+    deadline_cushion = now + timedelta(milliseconds=1100)
+
+    filtered_options = packer.filter_options(deadline)
+
+    assert datetime.now() < deadline_cushion
+    assert len(all_options) == 802
+    assert len(filtered_options) < 400

@@ -270,6 +270,8 @@ def xtest_group_fill():
                                start_text11x11,
                                start_text13x13,
                                start_text11x11b)
+    packer.filter_seconds = 60
+    packer.filter_limit = 150
 
     # assert packer.display() == expected_display
     is_filled = packer.fill()

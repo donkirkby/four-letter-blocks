@@ -1,5 +1,5 @@
 import typing
-from dataclasses import dataclass
+from collections import Counter
 from datetime import datetime
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -9,14 +9,8 @@ from miniexact import miniexacts_m
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker, build_masks
+from four_letter_blocks.packing_option import PackingOption
 from four_letter_blocks.puzzle import Puzzle
-
-
-@dataclass
-class PackingOption:
-    rotated_shape_name: str
-    space_items: list[str]  # 4 item names
-    mask: np.ndarray  # 1s in the 4 covered spaces
 
 
 class XPacker(BlockPacker):
@@ -83,8 +77,8 @@ class XPacker(BlockPacker):
                       yield_states = True) -> typing.Iterator[np.ndarray | None]:
         start_state = self.state
         assert start_state is not None
-        option_masks: dict[int, np.ndarray] = {}  # { option_num: [[flag]] }
-        solver = self.prepare_solver(option_masks)
+        option_map: dict[int, PackingOption] = {}  # { option_num: option }
+        solver = self.prepare_solver(option_map)
         width = self.width
         height = self.height
         solution_count = 0
@@ -105,31 +99,32 @@ class XPacker(BlockPacker):
                 new_state = start_state.copy()
                 start_block = max(int(new_state.max()), self.GAP) + 1
                 for block_num, option_num in enumerate(selected_options, start_block):
-                    coverage_flags = option_masks[option_num][:height, :width]
+                    option = option_map[option_num]
+                    coverage_flags = option.mask[:height, :width]
                     new_state += np.uint8(block_num) * coverage_flags
                 yield new_state
 
     def prepare_solver(
             self,
-            option_masks: dict[int, np.ndarray]|None = None) -> miniexacts_m:
+            option_map: dict[int, PackingOption]|None = None) -> miniexacts_m:
         # space items are spaces in the grid, named 'i_j' for row i, column j.
         solver = miniexacts_m()
         for item_name in self.find_open_space_items():
             solver.primary(item_name)
 
-        self.add_shape_items(solver)
+        # self.add_shape_items(solver)
 
         # Each option is a slot taking up four spaces, plus a shape name.
         for option in self.find_options():
-            solver.add(option.rotated_shape_name[0])
+            # solver.add(option.rotated_shape_name[0])
             for item in option.space_items:
                 solver.add(item)
             option_num = solver.add(0)
             assert option_num != 0
 
             # Save option mask to assemble state from solution.
-            if option_masks is not None:
-                option_masks[option_num] = option.mask
+            if option_map is not None:
+                option_map[option_num] = option
         return solver
 
     def format_dlx(self, sorted_options: bool = False) -> str:
@@ -212,9 +207,33 @@ class XPacker(BlockPacker):
                             continue
 
                         yield PackingOption(shape_name,
-                                            list(block_items),
                                             coverage_flags)
+                                            # list(block_items))
 
+
+    def filter_options(self,
+                       deadline: datetime | None = None,
+                       limit = 1000) -> list[PackingOption]:
+        option_map: dict[int, PackingOption] = {}  # { option_num: option }
+        solver = self.prepare_solver(option_map)
+        filtered_options = set()  # option numbers
+        option_counts: Counter[int] = Counter()  # option numbers
+        while True:
+            if solver.solve() != self.SOLUTION_FOUND:
+                break
+            if deadline is not None and deadline < datetime.now():
+                break
+            selected_options = solver.selected_options()
+            if not filtered_options:
+                # Always include the first solution, so we have at least one.
+                filtered_options = set(selected_options)
+            option_counts.update(selected_options)
+
+        for option_num, option_count in option_counts.most_common(limit):
+            if len(filtered_options) >= limit:
+                break
+            filtered_options.add(option_num)
+        return [option_map[option_num] for option_num in filtered_options]
 
     def find_word_items(self) -> list[set[str]]:
         all_word_items: list[set[str]] = []
