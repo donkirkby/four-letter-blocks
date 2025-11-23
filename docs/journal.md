@@ -106,8 +106,40 @@ our [library] provides access to O'Reilly's copy of
 and I found the [xcover] library that seems to have implemented it in Python
 with Numba just-in-time compilation.
 
+Soon after, I switched from xcover to [miniexact], since it supports colours
+and multiplicity.
+
 [dry erase]: images/dry-erase.jpg
 [algorithm X]: https://en.wikipedia.org/wiki/Knuth%27s_Algorithm_X
 [library]: https://auth.vpl.ca/ext/scripts/access/index.php?resource=OReilly&assetid=9780134671857
 [The Art of Computer Programming]: https://learning.oreilly.com/library/view/the-art-of/9780134671857/ch07b.xhtml
 [xcover]: https://pypi.org/project/xcover/
+[miniexact]: https://github.com/miniexact/miniexact
+
+### Oct 2025
+Switch from using a solver for the front and another for the back to making
+each option double sided, and using one solver.
+
+Try switching to pentominoes. One nice outcome was a more logical grouping
+of shapes into families that include rotation and flipping. It didn't help
+performance, though, so I left it on a dead branch that you can find from
+[issue 65].
+
+[issue 65]: https://github.com/donkirkby/four-letter-blocks/issues/65
+
+### Nov 2025
+Tried filtering options down to the most common ones in single-sided solutions,
+but it didn't help performance.
+
+Went back to Knuth's [original DLX], and found that the option for making
+random choices during search often found the first solution faster than the
+default search order. Wrote a proof of concept that runs several short searches
+with different random seeds, instead of one long search, and it successfully
+solved an 11x11 pair within 45 minutes.
+
+Got some [ideas] from Max Heisinger, and found that DLX-PRE dropped the 11x11
+solution down to 10 minutes by eliminating redundant items and unusable
+options.
+
+[original DLX]: https://cs.stanford.edu/~knuth/programs.html
+[ideas]: https://github.com/miniexact/miniexact/issues/6#issuecomment-3567907089
