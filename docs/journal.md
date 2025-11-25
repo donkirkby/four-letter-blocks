@@ -139,7 +139,13 @@ solved an 11x11 pair within 45 minutes.
 
 Got some [ideas] from Max Heisinger, and found that DLX-PRE dropped the 11x11
 solution down to 10 minutes by eliminating redundant items and unusable
-options.
+options. See the [problems] folder for some example inputs of different sizes.
+
+| Scenario     | Time (Gmems) |
+|--------------|--------------|
+| original 9x9 |          4.1 |
+| filtered 9x9 |          3.4 |
 
 [original DLX]: https://cs.stanford.edu/~knuth/programs.html
 [ideas]: https://github.com/miniexact/miniexact/issues/6#issuecomment-3567907089
+[problems]: problems/
