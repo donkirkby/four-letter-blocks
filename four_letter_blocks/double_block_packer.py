@@ -1,9 +1,9 @@
 from collections import Counter, defaultdict
-from itertools import permutations, groupby
-from operator import attrgetter
+from itertools import permutations
 
 import numpy as np
-from miniexact import miniexacts_m
+from miniexact import miniexacts_x
+from scipy.ndimage import label
 
 from four_letter_blocks.block import flipped_shapes
 from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
@@ -14,17 +14,107 @@ class DoubleBlockPacker:
     def __init__(self,
                  *start_texts: str) -> None:
         self.is_logging = False
-        combined_start_texts = self.combine_start_texts(start_texts)
-        self.front_packer = XPacker(start_text=combined_start_texts[0])
+        self.front_text, self.back_text = self.combine_start_texts(start_texts)
+        self.front_packer = XPacker(start_text=self.front_text)
         self.width = self.front_packer.width
         self.height = self.front_packer.height
-        front_unused = self.front_packer.unused_count
 
-        self.back_packer = XPacker(start_text=combined_start_texts[1])
+        self.back_packer = XPacker(start_text=self.back_text)
+
+        self.validate_complete_words()
+        self.validate_block_sizes()
+        self.validate_unused_sizes()
+        self.validate_fill_sides()
+        self.validate_missing_shapes()
+        self.validate_unused_totals()
+
+    def validate_complete_words(self):
+        complete_word_messages: list[str] = []
+        for start_text, side in ((self.back_text, 'back'),
+                                 (self.front_text, 'front')):
+            puzzle = Puzzle.parse_sections('',
+                                           start_text,
+                                           '',
+                                           start_text)
+            complete_word_messages.extend(
+                f'{message} in {side}'
+                for message in puzzle.check_word_length()
+                if 'complete' in message)
+        if complete_word_messages:
+            raise ValueError(f'Found {", ".join(complete_word_messages)}.')
+
+    def validate_unused_totals(self):
+        front_unused = self.front_packer.unused_count
         back_unused = self.back_packer.unused_count
         if front_unused != back_unused:
             raise ValueError(
                 f'Different space counts: {front_unused} and {back_unused}.')
+
+    def validate_missing_shapes(self):
+        # Disable rotation
+        self.front_packer.target_shape_counts = Counter({'S0': 1})
+        self.back_packer.target_shape_counts = Counter({'S0': 1})
+        front_shape_counts = self.front_packer.packed_shape_counts
+        back_shape_counts = self.count_back_shapes(self.back_packer.state)
+        missing_back_counts = front_shape_counts - back_shape_counts
+        missing_front_counts = back_shape_counts - front_shape_counts
+        missing_messages = [f'shape {flipped_shapes()[shape_name]} in back'
+                            for shape_name in missing_back_counts.keys()]
+        missing_messages.extend(f'shape {shape_name} in front'
+                                for shape_name in missing_front_counts.keys())
+        if missing_messages:
+            raise ValueError(f"Missing {', '.join(missing_messages)}.")
+
+    def validate_fill_sides(self):
+        fill_failure_messages = []
+        for packer, side in ((self.back_packer, 'back'),
+                             (self.front_packer, 'front')):
+            start_state = packer.state.copy()
+            is_filled = packer.fill()
+            if not is_filled:
+                fill_failure_messages.append(f'in {side}')
+            packer.state = start_state
+        if fill_failure_messages:
+            raise ValueError(f'Fill failed {" and ".join(fill_failure_messages)}.')
+
+    def validate_unused_sizes(self):
+        group_messages = []
+        for packer, side in ((self.back_packer, 'back'),
+                             (self.front_packer, 'front')):
+            unused = packer.state == XPacker.UNUSED
+            structure = np.array([[0, 1, 0],
+                                  [1, 1, 1],
+                                  [0, 1, 0]],
+                                 bool)
+            unused_groups: np.ndarray
+            unused_groups, group_count = label(unused, structure=structure)
+            bin_counts = np.bincount(unused_groups.flatten())
+            uneven_groups, = np.nonzero(bin_counts % 4)
+            if uneven_groups.size and uneven_groups[0] == 0:
+                uneven_groups = uneven_groups[1:]
+            if len(uneven_groups) == 1:
+                continue
+            uneven_sizes = [int(bin_counts[group_num])
+                            for group_num in uneven_groups]
+            uneven_sizes.sort()
+            group_messages.extend(f'{size} in {side}'
+                                  for size in uneven_sizes)
+        if group_messages:
+            raise ValueError(f'Bad unused sizes of {", ".join(group_messages)}.')
+
+    def validate_block_sizes(self):
+        front_block_sizes = np.bincount(self.front_packer.state.reshape(
+            self.front_packer.width * self.front_packer.height))
+        back_block_sizes = np.bincount(self.back_packer.state.reshape(
+            self.back_packer.width * self.back_packer.height))
+        size_messages = [f'{XPacker.BLOCK_CHARS[block]} in back'
+                         for block, size in enumerate(back_block_sizes)
+                         if block > XPacker.GAP and size not in (0, 4)]
+        size_messages.extend(f'{XPacker.BLOCK_CHARS[block]} in front'
+                             for block, size in enumerate(front_block_sizes)
+                             if block > XPacker.GAP and size not in (0, 4))
+        if size_messages:
+            raise ValueError(f'Bad block size for {", ".join(size_messages)}.')
 
     @property
     def state(self):
@@ -79,31 +169,31 @@ class DoubleBlockPacker:
         self.back_packer.is_logging = self.is_logging
         self.front_packer.is_logging = self.is_logging
 
-        solver = miniexacts_m()
+        solver = miniexacts_x()
 
         for prefix, packer in (('b_', self.back_packer),
                                ('f_', self.front_packer)):
             for item_name in packer.find_open_space_items():
                 solver.primary(prefix + item_name)
 
-        self.back_packer.add_shape_items(solver)
-
         back_options: dict[str, list[PackingOption]] = defaultdict(list)
-        for rotated_shape_name, shape_options in groupby(
-                self.back_packer.find_options(),
-                attrgetter('rotated_shape_name')):
-            back_options[rotated_shape_name] = list(shape_options)
+        for option in self.back_packer.find_filtered_options():
+            back_options[option.rotated_shape_name].append(option)
 
         flipped_shape_names = flipped_shapes()
         front_masks: dict[int, np.ndarray] = {}
         back_masks: dict[int, np.ndarray] = {}
 
-        for front_option in self.front_packer.find_options():
-            front_shape_name = front_option.rotated_shape_name
+        front_options = self.front_packer.find_filtered_options()
+        if not front_options and not back_options:
+            if self.back_packer.unused_count == 0:
+                # Unused counts on front and back must match.
+                # Already filled.
+                return True
+        for front_option in front_options:
             back_shape_name = flipped_shape_names[front_option.rotated_shape_name]
             back_shape_options = back_options[back_shape_name]
             for back_option in back_shape_options:
-                solver.add(front_shape_name[0])
                 for prefix, items in (('b_', back_option.space_items),
                                       ('f_', front_option.space_items)):
                     for space_name in items:
@@ -116,6 +206,7 @@ class DoubleBlockPacker:
                 front_masks[option_num] = front_option.mask
                 back_masks[option_num] = back_option.mask
 
+        # solver.write_to_dlx('dump/problem.dlx')
         if solver.solve() != XPacker.SOLUTION_FOUND:
             return False
 

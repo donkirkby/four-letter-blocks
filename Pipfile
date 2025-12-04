@@ -15,6 +15,7 @@ miniexact = "*"
 four-letter-blocks = {editable = true, extras = ["dev"], path = "."}
 mypy = "*"
 types-pyyaml = "*"
+scipy-stubs = "*"
 
 [requires]
 python_version = "3.12"

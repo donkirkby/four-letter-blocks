@@ -11,6 +11,8 @@ subtitle: Crossword puzzles to assemble
 [logo]: images/logo.png
 [buy sets of puzzles]: https://www.thegamecrafter.com/designers/don-kirkby-s-games
 [Cross Jig Publishing Co.]: https://www.oldpuzzles.com/buy-puzzles/sale-list/crossword-puzzle-1
+[Tiled Words]: https://github.com/Paul-Hebert
+[Paul Hebert]: https://tiledwords.com/
 
 ![logo]
 
@@ -19,6 +21,10 @@ puzzle cut up into blocks of four letters. The solver gets the blocks plus a
 set of standard crossword clues and has to assemble the grid. The bad news is
 that the clues aren't numbered in the normal way - 1 Across might not be in the
 top left. The good news is that every word has at least the first letter given.
+
+I recently learned that I was not the first to build a crossword puzzle out of
+tetrominoes. The [Cross Jig Publishing Co.] published one in 1932. A more recent
+puzzle in the same family is [Tiled Words], by [Paul Hebert].
 
 Here's a small starter puzzle to see how they work. You can also print out the
 [PDF]. Find more challenging puzzles I've published on [Puzzling Stack Exchange].

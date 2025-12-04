@@ -407,6 +407,8 @@ class Puzzle:
                            if block.shape is not None)
         counter: typing.Counter[str] = Counter()
         for block in self.blocks:
+            if block.marker == Block.UNUSED:
+                continue
             shape = block.shape
             rotation = block.shape_rotation
             if self.rotations_display == RotationsDisplay.BACK:

@@ -16,24 +16,24 @@ def reverse(a: list):
 
 
 def parse_basic_puzzle():
-    source_file = StringIO("""\
-Basic Puzzle
-
-WORD
-I##A
-N##S
-EACH
-
-WORD - Part of a sentence
-EACH - One at a time
-WINE - Sour grapes
-DASH - Run between words
-
-AABB
-A##B
-A##B
-CCCC
-""")
+    source_file = StringIO(dedent("""\
+        Basic Puzzle
+        
+        WORD
+        I##A
+        N##S
+        EACH
+        
+        WORD - Part of a sentence
+        EACH - One at a time
+        WINE - Sour grapes
+        DASH - Run between words
+        
+        AABB
+        A##B
+        A##B
+        CCCC
+        """))
     puzzle = Puzzle.parse(source_file)
     return puzzle
 
@@ -51,111 +51,111 @@ def test_parse():
 
 
 def test_parse_clue_with_reference():
-    source_file = StringIO("""\
-Basic Puzzle
-
-WORD
-I##A
-N##S
-EACH
-
-WORD - Part of a sentence
-EACH - One at a time
-WINE - Sour grapes
-DASH - Run between WORD and a neighbour
-
-AABB
-A##B
-A##B
-CCCC
-""")
+    source_file = StringIO(dedent("""\
+        Basic Puzzle
+        
+        WORD
+        I##A
+        N##S
+        EACH
+        
+        WORD - Part of a sentence
+        EACH - One at a time
+        WINE - Sour grapes
+        DASH - Run between WORD and a neighbour
+        
+        AABB
+        A##B
+        A##B
+        CCCC
+        """))
     puzzle = Puzzle.parse(source_file)
 
     assert puzzle.down_clues[1].format() == '2. Run between 1 Across and a neighbour'
 
 
 def test_parse_clue_with_unknown_reference():
-    source_file = StringIO("""\
-Basic Puzzle
-
-WORD
-I##A
-N##S
-EACH
-
-WORD - Part of a sentence
-EACH - One at a time
-WINE - Sour grapes
-DASH - Run between WHAT and a neighbour
-
-AABB
-A##B
-A##B
-CCCC
-""")
+    source_file = StringIO(dedent("""\
+        Basic Puzzle
+        
+        WORD
+        I##A
+        N##S
+        EACH
+        
+        WORD - Part of a sentence
+        EACH - One at a time
+        WINE - Sour grapes
+        DASH - Run between WHAT and a neighbour
+        
+        AABB
+        A##B
+        A##B
+        CCCC
+        """))
     puzzle = Puzzle.parse(source_file)
 
     assert puzzle.down_clues[1].format() == '2. Run between WHAT and a neighbour'
 
 
 def test_parse_clue_with_two_references():
-    source_file = StringIO("""\
-Basic Puzzle
-
-WORD
-I##A
-N##S
-EACH
-
-WORD - Part of a sentence
-EACH - One at a time
-WINE - Sour grapes
-DASH - Run between WORD and WINE
-
-AABB
-A##B
-A##B
-CCCC
-""")
+    source_file = StringIO(dedent("""\
+        Basic Puzzle
+        
+        WORD
+        I##A
+        N##S
+        EACH
+        
+        WORD - Part of a sentence
+        EACH - One at a time
+        WINE - Sour grapes
+        DASH - Run between WORD and WINE
+        
+        AABB
+        A##B
+        A##B
+        CCCC
+        """))
     puzzle = Puzzle.parse(source_file)
 
     assert puzzle.down_clues[1].format() == '2. Run between 1 Across and 1 Down'
 
 
 def test_parse_with_suits():
-    source_file = StringIO("""\
-Title
-
-ABCDEFGHIJKL
-A##########L
-BZZZZ######M
-B##########M
-C##########N
-C##########N
-D##########O
-D##########O
-E##########P
-E##########P
-F##########Q
-FGHIJKLMNOPQ
-
-ABCDEFGHIJKL - Half an alphabet?
-FGHIJKLMNOPQ - Later
-BZZZZ - Noisy bee
-
-AAAABBBBCCCC
-K##########D
-KLLLL######D
-K##########D
-K##########D
-J##########E
-J##########E
-J##########E
-J##########E
-I##########F
-I##########F
-IIHHHHGGGGFF
-""")
+    source_file = StringIO(dedent("""\
+        Title
+        
+        ABCDEFGHIJKL
+        A##########L
+        BZZZZ######M
+        B##########M
+        C##########N
+        C##########N
+        D##########O
+        D##########O
+        E##########P
+        E##########P
+        F##########Q
+        FGHIJKLMNOPQ
+        
+        ABCDEFGHIJKL - Half an alphabet?
+        FGHIJKLMNOPQ - Later
+        BZZZZ - Noisy bee
+        
+        AAAABBBBCCCC
+        K##########D
+        KLLLL######D
+        K##########D
+        K##########D
+        J##########E
+        J##########E
+        J##########E
+        J##########E
+        I##########F
+        I##########F
+        IIHHHHGGGGFF
+        """))
     puzzle = Puzzle.parse(source_file)
 
     assert puzzle.grid[0, 0].suit == 'C'
@@ -169,41 +169,41 @@ IIHHHHGGGGFF
 
 
 def test_extra_section():
-    source_file = StringIO("""\
-Puzzle With Extra
-
-WORD
-I##A
-N##S
-EACH
-
-WORD - Part of a sentence
-EACH - One at a time
-WINE - Sour grapes
-DASH - Run between words
-
-AAAA
-B##C
-B##C
-BBCC
-
-Lorem ipsum
-""")
+    source_file = StringIO(dedent("""\
+        Puzzle With Extra
+        
+        WORD
+        I##A
+        N##S
+        EACH
+        
+        WORD - Part of a sentence
+        EACH - One at a time
+        WINE - Sour grapes
+        DASH - Run between words
+        
+        AAAA
+        B##C
+        B##C
+        BBCC
+        
+        Lorem ipsum
+        """))
     with pytest.raises(ValueError, match='Expected 4 sections, found 5.'):
         Puzzle.parse(source_file)
 
 
 def test_fewer_sections():
-    source_file = StringIO("""\
-Puzzle With Fewer
-
-WORD
-I##A
-N##S
-EACH
-
--
-""")
+    source_file = StringIO(dedent("""\
+        Puzzle With Fewer
+        
+        WORD
+        I##A
+        N##S
+        EACH
+        
+        -
+        """))
     puzzle = Puzzle.parse(source_file)
 
     assert len(puzzle.all_clues) == 4
@@ -211,43 +211,43 @@ EACH
 
 
 def test_missing_definitions():
-    source_file = StringIO("""\
-Title
-
-WORD
-I##A
-N##S
-EACH
-
-WORD - Part of a sentence
-
-AAAA
-B##C
-B##C
-BBCC
-""")
+    source_file = StringIO(dedent("""\
+        Title
+        
+        WORD
+        I##A
+        N##S
+        EACH
+        
+        WORD - Part of a sentence
+        
+        AAAA
+        B##C
+        B##C
+        BBCC
+        """))
     puzzle = Puzzle.parse(source_file)
 
     assert puzzle.across_clues[1].format() == '3. '
 
 
 def test_bad_definitions():
-    source_file = StringIO("""\
-Bad Defs
-
-WORD
-I##A
-N##S
-EACH
-
-WORD = Part of a sentence
-EACH - One at a time
-
-AAAA
-B##C
-B##C
-BBCC
-""")
+    source_file = StringIO(dedent("""\
+        Bad Defs
+        
+        WORD
+        I##A
+        N##S
+        EACH
+        
+        WORD = Part of a sentence
+        EACH - One at a time
+        
+        AAAA
+        B##C
+        B##C
+        BBCC
+        """))
     puzzle = Puzzle.parse(source_file)
 
     assert puzzle.all_clues == {'EACH': Clue('One at a time', 3),
@@ -257,25 +257,25 @@ BBCC
 
 
 def test_extra_definitions():
-    source_file = StringIO("""\
-Extra Defs
-
-WORD
-I##A
-N##S
-EACH
-
-WORD - Part of a sentence
-EACH - One at a time
-WINE - Sour grapes
-DOOM - Will be removed
-DASH - Run between words
-
-AAAA
-B##C
-B##C
-BBCC
-""")
+    source_file = StringIO(dedent("""\
+        Extra Defs
+        
+        WORD
+        I##A
+        N##S
+        EACH
+        
+        WORD - Part of a sentence
+        EACH - One at a time
+        WINE - Sour grapes
+        DOOM - Will be removed
+        DASH - Run between words
+        
+        AAAA
+        B##C
+        B##C
+        BBCC
+        """))
     puzzle = Puzzle.parse(source_file)
 
     assert puzzle.all_clues == {'EACH': Clue('One at a time', 3),
@@ -285,12 +285,12 @@ BBCC
 
 
 def test_parse_updates_old_clues():
-    clues_text = """\
-WORD - Part of a sentence
-EACH - One at a time
-WINE - Sour grapes
-DASH - Run between words
-"""
+    clues_text = dedent("""\
+        WORD - Part of a sentence
+        EACH - One at a time
+        WINE - Sour grapes
+        DASH - Run between words
+        """)
     old_clues = {}
     Puzzle.parse_sections('', '', clues_text, '', old_clues)
 
@@ -301,16 +301,16 @@ DASH - Run between words
 
 
 def test_parse_includes_old_clues():
-    grid_text = """\
-WORD
-I##A
-N##S
-EACH
-"""
-    clues_text = """\
-WORD - Part of a sentence
-DASH - Run between words
-"""
+    grid_text = dedent("""\
+        WORD
+        I##A
+        N##S
+        EACH
+        """)
+    clues_text = dedent("""\
+        WORD - Part of a sentence
+        DASH - Run between words
+        """)
     old_clues = {'EACH': Clue('One at a time'), 'OTHER': Clue('Unrelated')}
     puzzle = Puzzle.parse_sections('', grid_text, clues_text, '', old_clues)
 
@@ -405,21 +405,21 @@ def test_resize():
 
 
 def test_display_block_summary():
-    source_file = StringIO("""\
-Title
-
-WORD
-I##A
-NO#S
-EACH
-
--
-
-AABB
-A##B
-DD#B
-CCCC
-""")
+    source_file = StringIO(dedent("""\
+        Title
+        
+        WORD
+        I##A
+        NO#S
+        EACH
+        
+        -
+        
+        AABB
+        A##B
+        DD#B
+        CCCC
+        """))
     puzzle = Puzzle.parse(source_file)
 
     block_summary = puzzle.display_block_summary()
@@ -428,21 +428,21 @@ CCCC
 
 
 def test_display_block_summary_with_rotations():
-    source_file = StringIO("""\
-Title
-
-X#XX
-XXX#
-XX#X
-XXXX
-
--
-
-D#BB
-DBB#
-DD#C
-ACCC
-""")
+    source_file = StringIO(dedent("""\
+        Title
+        
+        X#XX
+        XXX#
+        XX#X
+        XXXX
+        
+        -
+        
+        D#BB
+        DBB#
+        DD#C
+        ACCC
+        """))
     puzzle = Puzzle.parse(source_file)
     puzzle.rotations_display = RotationsDisplay.FRONT
 
@@ -452,21 +452,21 @@ ACCC
 
 
 def test_display_block_summary_with_rotations_back():
-    source_file = StringIO("""\
-Title
-
-XX#X
-#XXX
-X#XX
-XXXX
-
--
-
-BB#D
-#BBD
-C#DD
-CCCA
-""")
+    source_file = StringIO(dedent("""\
+        Title
+        
+        XX#X
+        #XXX
+        X#XX
+        XXXX
+        
+        -
+        
+        BB#D
+        #BBD
+        C#DD
+        CCCA
+        """))
     puzzle = Puzzle.parse(source_file)
     puzzle.rotations_display = RotationsDisplay.BACK
 
@@ -476,21 +476,21 @@ CCCA
 
 
 def test_shape_counts():
-    source_file = StringIO("""\
-Title
-
-XX#X
-#XXX
-X#XX
-XXXX
-
--
-
-BB#D
-#BBD
-C#DD
-CCCA
-""")
+    source_file = StringIO(dedent("""\
+        Title
+        
+        XX#X
+        #XXX
+        X#XX
+        XXXX
+        
+        -
+        
+        BB#D
+        #BBD
+        C#DD
+        CCCA
+        """))
     puzzle = Puzzle.parse(source_file)
 
     counts = puzzle.shape_counts
@@ -498,22 +498,46 @@ CCCA
     assert counts == Counter({'J': 2, 'Z': 1})
 
 
+def test_shape_counts_no_rotation():
+    source_file = StringIO(dedent("""\
+        Title
+        
+        XX#X
+        #XXX
+        X#XX
+        XXXX
+        
+        -
+        
+        BB#.
+        #BB.
+        C#..
+        CCCA
+        """))
+    puzzle = Puzzle.parse(source_file)
+    puzzle.rotations_display = RotationsDisplay.FRONT
+
+    counts = puzzle.shape_counts
+
+    assert counts == Counter({'J3': 1, 'Z0': 1})
+
+
 def test_flipped_shape_counts():
-    source_file = StringIO("""\
-Title
-
-XX#X
-#XXX
-X#XX
-XXXX
-
--
-
-BB#D
-#BBD
-C#DD
-CCCA
-""")
+    source_file = StringIO(dedent("""\
+        Title
+        
+        XX#X
+        #XXX
+        X#XX
+        XXXX
+        
+        -
+        
+        BB#D
+        #BBD
+        C#DD
+        CCCA
+        """))
     puzzle = Puzzle.parse(source_file)
 
     counts = puzzle.flipped_shape_counts
@@ -522,33 +546,25 @@ CCCA
 
 
 def test_flipped_shape_counts_no_rotation():
-    source_file = StringIO("""\
-Title
-
-XX#XXX
-#XXXXX
-X#XXX#
-XXXXXX
-#####X
-######
-
--
-
-BB#DEE
-#BBDEE
-C#DDF#
-CCCAFF
-#####F
-######
-""")
-    x = """\
-EED#BB
-EEDBB#
-#FDD#C
-FFACCC
-F#####
-######
-"""
+    source_file = StringIO(dedent("""\
+        Title
+        
+        XX#XXX
+        #XXXXX
+        X#XXX#
+        XXXXXX
+        #####X
+        ######
+        
+        -
+        
+        BB#DEE
+        #BBDEE
+        C#DDF#
+        CCCAFF
+        #####F
+        ######
+        """))
     puzzle = Puzzle.parse(source_file)
     puzzle.rotations_display = RotationsDisplay.FRONT
 
@@ -558,21 +574,21 @@ F#####
 
 
 def test_display_block_sizes_all_correct():
-    source_file = StringIO("""\
-Title
-
-WORD
-I##A
-N##S
-EACH
-
--
-
-AABB
-A##B
-A##B
-CCCC
-""")
+    source_file = StringIO(dedent("""\
+        Title
+        
+        WORD
+        I##A
+        N##S
+        EACH
+        
+        -
+        
+        AABB
+        A##B
+        A##B
+        CCCC
+        """))
     puzzle = Puzzle.parse(source_file)
 
     block_sizes = puzzle.display_block_sizes()
@@ -581,14 +597,14 @@ CCCC
 
 
 def test_display_block_sizes_no_blocks():
-    source_file = StringIO("""\
-Title
-
-WORD
-I##A
-NO#S
-EACH
-""")
+    source_file = StringIO(dedent("""\
+        Title
+        
+        WORD
+        I##A
+        NO#S
+        EACH
+        """))
     puzzle = Puzzle.parse(source_file)
 
     block_summary = puzzle.display_block_summary()
@@ -597,21 +613,21 @@ EACH
 
 
 def test_display_block_sizes_four_unused():
-    source_file = StringIO("""\
-Title
-
-WORD
-I##A
-N##S
-EACH
-
--
-
-AAAA
-####
-####
-BBBB
-""")
+    source_file = StringIO(dedent("""\
+        Title
+        
+        WORD
+        I##A
+        N##S
+        EACH
+        
+        -
+        
+        AAAA
+        ####
+        ####
+        BBBB
+        """))
     puzzle = Puzzle.parse(source_file)
 
     block_sizes = puzzle.display_block_sizes()
@@ -620,21 +636,21 @@ BBBB
 
 
 def test_warning_complete_across():
-    source_file = StringIO("""\
-Title
-
-WORD
-I##A
-N##S
-EACH
-
--
-
-AAAA
-B##C
-B##C
-BBCC
-""")
+    source_file = StringIO(dedent("""\
+        Title
+        
+        WORD
+        I##A
+        N##S
+        EACH
+        
+        -
+        
+        AAAA
+        B##C
+        B##C
+        BBCC
+        """))
     puzzle = Puzzle.parse(source_file)
 
     warnings = puzzle.check_style()
@@ -643,21 +659,21 @@ BBCC
 
 
 def test_warning_complete_down():
-    source_file = StringIO("""\
-Title
-
-WORD
-I##A
-N##S
-EACH
-
--
-
-AAAC
-A##C
-B##C
-BBBC
-""")
+    source_file = StringIO(dedent("""\
+        Title
+        
+        WORD
+        I##A
+        N##S
+        EACH
+        
+        -
+        
+        AAAC
+        A##C
+        B##C
+        BBBC
+        """))
     puzzle = Puzzle.parse(source_file)
 
     warnings = puzzle.check_style()
@@ -666,14 +682,14 @@ BBBC
 
 
 def test_warning_complete_unused():
-    source_file = StringIO("""\
-Title
-
-WORD
-I##A
-N##S
-EACH
-""")
+    source_file = StringIO(dedent("""\
+        Title
+        
+        WORD
+        I##A
+        N##S
+        EACH
+        """))
     puzzle = Puzzle.parse(source_file)
 
     warnings = puzzle.check_style()
@@ -682,14 +698,14 @@ EACH
 
 
 def test_warning_two_letter():
-    source_file = StringIO("""\
-Title
-
-WORD
-I#OA
-NO#S
-ENDS
-""")
+    source_file = StringIO(dedent("""\
+        Title
+        
+        WORD
+        I#OA
+        NO#S
+        ENDS
+        """))
     puzzle = Puzzle.parse(source_file)
 
     warnings = puzzle.check_style()
@@ -701,14 +717,14 @@ ENDS
 
 
 def test_warning_square():
-    source_file = StringIO("""\
-Title
-
-WON
-I##
-NO#
-END
-""")
+    source_file = StringIO(dedent("""\
+        Title
+        
+        WON
+        I##
+        NO#
+        END
+        """))
     puzzle = Puzzle.parse(source_file)
 
     warnings = puzzle.check_style()
@@ -719,14 +735,14 @@ END
 
 
 def test_warning_symmetry():
-    source_file = StringIO("""\
-Title
-
-WE#D
-I##A
-N##D
-ENDS
-""")
+    source_file = StringIO(dedent("""\
+        Title
+        
+        WE#D
+        I##A
+        N##D
+        ENDS
+        """))
     puzzle = Puzzle.parse(source_file)
 
     warnings = puzzle.check_style()
@@ -736,14 +752,14 @@ ENDS
 
 
 def test_warning_symmetry_diagonal():
-    source_file = StringIO("""\
-Title
-
-WEED
-I##A
-N##D
-END#
-""")
+    source_file = StringIO(dedent("""\
+        Title
+        
+        WEED
+        I##A
+        N##D
+        END#
+        """))
     puzzle = Puzzle.parse(source_file)
 
     warnings = puzzle.check_style()
@@ -752,13 +768,13 @@ END#
 
 
 def test_warning_symmetry_vertical():
-    source_file = StringIO("""\
-Title
-
-WED
-I#A
-N#D
-""")
+    source_file = StringIO(dedent("""\
+        Title
+        
+        WED
+        I#A
+        N#D
+        """))
     puzzle = Puzzle.parse(source_file)
 
     warnings = puzzle.check_style()
@@ -767,14 +783,14 @@ N#D
 
 
 def test_warning_repeat():
-    source_file = StringIO("""\
-Title
-
-REED
-E##E
-E##A
-DEED
-""")
+    source_file = StringIO(dedent("""\
+        Title
+        
+        REED
+        E##E
+        E##A
+        DEED
+        """))
     puzzle = Puzzle.parse(source_file)
 
     warnings = puzzle.check_style()
@@ -956,11 +972,11 @@ def test_draw_clues_with_reference(pixmap_differ: PixmapDiffer):
 
 def test_format_grid():
     puzzle = parse_basic_puzzle()
-    expected_text = """\
-WORD
-I##A
-N##S
-EACH"""
+    expected_text = dedent("""\
+        WORD
+        I##A
+        N##S
+        EACH""")
 
     grid_text = puzzle.format_grid()
 
@@ -969,11 +985,11 @@ EACH"""
 
 def test_format_clues():
     puzzle = parse_basic_puzzle()
-    expected_text = """\
-DASH - Run between words
-EACH - One at a time
-WINE - Sour grapes
-WORD - Part of a sentence"""
+    expected_text = dedent("""\
+        DASH - Run between words
+        EACH - One at a time
+        WINE - Sour grapes
+        WORD - Part of a sentence""")
 
     clues_text = puzzle.format_clues()
 
@@ -981,29 +997,29 @@ WORD - Part of a sentence"""
 
 
 def test_format_clues_with_reference():
-    source_file = StringIO("""\
-Basic Puzzle
-
-WORD
-I##A
-N##S
-EACH
-
-WORD - Part of a sentence
-EACH - One at a time
-WINE - Sour grapes
-DASH - Run between WORD and a neighbour
-
-AABB
-A##B
-A##B
-CCCC
-""")
-    expected_text = """\
-DASH - Run between WORD and a neighbour
-EACH - One at a time
-WINE - Sour grapes
-WORD - Part of a sentence"""
+    source_file = StringIO(dedent("""\
+        Basic Puzzle
+        
+        WORD
+        I##A
+        N##S
+        EACH
+        
+        WORD - Part of a sentence
+        EACH - One at a time
+        WINE - Sour grapes
+        DASH - Run between WORD and a neighbour
+        
+        AABB
+        A##B
+        A##B
+        CCCC
+        """))
+    expected_text = dedent("""\
+        DASH - Run between WORD and a neighbour
+        EACH - One at a time
+        WINE - Sour grapes
+        WORD - Part of a sentence""")
     puzzle = Puzzle.parse(source_file)
 
     clues_text = puzzle.format_clues()
@@ -1013,11 +1029,11 @@ WORD - Part of a sentence"""
 
 def test_format_blocks():
     puzzle = parse_basic_puzzle()
-    expected_text = """\
-AABB
-A##B
-A##B
-CCCC"""
+    expected_text = dedent("""\
+        AABB
+        A##B
+        A##B
+        CCCC""")
 
     blocks_text = puzzle.format_blocks()
 
@@ -1025,25 +1041,25 @@ CCCC"""
 
 
 def test_format_blocks_unused():
-    source_file = StringIO("""\
-Title
-
-WORD
-I##A
-N##S
-EACH
-
--
-
-AAAA
- ...
-""")
+    source_file = StringIO(dedent("""\
+        Title
+        
+        WORD
+        I##A
+        N##S
+        EACH
+        
+        -
+        
+        AAAA
+         ...
+        """))
     puzzle = Puzzle.parse(source_file)
-    expected_text = """\
-AAAA
-?##?
-?##?
-????"""
+    expected_text = dedent("""\
+        AAAA
+        ?##?
+        ?##?
+        ????""")
 
     blocks_text = puzzle.format_blocks()
 
@@ -1053,11 +1069,11 @@ AAAA
 def test_shuffle(monkeypatch):
     monkeypatch.setattr(four_letter_blocks.puzzle, 'shuffle', reverse)
     puzzle = parse_basic_puzzle()
-    expected_text = """\
-CCBB
-C##B
-C##B
-AAAA"""
+    expected_text = dedent("""\
+        CCBB
+        C##B
+        C##B
+        AAAA""")
 
     puzzle.shuffle()
     grid_text = puzzle.format_blocks()

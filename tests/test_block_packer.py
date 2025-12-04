@@ -363,6 +363,21 @@ def test_positions():
     assert packer.positions == expected_positions
 
 
+def test_positions_not_four():
+    """ Blocks that don't have 4 squares, aren't included. """
+    packer = BlockPacker(start_text=dedent("""\
+        .A#CC
+        AAB.C
+        BBB.C
+        ....C
+        ....."""))
+
+    # {shape: [(x, y, rotation)]}
+    expected_positions = {'L': [(0, 1, 1)]}
+
+    assert packer.positions == expected_positions
+
+
 def test_rotated_positions():
     packer = BlockPacker(start_text=dedent("""\
         AA#CC

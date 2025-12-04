@@ -103,6 +103,11 @@ class BlockPacker:
 
     @property
     def positions(self):
+        """ Positions and rotations of each shape in the packed grid.
+
+        :return: {shape: [(x, y, rotation)]} (Excludes blocks that don't have
+        four letters.)
+        """
         result = defaultdict(list)
         shape_map = shape_rotations()
         max_block = int(np.max(self.state))
@@ -114,10 +119,11 @@ class BlockPacker:
             if not coordinates:
                 continue
             norm_coordinates = normalize_coordinates(coordinates)  # type: ignore
-            shape_name, rotation = shape_map[norm_coordinates]
-            result[shape_name].append((min(x_coordinates),
-                                       min(y_coordinates),
-                                       rotation))
+            shape_name, rotation = shape_map.get(norm_coordinates, (None, None))
+            if shape_name is not None:
+                result[shape_name].append((min(x_coordinates),
+                                           min(y_coordinates),
+                                           rotation))
         return result
 
     @property
@@ -227,7 +233,9 @@ class BlockPacker:
                                          [1, 1, 1],
                                          [0, 1, 0]]
                 gap_groups: np.ndarray
-                gap_groups, group_count = label(gaps, structure=structure)
+                labels = label(gaps, structure=structure)
+                assert isinstance(labels, tuple)
+                gap_groups, group_count = labels
                 bin_counts = np.bincount(gap_groups.flatten())
                 uneven_groups, = np.nonzero(bin_counts % 4)
                 if uneven_groups.size and uneven_groups[0] == 0:

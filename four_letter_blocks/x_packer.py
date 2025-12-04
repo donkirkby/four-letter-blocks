@@ -5,7 +5,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import numpy as np
-from miniexact import miniexacts_m
+from miniexact import miniexacts_x
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker, build_masks
@@ -84,7 +84,13 @@ class XPacker(BlockPacker):
         start_state = self.state
         assert start_state is not None
         option_masks: dict[int, np.ndarray] = {}  # { option_num: [[flag]] }
-        solver = self.prepare_solver(option_masks)
+        try:
+            solver = self.prepare_solver(option_masks)
+        except ValueError:
+            # No valid options, no solutions.
+            if self.is_full:
+                yield self.state
+            return
         width = self.width
         height = self.height
         solution_count = 0
@@ -111,17 +117,15 @@ class XPacker(BlockPacker):
 
     def prepare_solver(
             self,
-            option_masks: dict[int, np.ndarray]|None = None) -> miniexacts_m:
+            option_masks: dict[int, np.ndarray]|None = None) -> miniexacts_x:
         # space items are spaces in the grid, named 'i_j' for row i, column j.
-        solver = miniexacts_m()
+        solver = miniexacts_x()
         for item_name in self.find_open_space_items():
             solver.primary(item_name)
 
-        self.add_shape_items(solver)
-
         # Each option is a slot taking up four spaces, plus a shape name.
+        option_num = 0
         for option in self.find_options():
-            solver.add(option.rotated_shape_name[0])
             for item in option.space_items:
                 solver.add(item)
             option_num = solver.add(0)
@@ -130,6 +134,8 @@ class XPacker(BlockPacker):
             # Save option mask to assemble state from solution.
             if option_masks is not None:
                 option_masks[option_num] = option.mask
+        if option_num == 0:
+            raise ValueError('No options found.')
         return solver
 
     def format_dlx(self, sorted_options: bool = False) -> str:
@@ -142,18 +148,12 @@ class XPacker(BlockPacker):
             if not sorted_options:
                 return dlx_text
             dlx_lines = dlx_text.splitlines()
-            sorted_lines = []
-            for i, line in enumerate(dlx_lines):
-                if i == 0:
-                    sorted_lines.append(line)
-                else:
-                    items = line.split()
-                    items.sort()
-                    sorted_line = ' '.join(items)
-                    sorted_lines.append(sorted_line)
-            return '\n'.join(sorted_lines)
+            sorted_lines = [' '.join(sorted(line.strip().split()))
+                            for line in dlx_lines]
+            sorted_lines[1:] = sorted(sorted_lines[1:])
+            return '\n'.join(sorted_lines) + '\n'
 
-    def add_shape_items(self, solver: miniexacts_m) -> None:
+    def add_shape_items(self, solver: miniexacts_x) -> None:
         """ Add an item to the solver for each shape.
 
         If self.required_shape_counts is set, then exact multiplicities will
@@ -181,7 +181,7 @@ class XPacker(BlockPacker):
             (int(i), int(j))
             for i, j in zip(*np.where(self.state == self.UNUSED))]
         for i, j in open_spaces:
-            yield f's{i}_{j}'
+            yield f'{i}_{j}'
 
     def find_options(self) -> typing.Iterator[PackingOption]:
         """ Yields all options for this packer. """
@@ -202,7 +202,7 @@ class XPacker(BlockPacker):
                         covered_spaces = [
                             (int(i2), int(j2))
                             for i2, j2 in zip(*np.where(coverage_flags))]
-                        block_items = {f's{i2}_{j2}'
+                        block_items = {f'{i2}_{j2}'
                                        for i2, j2 in covered_spaces}
                         has_complete_word = any(
                             word_items.issubset(block_items)
@@ -215,6 +215,19 @@ class XPacker(BlockPacker):
                                             list(block_items),
                                             coverage_flags)
 
+    def find_filtered_options(self) -> list[PackingOption]:
+        filtered_options = []
+        start_state = self.state
+        options = list(self.find_options())
+        for option in options:
+            self.state = start_state
+            next_block = self.find_next_block()
+            self.state = start_state + next_block * option.mask[:self.height, :self.width]
+            is_filled = self.fill()
+            if is_filled:
+                filtered_options.append(option)
+        self.state = start_state
+        return filtered_options
 
     def find_word_items(self) -> list[set[str]]:
         all_word_items: list[set[str]] = []
@@ -240,7 +253,7 @@ class XPacker(BlockPacker):
                     for k in range(len(word)):
                         i2 = i + k*di
                         j2 = j + k*dj
-                        item_name = f's{i2}_{j2}'
+                        item_name = f'{i2}_{j2}'
                         word_items.append(item_name)
                     word_item_set = set(word_items)
                     all_word_items.append(word_item_set)
