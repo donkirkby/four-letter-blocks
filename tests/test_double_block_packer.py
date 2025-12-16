@@ -344,7 +344,7 @@ def test_validate_gap_sizes():
         ..BAA
         #..A#""")
 
-    expected_error = r'Bad unused sizes of 3 in back, 9 in back\.'
+    expected_error = r'Bad unused sizes of 3 in 5x5 B, 9 in 5x5 B\.'
     with pytest.raises(ValueError, match=expected_error):
         DoubleBlockPacker(front_text, back_text)
 
@@ -363,7 +363,7 @@ def test_validate_unsolvable():
         ..BAA
         #.AA#""")
 
-    expected_error = r'Fill failed in front\.'
+    expected_error = r'Fill failed in 5x5 A\.'
     with pytest.raises(ValueError, match=expected_error):
         DoubleBlockPacker(front_text, back_text)
 
@@ -383,12 +383,35 @@ def test_validate_warnings():
         #..A#""")
 
     expected_error = (r'Found complete word on one block from \(2, 1\) to '
-                      r'\(4, 1\) in front\.')
+                      r'\(4, 1\) in 5x5 A\.')
     with pytest.raises(ValueError, match=expected_error):
         DoubleBlockPacker(front_text, back_text)
 
 
+def test_validate_warnings_with_puzzle_titles():
+    front_text = dedent("""\
+        #AAA#
+        ..A..
+        .....
+        .....
+        #.#.#""")
+    back_text = dedent("""\
+        #.#.#
+        .....
+        .....
+        ..AAA
+        #..A#""")
+
+    expected_error = (r'Found complete word on one block from \(2, 1\) to '
+                      r'\(4, 1\) in Example 1 \(5x5\)\.')
+    with pytest.raises(ValueError, match=expected_error):
+        DoubleBlockPacker(front_text, back_text, titles=['Example 1 (5x5)', 'Example 2 (5x5)'])
+
+
 def xtest_group_fill():
+    # TODO: command line tool that suggests placement when blocks don't match,
+    # or prints stats and tries to solve when they do match.
+    # TODO: cache filtered options for any grid.
     start_text9x9 = dedent("""\
         .....#...
         .....#...

@@ -12,8 +12,11 @@ from four_letter_blocks.x_packer import XPacker, PackingOption
 
 class DoubleBlockPacker:
     def __init__(self,
-                 *start_texts: str) -> None:
+                 *start_texts: str,
+                 titles: list[str] | None = None) -> None:
         self.is_logging = False
+        self.titles = titles or []
+        self.start_packers: list[XPacker] = []
         self.front_text, self.back_text = self.combine_start_texts(start_texts)
         self.front_packer = XPacker(start_text=self.front_text)
         self.width = self.front_packer.width
@@ -21,23 +24,22 @@ class DoubleBlockPacker:
 
         self.back_packer = XPacker(start_text=self.back_text)
 
-        self.validate_complete_words()
+        self.validate_complete_words(start_texts)
         self.validate_block_sizes()
         self.validate_unused_sizes()
         self.validate_fill_sides()
         self.validate_missing_shapes()
         self.validate_unused_totals()
 
-    def validate_complete_words(self):
+    def validate_complete_words(self, start_texts: tuple[str, ...]) -> None:
         complete_word_messages: list[str] = []
-        for start_text, side in ((self.back_text, 'back'),
-                                 (self.front_text, 'front')):
+        for start_text, title in zip(start_texts, self.titles):
             puzzle = Puzzle.parse_sections('',
                                            start_text,
                                            '',
                                            start_text)
             complete_word_messages.extend(
-                f'{message} in {side}'
+                f'{message} in {title}'
                 for message in puzzle.check_word_length()
                 if 'complete' in message)
         if complete_word_messages:
@@ -65,29 +67,30 @@ class DoubleBlockPacker:
         if missing_messages:
             raise ValueError(f"Missing {', '.join(missing_messages)}.")
 
-    def validate_fill_sides(self):
+    def validate_fill_sides(self) -> None:
         fill_failure_messages = []
-        for packer, side in ((self.back_packer, 'back'),
-                             (self.front_packer, 'front')):
+        for packer, title in zip(self.start_packers, self.titles):
+            assert packer.state is not None
             start_state = packer.state.copy()
             is_filled = packer.fill()
             if not is_filled:
-                fill_failure_messages.append(f'in {side}')
+                fill_failure_messages.append(f'in {title}')
             packer.state = start_state
         if fill_failure_messages:
             raise ValueError(f'Fill failed {" and ".join(fill_failure_messages)}.')
 
-    def validate_unused_sizes(self):
-        group_messages = []
-        for packer, side in ((self.back_packer, 'back'),
-                             (self.front_packer, 'front')):
+    def validate_unused_sizes(self) -> None:
+        group_messages: list[str] = []
+        for packer, title in zip(self.start_packers, self.titles):
             unused = packer.state == XPacker.UNUSED
             structure = np.array([[0, 1, 0],
                                   [1, 1, 1],
                                   [0, 1, 0]],
                                  bool)
             unused_groups: np.ndarray
-            unused_groups, group_count = label(unused, structure=structure)
+            labeled = label(unused, structure=structure)
+            assert isinstance(labeled, tuple)
+            unused_groups, group_count = labeled
             bin_counts = np.bincount(unused_groups.flatten())
             uneven_groups, = np.nonzero(bin_counts % 4)
             if uneven_groups.size and uneven_groups[0] == 0:
@@ -97,7 +100,7 @@ class DoubleBlockPacker:
             uneven_sizes = [int(bin_counts[group_num])
                             for group_num in uneven_groups]
             uneven_sizes.sort()
-            group_messages.extend(f'{size} in {side}'
+            group_messages.extend(f'{size} in {title}'
                                   for size in uneven_sizes)
         if group_messages:
             raise ValueError(f'Bad unused sizes of {", ".join(group_messages)}.')
@@ -120,12 +123,29 @@ class DoubleBlockPacker:
     def state(self):
         return np.concatenate((self.front_packer.state, self.back_packer.state))
 
-    @staticmethod
-    def combine_start_texts(start_texts):
-        if len(start_texts) <= 2:
-            return start_texts
+    def combine_start_texts(self, start_texts):
+        if not self.titles:
+            for start_text in start_texts:
+                lines = start_text.splitlines()
+                height = len(lines)
+                width = len(lines[0])
+                title = f'{width}x{height}'
+                self.titles.append(title)
+            title_totals = Counter(self.titles)
+            title_counts = Counter()
+            for i, title in enumerate(self.titles):
+                if title_totals[title] > 1:
+                    title_suffix = chr(ord('A') + title_counts[title])
+                    new_title = f'{title} {title_suffix}'
+                    self.titles[i] = new_title
+                    title_counts[title] += 1
+
         start_packers = [XPacker(start_text=start_text)
                          for start_text in start_texts]
+        self.start_packers = start_packers
+
+        if len(start_texts) <= 2:
+            return start_texts
         head_packer = start_packers[0]
         split_packers = []
         for tail_packers in permutations(start_packers[1:]):
@@ -146,7 +166,7 @@ class DoubleBlockPacker:
             start_counts = tuple(packer.unused_count
                                  for packer in start_packers)
             raise ValueError(f'No combination of unused counts could be evenly '
-                             f'split: {start_counts}')
+                             f'split: {start_counts}.')
 
         combined_start_texts = []
         max_width = max(packer.width for packer in start_packers)
