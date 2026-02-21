@@ -14,8 +14,8 @@ def test_draw_text(pixmap_differ: PixmapDiffer):
     with pixmap_differ.create_painters(740, 190):
         actual = pixmap_differ.actual.painter
         expected = pixmap_differ.expected.painter
-        pixmap_differ.radius = 6
-        pixmap_differ.tolerance = 26
+        # pixmap_differ.radius = 6
+        # pixmap_differ.tolerance = 26
 
         font = expected.font()
         font.setPixelSize(30)
