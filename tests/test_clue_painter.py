@@ -476,6 +476,9 @@ def test_draw_clues_with_suits(pixmap_differ: PixmapDiffer):
         font = QFont('NotoSansCJK')
         font.setPixelSize(40)
         expected.setFont(font)
+        pen = expected.pen()
+        pen.setWidth(2)
+        expected.setPen(pen)
         header_rect = QRectF(margin, margin, width-2*margin, height-2*margin)
         CluePainter.draw_text(header_rect,
                               'Basic Puzzle',
