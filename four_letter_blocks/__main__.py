@@ -497,6 +497,7 @@ class FourLetterBlocksWindow(QMainWindow):
                                            puzzle.format_grid(),
                                            puzzle.format_clues(),
                                            new_blocks)
+        assert puzzle.source_path is not None
         new_puzzle.source_path = puzzle.source_path
         if new_puzzle is not None:
             self.pair_puzzles[puzzle_index] = new_puzzle

@@ -14,8 +14,6 @@ def test_draw_text(pixmap_differ: PixmapDiffer):
     with pixmap_differ.create_painters(740, 190):
         actual = pixmap_differ.actual.painter
         expected = pixmap_differ.expected.painter
-        pixmap_differ.radius = 6
-        pixmap_differ.tolerance = 26
 
         font = expected.font()
         font.setPixelSize(30)
@@ -39,8 +37,6 @@ def test_draw_text_bold(pixmap_differ: PixmapDiffer):
     with pixmap_differ.create_painters(740, 190):
         actual = pixmap_differ.actual.painter
         expected = pixmap_differ.expected.painter
-        pixmap_differ.radius = 6
-        pixmap_differ.tolerance = 26
 
         font = expected.font()
         font.setPixelSize(30)
@@ -68,8 +64,6 @@ def test_draw_text_background(pixmap_differ: PixmapDiffer):
     with pixmap_differ.create_painters(740, 190):
         actual = pixmap_differ.actual.painter
         expected = pixmap_differ.expected.painter
-        pixmap_differ.radius = 6
-        pixmap_differ.tolerance = 26
 
         font = expected.font()
         font.setPixelSize(30)
@@ -108,8 +102,6 @@ def test_draw_text_gradient(pixmap_differ: PixmapDiffer):
     with pixmap_differ.create_painters(740, 190):
         actual = pixmap_differ.actual.painter
         expected = pixmap_differ.expected.painter
-        pixmap_differ.radius = 6
-        pixmap_differ.tolerance = 26
 
         font = expected.font()
         font.setPixelSize(30)
@@ -203,8 +195,6 @@ def test_draw_clues(pixmap_differ: PixmapDiffer):
 
     margin = 10
     with pixmap_differ.create_painters(740, 190):
-        pixmap_differ.radius = 5
-        pixmap_differ.tolerance = 30
         actual = pixmap_differ.actual.painter
         expected = pixmap_differ.expected.painter
         font = QFont('NotoSansCJK')
@@ -381,8 +371,6 @@ def test_draw_clues_wrapped(pixmap_differ: PixmapDiffer):
     height = 190
     margin = 10
     with pixmap_differ.create_painters(width, height):
-        pixmap_differ.radius = 5
-        pixmap_differ.tolerance = 30
         actual = pixmap_differ.actual.painter
         expected = pixmap_differ.expected.painter
         font = QFont('NotoSansCJK')
@@ -444,10 +432,7 @@ def test_draw_clues_next_page(pixmap_differ: PixmapDiffer):
     width = 740
     height = 190
     margin = 10
-    align_right = int(Qt.AlignmentFlag.AlignRight)
     with pixmap_differ.create_painters(width, height):
-        pixmap_differ.radius = 5
-        pixmap_differ.tolerance = 30
         actual = pixmap_differ.actual.painter
         expected = pixmap_differ.expected.painter
         font = QFont('NotoSansCJK')
@@ -455,13 +440,14 @@ def test_draw_clues_next_page(pixmap_differ: PixmapDiffer):
         expected.setFont(font)
         number_width = CluePainter.find_text_width('1.', expected)
         padded_width = CluePainter.find_text_width('1. ', expected)
+        flags = 0
         expected.drawText(margin, margin,
                           number_width, height,
-                          align_right,
+                          flags,
                           '2.')
-        expected.drawText(margin+padded_width, margin,
-                          width, height,
-                          0,
+        expected.drawText(QRectF(margin+padded_width, margin,
+                                 width, height),
+                          flags,
                           'Run between words')
 
         clue_painter = CluePainter(puzzle1,
@@ -485,13 +471,14 @@ def test_draw_clues_with_suits(pixmap_differ: PixmapDiffer):
     height = 190
     margin = 10
     with pixmap_differ.create_painters(width, height):
-        pixmap_differ.radius = 6
-        pixmap_differ.tolerance = 30
         actual = pixmap_differ.actual.painter
         expected = pixmap_differ.expected.painter
         font = QFont('NotoSansCJK')
         font.setPixelSize(40)
         expected.setFont(font)
+        pen = expected.pen()
+        pen.setWidth(2)
+        expected.setPen(pen)
         header_rect = QRectF(margin, margin, width-2*margin, height-2*margin)
         CluePainter.draw_text(header_rect,
                               'Basic Puzzle',
