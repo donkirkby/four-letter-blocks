@@ -215,8 +215,10 @@ class BlockPacker:
                 structure[1, 1, :, :] = [[0, 1, 0],
                                          [1, 1, 1],
                                          [0, 1, 0]]
+                labelled = label(gaps, structure=structure)
+                assert not isinstance(labelled, int)
                 gap_groups: np.ndarray
-                gap_groups, group_count = label(gaps, structure=structure)
+                gap_groups, group_count = labelled
                 bin_counts = np.bincount(gap_groups.flatten())
                 uneven_groups, = np.nonzero(bin_counts % 4)
                 if uneven_groups.size and uneven_groups[0] == 0:
@@ -259,11 +261,12 @@ class BlockPacker:
             block_nums = range(2, 256)
         block_nums_iter = iter(block_nums)
         assert self.state is not None
-        state = np.zeros(self.state.shape, np.uint8)
+        shape = self.state.shape
+        state = np.zeros(shape, np.uint8)
         gap_spaces = self.state == 1
         state += gap_spaces
-        for row in range(state.shape[0]):
-            for col in range(state.shape[1]):  # type: ignore
+        for row in range(shape[0]):
+            for col in range(shape[1]):  # type: ignore
                 new_block = state[row, col]
                 if new_block != 0:
                     # already filled as part of a block
@@ -411,7 +414,7 @@ class BlockPacker:
                         unused_count = np.count_nonzero(self.state == self.UNUSED)
                         if (self.fewest_unused is None or
                                 unused_count < self.fewest_unused):
-                            self.fewest_unused = unused_count
+                            self.fewest_unused = int(unused_count)
                         is_filled = unused_count == 0
                         remaining_pieces_count = shape_counts.total()
                         is_finished = is_filled or remaining_pieces_count == 0

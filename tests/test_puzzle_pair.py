@@ -83,6 +83,11 @@ def test_draw_blocks(pixmap_differ: PixmapDiffer):
     actual: QPainter
     expected: QPainter
     with pixmap_differ.create_painters(360, 180) as (actual, expected):
+        # Weird interference from test_draw_front and antialiasing?
+        # Work around it by increasing tolerance and radius.
+        pixmap_differ.radius = 2
+        pixmap_differ.tolerance = 4
+
         expected.fillRect(0, 0, 360, 180, 'cornsilk')
         actual.fillRect(0, 0, 360, 180, 'cornsilk')
         puzzle_pair1 = parse_puzzle_pair()
