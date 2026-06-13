@@ -1,6 +1,6 @@
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPen, QColor, QPainter, QRadialGradient, \
-    QLinearGradient, QPainterPath, QFont
+    QLinearGradient, QPainterPath
 from colorspacious import cspace_convert
 
 from four_letter_blocks.square import Square, draw_gradient_rect, draw_text_path
@@ -80,10 +80,15 @@ def test_paint_with_number_and_suit(pixmap_differ: PixmapDiffer):
     expected: QPainter
     with pixmap_differ.create_painters(180, 180) as (actual, expected):
         font = expected.font()
-        font.setPixelSize(20)
+        font.setPixelSize(80)
         expected.setFont(font)
+        gray1 = 227
+        gray2 = 140
+        expected.setPen(QPen(QColor(gray1, gray1, gray1)))
+        expected.drawText(20, 20, 80, 80, Qt.AlignHCenter, '♥')
+        expected.setPen(QPen(QColor(gray2, gray2, gray2)))
+        expected.drawText(20, 20, 80, 80, Qt.AlignHCenter, '♡')
         expected.setPen(QPen('black'))
-        expected.drawText(20, 20, 80, 80, Qt.AlignRight, '♡ ')
         font.setPixelSize(20)
         expected.setFont(font)
         expected.drawText(24, 20, 80, 80, 0, '12')
@@ -164,7 +169,7 @@ def test_draw_text_path(pixmap_differ: PixmapDiffer):
         y = 100
         path.addText(x, y, font, '42')
         rect = path.boundingRect()
-        path.translate(round(50 - (rect.left()+rect.right())/2), 0)
+        path.translate(50 - (rect.left()+rect.right())/2, 0)
         expected.setRenderHint(QPainter.Antialiasing)
         expected.fillPath(path, QColor('blue'))
 
@@ -188,7 +193,7 @@ def test_paint_with_face_colour(pixmap_differ: PixmapDiffer):
         expected.setFont(font)
         draw_text_path(expected, 38, 49, '12')
 
-        font.setPixelSize(40)
+        font.setPixelSize(46)
         expected.setFont(font)
         draw_text_path(expected, 60, 82, 'W', is_centred=True)
 
@@ -217,15 +222,20 @@ def test_paint_packed_with_suit(pixmap_differ: PixmapDiffer):
     expected: QPainter
     with pixmap_differ.create_painters(180, 180) as (actual, expected):
         font = expected.font()
-        font.setPixelSize(15)
+        font.setPixelSize(66)
         expected.setFont(font)
-        draw_text_path(expected, 77, 49, '♡', is_centred=True)
+        gray1 = 227
+        gray2 = 140
+        expected.setPen(QPen(QColor(gray1, gray1, gray1)))
+        draw_text_path(expected, 60, 82, '♥', is_centred=True)
+        expected.setPen(QPen(QColor(gray2, gray2, gray2)))
+        draw_text_path(expected, 60, 82, '♡', is_centred=True)
         expected.setPen(QPen('black'))
         font.setPixelSize(15)
         expected.setFont(font)
         draw_text_path(expected, 38, 49, '12')
 
-        font.setPixelSize(40)
+        font.setPixelSize(46)
         expected.setFont(font)
         draw_text_path(expected, 60, 82, 'W', is_centred=True)
 
@@ -261,13 +271,17 @@ def test_paint_packed_with_suit_and_face_colour(pixmap_differ: PixmapDiffer):
                            face_colour,
                            25, 25, 70, 70, 25)
         font = expected.font()
-        courier = QFont('Courier')
-        courier.setPixelSize(15)
-        expected.setFont(courier)
-        draw_text_path(expected, 77, 49, '♣', is_centred=True)
+        font.setPixelSize(66)
+        expected.setFont(font)
+        gray2 = 140
+        expected.setPen(QPen(QColor(gray2, gray2, gray2)))
+        draw_text_path(expected, 60, 82, '♣', is_centred=True)
+        expected.setPen(QPen('black'))
+        font.setPixelSize(15)
+        expected.setFont(font)
         draw_text_path(expected, 38, 49, '12')
 
-        font.setPixelSize(40)
+        font.setPixelSize(46)
         expected.setFont(font)
         draw_text_path(expected, 60, 82, 'W', is_centred=True)
 
@@ -278,4 +292,4 @@ def test_paint_packed_with_suit_and_face_colour(pixmap_differ: PixmapDiffer):
         square.face_colour = face_colour
 
         actual.fillRect(actual.window(), bg_colour)
-        square.draw(actual, is_packed=True, number_font=courier)
+        square.draw(actual, is_packed=True)

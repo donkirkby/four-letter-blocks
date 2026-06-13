@@ -1,5 +1,5 @@
 from PySide6.QtCore import QRect, Qt
-from PySide6.QtGui import QPainter, QColor, QPainterPath, QLinearGradient, QRadialGradient, QFont
+from PySide6.QtGui import QPainter, QColor, QPainterPath, QLinearGradient, QRadialGradient
 
 from four_letter_blocks.suit import Suit
 
@@ -36,8 +36,7 @@ class Square:
     def draw(self,
              painter: QPainter,
              is_packed=False,
-             face_offset: float = 0,
-             number_font: QFont | None = None):
+             face_offset: float = 0):
         pen = painter.pen()
         pen.setWidth(round(self.size/80))
         painter.setPen(pen)
@@ -46,9 +45,10 @@ class Square:
                      self.size,
                      self.size)
         face = QColor(self.face_colour)
+        black = QColor('black')
+        suit_outline = QColor(140, 140, 140)
+        suit_fill = QColor(227, 227, 227)
         font = painter.font()
-        if number_font is None:
-            number_font = font
 
         if is_packed:
             draw_gradient_rect(painter,
@@ -66,36 +66,55 @@ class Square:
             pass
         elif not is_packed:
             suit_display = self.SUIT_DISPLAYS[self.suit]
-            number_font.setPixelSize(round(self.size * self.NUMBER_SIZE))
-            painter.setFont(number_font)
+            painter.setFont(font)
+            old_pen = painter.pen()
+            if suit_display.filled != suit_display.display:
+                assert suit_display.filled is not None
+                painter.setPen(suit_fill)
+                painter.drawText(rect,
+                                 Qt.AlignmentFlag.AlignHCenter,
+                                 suit_display.filled)
+            painter.setPen(suit_outline)
             painter.drawText(rect,
-                             Qt.AlignmentFlag.AlignRight,
-                             suit_display.display + ' ')
+                             Qt.AlignmentFlag.AlignHCenter,
+                             suit_display.display)
+            painter.setPen(old_pen)
         else:
+            x = rect.left() + self.size / 2
+            y = rect.top() + self.size * 0.775
             suit_display = self.SUIT_DISPLAYS[self.suit]
-            number_font.setPixelSize(round(self.size * 0.1875))
-            painter.setFont(number_font)
+            font.setPixelSize(round(self.size * 0.82))
+            painter.setFont(font)
+            if suit_display.filled != suit_display.display:
+                painter.setPen(suit_fill)
+                draw_text_path(painter,
+                               x,
+                               y,
+                               suit_display.filled,
+                               is_centred=True)
+            painter.setPen(suit_outline)
             draw_text_path(painter,
-                           rect.left()+round(self.size*0.71),
-                           rect.top()+round(self.size*0.3625),
+                           x,
+                           y,
                            suit_display.display,
                            is_centred=True)
+            painter.setPen(black)
 
         if self.number is None:
             pass
         elif not is_packed:
-            number_font.setPixelSize(round(self.size * self.NUMBER_SIZE))
+            font.setPixelSize(round(self.size * self.NUMBER_SIZE))
             number_shift = round(self.size / 20)
-            painter.setFont(number_font)
+            painter.setFont(font)
             rect.translate(number_shift, 0)
             painter.drawText(rect, 0, str(self.number))
             rect.translate(-number_shift, 0)
         else:
-            number_font.setPixelSize(round(self.size * 0.1875))
-            painter.setFont(number_font)
+            font.setPixelSize(round(self.size * 0.1875))
+            painter.setFont(font)
             draw_text_path(painter,
-                           round(rect.left()+self.size*0.225),
-                           round(rect.top()+self.size*0.3625),
+                           rect.left()+self.size*0.225,
+                           rect.top()+self.size*0.3625,
                            str(self.number))
 
         if not is_packed:
@@ -106,7 +125,7 @@ class Square:
             painter.drawText(rect, Qt.AlignmentFlag.AlignHCenter, self.letter)
             rect.translate(0, -letter_shift)
         else:
-            font.setPixelSize(round(self.size * 0.5))
+            font.setPixelSize(round(self.size * 0.57))
             painter.setFont(font)
             draw_text_path(painter,
                            rect.left()+self.size/2,
@@ -127,10 +146,10 @@ def draw_text_path(painter: QPainter,
                    is_centred: bool = False):
     path = QPainterPath()
     font = painter.font()
-    path.addText(round(x), round(y), font, text)
+    path.addText(x, y, font, text)
     if is_centred:
         rect = path.boundingRect()
-        path.translate(round(x-(rect.left()+rect.right())/2), 0)
+        path.translate(x-(rect.left()+rect.right())/2, 0)
 
     old_hint = painter.testRenderHint(QPainter.RenderHint.Antialiasing)
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
