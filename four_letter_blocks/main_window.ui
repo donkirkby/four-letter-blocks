@@ -33,7 +33,7 @@
     <item>
      <widget class="QStackedWidget" name="main_tabs">
       <property name="currentIndex">
-       <number>2</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="puzzle_tab">
        <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -110,13 +110,6 @@
           </property>
          </widget>
         </item>
-        <item row="5" column="6">
-         <widget class="QPushButton" name="back_save_button">
-          <property name="text">
-           <string>S&amp;ave</string>
-          </property>
-         </widget>
-        </item>
         <item row="9" column="5">
          <widget class="QPushButton" name="front_fill_button">
           <property name="text">
@@ -155,13 +148,6 @@
           </property>
           <property name="maximum">
            <number>360</number>
-          </property>
-         </widget>
-        </item>
-        <item row="9" column="7">
-         <widget class="QPushButton" name="front_refill_button">
-          <property name="text">
-           <string>Refill...</string>
           </property>
          </widget>
         </item>
@@ -209,13 +195,6 @@
           </property>
          </widget>
         </item>
-        <item row="5" column="5">
-         <widget class="QPushButton" name="back_fill_button">
-          <property name="text">
-           <string>Fill</string>
-          </property>
-         </widget>
-        </item>
         <item row="9" column="0">
          <widget class="QLabel" name="front_blocks_label">
           <property name="text">
@@ -234,13 +213,6 @@
          <widget class="QPushButton" name="back_clear_button">
           <property name="text">
            <string>Clear</string>
-          </property>
-         </widget>
-        </item>
-        <item row="9" column="6">
-         <widget class="QPushButton" name="front_save_button">
-          <property name="text">
-           <string>S&amp;ave</string>
           </property>
          </widget>
         </item>
@@ -276,6 +248,27 @@
            </size>
           </property>
          </spacer>
+        </item>
+        <item row="9" column="7">
+         <widget class="QPushButton" name="front_save_button">
+          <property name="text">
+           <string>S&amp;ave</string>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="6">
+         <widget class="QPushButton" name="front_refill_button">
+          <property name="text">
+           <string>Refill...</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="7">
+         <widget class="QPushButton" name="back_save_button">
+          <property name="text">
+           <string>S&amp;ave</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -615,14 +608,10 @@
  <tabstops>
   <tabstop>back_open_button</tabstop>
   <tabstop>back_clear_button</tabstop>
-  <tabstop>back_fill_button</tabstop>
-  <tabstop>back_save_button</tabstop>
   <tabstop>back_blocks_text</tabstop>
   <tabstop>front_open_button</tabstop>
   <tabstop>front_clear_button</tabstop>
   <tabstop>front_fill_button</tabstop>
-  <tabstop>front_save_button</tabstop>
-  <tabstop>front_refill_button</tabstop>
   <tabstop>title_text</tabstop>
   <tabstop>grid_text</tabstop>
   <tabstop>clues_text</tabstop>

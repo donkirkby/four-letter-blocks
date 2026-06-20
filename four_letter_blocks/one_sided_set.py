@@ -20,13 +20,18 @@ class OneSidedSet(PuzzleSet):
                  puzzles_per_page: int = 2):
         """ Initialise a set of puzzles.
 
+        The one-sided set was an experiment to leave the back side blank so that
+        solvers could copy new puzzles onto the pieces with a dry-erase marker.
+        It took too long to copy them.
+
         :param puzzles: The puzzles to pack.
         :param block_packer: The block packer to use.
-        :param page_packers: The block packers to use for each page.
+        :param page_packers: The block packers to use for each travel page.
         :param start_hue: The hue of the first puzzle's face colour.
         :param set_options: Other options that can be set in a puzzle set file.
         :param frame_lengths: The number of squares in the frame segments:
             ((top, top, ...), (right, right, ...)).
+        :param puzzles_per_page: The number of puzzles that will fit on a page.
         """
         self.frame_lengths = frame_lengths
         super().__init__(*puzzles,

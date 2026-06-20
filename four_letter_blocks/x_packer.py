@@ -5,7 +5,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import numpy as np
-from miniexact import miniexacts_x
+from miniexact import miniexacts_m, miniexacts_x
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker, build_masks
@@ -31,7 +31,9 @@ class XPacker(BlockPacker):
                  start_text: str | None = None,
                  start_state: np.ndarray | None = None,
                  split_row=0):
-        """ Create an instance of BlockPacker.
+        """ Create an instance of XPacker.
+
+        This packer uses miniexact's DLX algorithm to find a packing.
 
         :param width: Width of the grid to pack
         :param height: Height of the grid to pack
@@ -57,20 +59,8 @@ class XPacker(BlockPacker):
     def fill(self) -> bool:
         """ Fill in the current state with the given shapes.
 
-        Cycles through the available shapes in self.target_shape_counts or
-        self.required_shape_counts, and tries them in different positions,
-        looking for the fewest rows. Set the current state to a filled in copy,
-        not changing the original.
-
-        Slots with the least coverage are always filled first. If
-        self.are_slots_shuffled is True, then coverage ties are broken randomly,
-        otherwise ties are filled from top to bottom.
-
         For self.target_shape_counts and self.required_shape_counts, disables
-        rotation if any of the shapes contain a letter and rotation number. They
-        are adjusted to remaining counts, if self.are_partials_saved is True. If
-        both are None, then calls calculate_max_shape_counts() to set
-        self.target_shape_counts.
+        rotation if any of the shapes contain a letter and rotation number.
         :return: True, if self.required_shape_counts has gone to zero, or if
             it's None and no gaps are left, otherwise False.
         """
@@ -81,6 +71,11 @@ class XPacker(BlockPacker):
 
     def find_fillings(self,
                       yield_states = True) -> typing.Iterator[np.ndarray | None]:
+        """ Iterate through all possible fillings.
+
+        :param yield_states: True, if the filled states should be yielded,
+            otherwise a None will be yielded as each filling is found.
+        """
         start_state = self.state
         assert start_state is not None
         option_masks: dict[int, np.ndarray] = {}  # { option_num: [[flag]] }
@@ -109,23 +104,51 @@ class XPacker(BlockPacker):
             else:
                 selected_options = solver.selected_options()
                 new_state = start_state.copy()
-                start_block = max(int(new_state.max()), self.GAP) + 1
-                for block_num, option_num in enumerate(selected_options, start_block):
+                block_num = max(int(new_state.max()), self.GAP) + 1
+                for option_num in selected_options:
                     coverage_flags = option_masks[option_num][:height, :width]
-                    new_state += np.uint8(block_num) * coverage_flags
+                    square_count = coverage_flags.sum()
+                    if square_count == 1:
+                        multiplier = np.uint8(self.GAP)
+                    else:
+                        multiplier = np.uint8(block_num)
+                        block_num += 1
+                    new_state += multiplier * coverage_flags
                 yield new_state
 
     def prepare_solver(
             self,
-            option_masks: dict[int, np.ndarray]|None = None) -> miniexacts_x:
+            option_masks: dict[int, np.ndarray]|None = None) \
+            -> miniexacts_x | miniexacts_m:
+        assert self.state is not None
+        is_travel_packing = self.GAP not in self.state
+        if not self.target_shape_counts:
+            solver = miniexacts_x()
+        else:
+            solver = miniexacts_m()
+            for shape_name, shape_count in self.target_shape_counts.items():
+                solver.primary(shape_name, shape_count, shape_count)
+
         # space items are spaces in the grid, named 'i_j' for row i, column j.
-        solver = miniexacts_x()
         for item_name in self.find_open_space_items():
             solver.primary(item_name)
+
+        if is_travel_packing:
+            for item_option in self.find_open_space_options():
+                solver.add(item_option.space_items[0])
+                option_num = solver.add(0)
+                assert option_num != 0
+
+                if option_masks is not None:
+                    option_masks[option_num] = item_option.mask
 
         # Each option is a slot taking up four spaces, plus a shape name.
         option_num = 0
         for option in self.find_options():
+            if self.target_shape_counts:
+                if option.rotated_shape_name not in self.target_shape_counts:
+                    continue
+                solver.add(option.rotated_shape_name)
             for item in option.space_items:
                 solver.add(item)
             option_num = solver.add(0)
@@ -182,6 +205,18 @@ class XPacker(BlockPacker):
             for i, j in zip(*np.where(self.state == self.UNUSED))]
         for i, j in open_spaces:
             yield f'{i}_{j}'
+
+    def find_open_space_options(self):
+        open_spaces = [
+            (int(i), int(j))
+            for i, j in zip(*np.where(self.state == self.UNUSED))]
+        no_coverage = np.zeros(shape=(self.height, self.width), dtype=bool)
+        for i, j in open_spaces:
+            coverage_flags = no_coverage.copy()
+            coverage_flags[i, j] = True
+            yield PackingOption('#',
+                                [f'{i}_{j}'],
+                                coverage_flags)
 
     def find_options(self) -> typing.Iterator[PackingOption]:
         """ Yields all options for this packer. """

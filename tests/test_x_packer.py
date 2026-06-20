@@ -1,3 +1,4 @@
+from collections import Counter
 from textwrap import dedent
 
 from four_letter_blocks.x_packer import XPacker
@@ -81,6 +82,28 @@ def test_fill_big_grid():
         IKK##eegff##OOM
         I#LLLLe____OO#M""")
     packer = XPacker(start_text=start_text)
+    is_filled = packer.fill()
+
+    assert is_filled
+    assert packer.display() == expected_display
+
+
+def test_fill_travel_grid():
+    start_text = dedent("""\
+        .....
+        .....
+        .....
+        .....
+        .....""")
+    expected_display = dedent("""\
+        ##AA#
+        #CCAA
+        ##CCB
+        DD##B
+        #DDBB""")
+    packer = XPacker(start_text=start_text)
+    packer.target_shape_counts = Counter({'J0': 1, 'Z0': 3})
+    packer.force_fours = False
     is_filled = packer.fill()
 
     assert is_filled

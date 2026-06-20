@@ -4,7 +4,7 @@ from collections import Counter
 from PySide6.QtCore import QPoint, QRectF
 from PySide6.QtGui import QPainter, QPainterPath, Qt
 
-from four_letter_blocks.block import Block
+from four_letter_blocks.block import Block, flipped_shapes
 from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.clue_overflow import ClueOverflow
 from four_letter_blocks.clue_painter import CluePainter
@@ -19,10 +19,30 @@ class PuzzlePair(PuzzleSet):
                  block_packer: BlockPacker | None = None,
                  start_hue: int = 0,
                  set_options: dict | None = None):
+        """ Initialise a pair of puzzles.
+
+        :param puzzles: The puzzles to pack.
+        :param block_packer: The block packer to use.
+        :param start_hue: The hue of the first puzzle's face colour.
+        :param set_options: Other options that can be set in a puzzle set file.
+        """
         assert len(puzzles) == 2
+        if set_options is None:
+            packing_pages = None
+        else:
+            packing_pages = set_options.get('packing_pages')
+        if not packing_pages:
+            width = puzzles[0].grid.width
+            height = puzzles[0].grid.height
+            packing_pages = [BlockPacker(width,
+                                         height,
+                                         tries=10_000,
+                                         min_tries=1)]
+
         super().__init__(*puzzles,
                          block_packer=block_packer,
                          start_hue=start_hue,
+                         page_packers=packing_pages,
                          set_options=set_options)
         self.slug_count = 1
         self.slug_index = 0
@@ -59,20 +79,18 @@ class PuzzlePair(PuzzleSet):
             else:
                 front_combo = f'{shape}{rotation}'
             self.front_blocks[front_combo].append(block)
+        flipped_shapes_dict = flipped_shapes()
         remaining_counts = Counter(self.shape_counts)
         for block in back_puzzle.blocks:
-            shape = block.shape
+            shape = block.rotated_shape
             if shape == 'O':
                 self.back_blocks[shape].append(block)
                 remaining_counts[shape] -= 1
             else:
-                front_shape = self.pairs.get(shape, shape)
-                for rotation in range(4):
-                    front_combo = f'{front_shape}{rotation}'
-                    if remaining_counts[front_combo]:
-                        self.back_blocks[shape].append(block)
-                        remaining_counts[front_combo] -= 1
-                        break
+                front_shape = flipped_shapes_dict[shape]
+                if remaining_counts[front_shape]:
+                    remaining_counts[front_shape] -= 1
+                self.back_blocks[shape].append(block)
 
         warnings = []
         for shape, count in remaining_counts.items():

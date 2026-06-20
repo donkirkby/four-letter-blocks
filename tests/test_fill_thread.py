@@ -1,9 +1,11 @@
-# from textwrap import dedent
-#
-# from four_letter_blocks.block_packer import BlockPacker
-# from four_letter_blocks.fill_thread import FillThread
-#
-#
+from textwrap import dedent
+
+from four_letter_blocks.block_packer import BlockPacker
+from four_letter_blocks.double_block_packer import DoubleBlockPacker
+from four_letter_blocks.fill_thread import FillThread
+from four_letter_blocks.x_packer import XPacker
+
+
 # def test_single_target_init():
 #     target_text = dedent('''\
 #         .....
@@ -15,7 +17,7 @@
 #
 #     thread = FillThread([target_text])
 #
-#     assert isinstance(thread.packer, EvoPacker)
+#     assert isinstance(thread.packer, XPacker)
 #     assert thread.packer.target_shape_counts == expected_shape_targets
 #
 #
@@ -34,24 +36,128 @@
 #     thread.run()  # Runs in current thread, not a new one like start().
 #
 #     assert thread.solutions
-#
-#
-# def test_source_and_target_init():
-#     target_text = dedent('''\
-#         #...#
-#         .....
-#         ..#..
-#         .....
-#         #...#''')
-#     source_text = dedent('''\
-#         AAABB
-#         #DABB
-#         #D#C#
-#         DDEC#
-#         EEECC''')
-#     expected_shape_targets = {'L3': 1, 'O': 1, 'L0': 1, 'J0': 1, 'J3': 1}
-#
-#     thread = FillThread([target_text], [source_text])
-#
-#     assert isinstance(thread.packer, EvoPacker)
-#     assert thread.packer.target_shape_counts == expected_shape_targets
+
+
+def test_source_and_target_init():
+    target_text = dedent('''\
+        .....
+        .....
+        .....
+        .....
+        .....''')
+    source_text = dedent('''\
+        #AAA#
+        EABBB
+        EE#BC
+        EDDCC
+        #DDC#''')
+    expected_target_text = dedent('''\
+        #EEE#
+        CCCED
+        AC#DD
+        AABBD
+        #ABB#''')
+    expected_shape_targets = {'J1': 1, 'T0': 1, 'S1': 1, 'O': 1, 'T3': 1}
+
+    thread = FillThread([target_text], [source_text])
+
+    assert isinstance(thread.packer, XPacker)
+    assert thread.packer.target_shape_counts == expected_shape_targets
+
+
+def test_source_and_target_run():
+    target_text = dedent('''\
+        .....
+        .....
+        .....
+        .....
+        .....''')
+    source_text = dedent('''\
+        #AAA#
+        EABBB
+        EE#BC
+        EDDCC
+        #DDC#''')
+    expected_target_text = dedent('''\
+        #EEE#
+        CCCED
+        AC#DD
+        AABBD
+        #ABB#''')
+    thread = FillThread([target_text], [source_text])
+
+    thread.run()
+    assert thread.progress is not None
+    assert thread.progress.is_success
+    assert thread.progress.target_texts == (expected_target_text,)
+
+def test_front_and_back_init():
+    front_target_text = dedent('''\
+        ....#.#
+        .......
+        ....#.#
+        ...#...
+        #.#....
+        .......
+        #.#....
+    ''')
+    back_target_text = dedent('''\
+        #.....#
+        ...#...
+        .......
+        .#.#.#.
+        .......
+        ...#...
+        #.....#
+    ''')
+
+    thread = FillThread([front_target_text, back_target_text])
+
+    assert isinstance(thread.packer, DoubleBlockPacker)
+    assert thread.packer.front_text == front_target_text
+    assert thread.packer.back_text == back_target_text
+
+def test_front_and_back_run():
+    front_target_text = dedent('''\
+        ....#.#
+        .......
+        ....#.#
+        ...#...
+        #.#....
+        .......
+        #.#....
+    ''')
+    back_target_text = dedent('''\
+        #.....#
+        ...#...
+        .......
+        .#.#.#.
+        .......
+        ...#...
+        #.....#
+    ''')
+    expected_front_text = dedent('''\
+        HHCC#A#
+        GHHCCAA
+        GFFF#A#
+        GGF#EDD
+        #B#EEED
+        BBIIJJD
+        #B#IIJJ''')
+    expected_back_text = dedent('''\
+        #CCFFF#
+        CCB#FHH
+        DDBBHHG
+        D#B#A#G
+        DIIAAGG
+        IIE#AJJ
+        #EEEJJ#''')
+
+    thread = FillThread([front_target_text, back_target_text])
+
+    thread.run()
+
+    assert thread.progress is not None
+    assert thread.progress.is_success
+    assert thread.progress.target_texts == (expected_front_text,
+                                            expected_back_text)

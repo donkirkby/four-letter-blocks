@@ -4,7 +4,11 @@ from pathlib import Path
 
 from PySide6.QtCore import QThread, Signal, QObject
 
+from four_letter_blocks.block_packer import BlockPacker
+from four_letter_blocks.double_block_packer import DoubleBlockPacker
 from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
+from four_letter_blocks.x_packer import XPacker
+
 
 @dataclass(frozen=True)
 class PackingProgress:
@@ -51,10 +55,24 @@ class FillThread(QThread):
            target_texts (black squares, unpacked)
         """
         super().__init__(parent)
-        # self.target_texts = list(target_texts)
-        # self.report_path = report_path
-        # start_text = self.target_texts[0].replace('.', '?')
-        # self.packer = EvoPacker(start_text=start_text)
+        self.target_texts = list(target_texts)
+        self.source_texts = list(source_texts)
+        self.report_path = report_path
+        if self.source_texts:
+            # Scenario 2 or 3
+            start_text = self.target_texts[0].replace('.', '?')
+            self.packer: BlockPacker|DoubleBlockPacker = XPacker(start_text=start_text)
+            self.packer.force_fours = False
+            source_puzzle = Puzzle.parse_sections('',
+                                                  self.source_texts[0],
+                                                  '',
+                                                  self.source_texts[0])
+            source_puzzle.rotations_display = RotationsDisplay.BACK
+            target_shape_counts = source_puzzle.shape_counts
+            self.packer.target_shape_counts = target_shape_counts
+        elif len(self.target_texts) > 1:
+            # Scenario 4
+            self.packer = DoubleBlockPacker(*self.target_texts)
         # self.attempt_count = 0
         # self.top_fitness = FitnessScore(-100, -1)
         # self.solutions: list[PackingProgress] = []
@@ -62,21 +80,13 @@ class FillThread(QThread):
         # gap_count = sum(c == '.' for c in self.target_texts[0])
         # block_count = gap_count // 4
         #
-        # self.source_texts = list(source_texts)
         # if not source_texts:
         #     target_shape_counts = EvoPacker.calculate_target_shape_counts(
         #         block_count)
         # else:
-        #     source_puzzle = Puzzle.parse_sections('',
-        #                                           source_texts[0],
-        #                                           '',
-        #                                           source_texts[0])
-        #     source_puzzle.rotations_display = RotationsDisplay.BACK
-        #     target_shape_counts = source_puzzle.shape_counts
-        # self.packer.target_shape_counts = target_shape_counts
+        self.progress: PackingProgress | None = None
 
     def run(self):
-        pass
         # if self.report_path is not None:
         #     self.pack_until_interrupted()
         #     return
@@ -101,7 +111,22 @@ class FillThread(QThread):
         #                                source_texts,
         #                                self.packer.top_fitness,
         #                                is_packed)
-        #     self.completed.emit(progress)
+        is_filled = self.packer.fill()
+        if is_filled:
+            summary = 'Filled.'
+            if isinstance(self.packer, DoubleBlockPacker):
+                target_texts = (self.packer.front_packer.display(),
+                                self.packer.back_packer.display())
+            else:
+                target_texts = (self.packer.display(),)
+        else:
+            summary = 'Filling failed.'
+            target_texts = tuple(self.target_texts)
+        self.progress = PackingProgress(summary,
+                                        target_texts,
+                                        tuple(self.source_texts),
+                                        is_filled)
+        self.completed.emit(self.progress)
 
     def pack_until_interrupted(self):
         # back_start_blocks = self.back_puzzle.format_blocks().replace(

@@ -421,12 +421,12 @@ def test_shape_counts_differ():
         QRST#
     
         -
-    
-        #ABBB
-        AAAFB
-        #C#F#
-        CCEFF
-        CEEE#
+        
+        #AAAB
+        CCABB
+        #C#B#
+        DCEEE
+        DDDE#
         ''')))
 
     with pytest.raises(ValueError,

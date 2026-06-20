@@ -26,6 +26,18 @@ class PuzzleSet:
                  set_options: dict | None = None,
                  frame_lengths: typing.Sequence[typing.Sequence[int]] = (),
                  puzzles_per_page: int = 4):
+        """ Initialise a set of puzzles.
+
+        :param puzzles: The puzzles to pack.
+        :param block_packer: The block packer to use.
+        :param page_packers: The block packers to use for each travel page.
+        :param start_hue: The hue of the first puzzle's face colour.
+        :param set_options: Other options that can be set in a puzzle set file.
+        :param frame_lengths: The number of squares in the frame segments:
+            ((top, top, ...), (right, right, ...)).
+        :param puzzles_per_page: The number of puzzles that will fit on a page
+            (both sides).
+        """
         if frame_lengths:
             raise NotImplementedError('Frame lengths not yet implemented.')
         set_options = set_options or {}

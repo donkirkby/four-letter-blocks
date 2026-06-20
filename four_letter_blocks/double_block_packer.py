@@ -14,6 +14,16 @@ class DoubleBlockPacker:
     def __init__(self,
                  *start_texts: str,
                  titles: list[str] | None = None) -> None:
+        """ Initialise a double block packer.
+
+        It generates all valid combinations of a front block and a back block
+        that are mirror images of each other, then passes the DLX problem to
+        miniexact.
+
+        :param start_texts: a sequence of packing strings that need to be packed
+        with blocks. It will split them up evenly between front and back.
+        :param titles: the titles of the puzzles to pack.
+        """
         self.is_logging = False
         self.titles = titles or []
         self.start_packers: list[XPacker] = []
@@ -53,9 +63,13 @@ class DoubleBlockPacker:
                 f'Different space counts: {front_unused} and {back_unused}.')
 
     def validate_missing_shapes(self):
+        assert self.front_packer.target_shape_counts is None
+        assert self.back_packer.target_shape_counts is None
+
         # Disable rotation
         self.front_packer.target_shape_counts = Counter({'S0': 1})
         self.back_packer.target_shape_counts = Counter({'S0': 1})
+
         front_shape_counts = self.front_packer.packed_shape_counts
         back_shape_counts = self.count_back_shapes(self.back_packer.state)
         missing_back_counts = front_shape_counts - back_shape_counts
@@ -64,6 +78,8 @@ class DoubleBlockPacker:
                             for shape_name in missing_back_counts.keys()]
         missing_messages.extend(f'shape {shape_name} in front'
                                 for shape_name in missing_front_counts.keys())
+        self.back_packer.target_shape_counts = None
+        self.front_packer.target_shape_counts = None
         if missing_messages:
             raise ValueError(f"Missing {', '.join(missing_messages)}.")
 

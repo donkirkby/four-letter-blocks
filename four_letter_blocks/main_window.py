@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'main_window.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.8.1
+## Created by: Qt User Interface Compiler version 6.10.2
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -138,11 +138,6 @@ class Ui_MainWindow(object):
 
         self.gridLayout_2.addWidget(self.needed_shapes_label, 13, 0, 1, 8)
 
-        self.back_save_button = QPushButton(self.pair_tab)
-        self.back_save_button.setObjectName(u"back_save_button")
-
-        self.gridLayout_2.addWidget(self.back_save_button, 5, 6, 1, 1)
-
         self.front_fill_button = QPushButton(self.pair_tab)
         self.front_fill_button.setObjectName(u"front_fill_button")
 
@@ -170,11 +165,6 @@ class Ui_MainWindow(object):
         self.front_hue.setMaximum(360)
 
         self.gridLayout_2.addWidget(self.front_hue, 11, 1, 1, 7)
-
-        self.front_refill_button = QPushButton(self.pair_tab)
-        self.front_refill_button.setObjectName(u"front_refill_button")
-
-        self.gridLayout_2.addWidget(self.front_refill_button, 9, 7, 1, 1)
 
         self.back_blocks_label = QLabel(self.pair_tab)
         self.back_blocks_label.setObjectName(u"back_blocks_label")
@@ -212,11 +202,6 @@ class Ui_MainWindow(object):
 
         self.gridLayout_2.addWidget(self.back_label, 2, 0, 1, 1)
 
-        self.back_fill_button = QPushButton(self.pair_tab)
-        self.back_fill_button.setObjectName(u"back_fill_button")
-
-        self.gridLayout_2.addWidget(self.back_fill_button, 5, 5, 1, 1)
-
         self.front_blocks_label = QLabel(self.pair_tab)
         self.front_blocks_label.setObjectName(u"front_blocks_label")
 
@@ -231,11 +216,6 @@ class Ui_MainWindow(object):
         self.back_clear_button.setObjectName(u"back_clear_button")
 
         self.gridLayout_2.addWidget(self.back_clear_button, 5, 4, 1, 1)
-
-        self.front_save_button = QPushButton(self.pair_tab)
-        self.front_save_button.setObjectName(u"front_save_button")
-
-        self.gridLayout_2.addWidget(self.front_save_button, 9, 6, 1, 1)
 
         self.front_name = QLineEdit(self.pair_tab)
         self.front_name.setObjectName(u"front_name")
@@ -253,6 +233,21 @@ class Ui_MainWindow(object):
         self.horizontal_spacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         self.gridLayout_2.addItem(self.horizontal_spacer, 5, 1, 1, 2)
+
+        self.front_save_button = QPushButton(self.pair_tab)
+        self.front_save_button.setObjectName(u"front_save_button")
+
+        self.gridLayout_2.addWidget(self.front_save_button, 9, 7, 1, 1)
+
+        self.front_refill_button = QPushButton(self.pair_tab)
+        self.front_refill_button.setObjectName(u"front_refill_button")
+
+        self.gridLayout_2.addWidget(self.front_refill_button, 9, 6, 1, 1)
+
+        self.back_save_button = QPushButton(self.pair_tab)
+        self.back_save_button.setObjectName(u"back_save_button")
+
+        self.gridLayout_2.addWidget(self.back_save_button, 5, 7, 1, 1)
 
         self.main_tabs.addWidget(self.pair_tab)
         self.set_tab = QWidget()
@@ -396,15 +391,11 @@ class Ui_MainWindow(object):
         self.statusbar.setObjectName(u"statusbar")
         MainWindow.setStatusBar(self.statusbar)
         QWidget.setTabOrder(self.back_open_button, self.back_clear_button)
-        QWidget.setTabOrder(self.back_clear_button, self.back_fill_button)
-        QWidget.setTabOrder(self.back_fill_button, self.back_save_button)
-        QWidget.setTabOrder(self.back_save_button, self.back_blocks_text)
+        QWidget.setTabOrder(self.back_clear_button, self.back_blocks_text)
         QWidget.setTabOrder(self.back_blocks_text, self.front_open_button)
         QWidget.setTabOrder(self.front_open_button, self.front_clear_button)
         QWidget.setTabOrder(self.front_clear_button, self.front_fill_button)
-        QWidget.setTabOrder(self.front_fill_button, self.front_save_button)
-        QWidget.setTabOrder(self.front_save_button, self.front_refill_button)
-        QWidget.setTabOrder(self.front_refill_button, self.title_text)
+        QWidget.setTabOrder(self.front_fill_button, self.title_text)
         QWidget.setTabOrder(self.title_text, self.grid_text)
         QWidget.setTabOrder(self.grid_text, self.clues_text)
         QWidget.setTabOrder(self.clues_text, self.blocks_text)
@@ -442,7 +433,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-        self.main_tabs.setCurrentIndex(2)
+        self.main_tabs.setCurrentIndex(1)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
@@ -503,23 +494,22 @@ class Ui_MainWindow(object):
         self.blocks_label.setText(QCoreApplication.translate("MainWindow", u"Blocks", None))
         self.warnings_label.setText(QCoreApplication.translate("MainWindow", u"Warnings", None))
         self.needed_shapes_label.setText(QCoreApplication.translate("MainWindow", u"Needed Shapes:", None))
-        self.back_save_button.setText(QCoreApplication.translate("MainWindow", u"S&ave", None))
         self.front_fill_button.setText(QCoreApplication.translate("MainWindow", u"Fill", None))
         self.front_label.setText(QCoreApplication.translate("MainWindow", u"Front Puzzle", None))
         self.front_hue_label.setText(QCoreApplication.translate("MainWindow", u"Front Hue", None))
         self.front_hue.setSuffix(QCoreApplication.translate("MainWindow", u"\u00b0", None))
-        self.front_refill_button.setText(QCoreApplication.translate("MainWindow", u"Refill...", None))
         self.back_blocks_label.setText(QCoreApplication.translate("MainWindow", u"Back Blocks", None))
         self.front_open_button.setText(QCoreApplication.translate("MainWindow", u"Ope&n...", None))
         self.front_clear_button.setText(QCoreApplication.translate("MainWindow", u"Clear", None))
         self.is_pair_travel_blocks.setText(QCoreApplication.translate("MainWindow", u"Travel Blocks", None))
         self.back_label.setText(QCoreApplication.translate("MainWindow", u"Back Puzzle", None))
-        self.back_fill_button.setText(QCoreApplication.translate("MainWindow", u"Fill", None))
         self.front_blocks_label.setText(QCoreApplication.translate("MainWindow", u"Front Blocks", None))
         self.back_open_button.setText(QCoreApplication.translate("MainWindow", u"&Open...", None))
         self.back_clear_button.setText(QCoreApplication.translate("MainWindow", u"Clear", None))
-        self.front_save_button.setText(QCoreApplication.translate("MainWindow", u"S&ave", None))
         self.is_pair_puzzle_blocks.setText(QCoreApplication.translate("MainWindow", u"Puzzle Blocks", None))
+        self.front_save_button.setText(QCoreApplication.translate("MainWindow", u"S&ave", None))
+        self.front_refill_button.setText(QCoreApplication.translate("MainWindow", u"Refill...", None))
+        self.back_save_button.setText(QCoreApplication.translate("MainWindow", u"S&ave", None))
         self.puzzle_set_font_label.setText(QCoreApplication.translate("MainWindow", u"First font", None))
         self.crossword_label.setText(QCoreApplication.translate("MainWindow", u"Crossword Files", None))
         self.puzzle_set_clear_button.setText(QCoreApplication.translate("MainWindow", u"Clear", None))

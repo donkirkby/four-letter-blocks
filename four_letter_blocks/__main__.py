@@ -158,7 +158,6 @@ class FourLetterBlocksWindow(QMainWindow):
         ui.front_clear_button.clicked.connect(self.clear_front)
         ui.back_clear_button.clicked.connect(self.clear_back)
         ui.front_fill_button.clicked.connect(self.fill_front)
-        ui.back_fill_button.clicked.connect(self.fill_back)
         ui.front_refill_button.clicked.connect(self.refill_front)
         ui.back_blocks_text.textChanged.connect(self.back_blocks_changed)
         ui.front_blocks_text.textChanged.connect(self.front_blocks_changed)
@@ -519,23 +518,20 @@ class FourLetterBlocksWindow(QMainWindow):
         new_blocks = re.sub(r'[^#\s]', '?', old_blocks)
         self.ui.front_blocks_text.setPlainText(new_blocks)
 
-    def fill_back(self):
-        self.statusBar().showMessage('Filling back...')
-        ui = self.ui
-        target_text = ui.back_blocks_text.toPlainText().replace('?', '.')
-        self.launch_fill(ui.back_fill_button, FillThread((target_text,)))
-
     def fill_front(self):
         ui = self.ui
-        target_text = ui.front_blocks_text.toPlainText().replace('.', '?')
         if ui.is_pair_puzzle_blocks.isChecked():
-            message = 'Filling front...'
+            target_texts = (ui.back_blocks_text.toPlainText().replace('.', '?'),
+                            ui.front_blocks_text.toPlainText().replace('.', '?'))
+            source_texts = ()
+            message = 'Filling front and back...'
         else:
-            target_text = target_text.replace('#', '?')
+            target_texts = (ui.front_blocks_text.toPlainText()
+                            .replace('.', '?').replace('#', '?'),)
+            source_texts = (ui.back_blocks_text.toPlainText(),)
             message = 'Filling travel blocks...'
         self.statusBar().showMessage(message)
-        new_thread = FillThread((target_text,),
-                                (ui.back_blocks_text.toPlainText(),))
+        new_thread = FillThread(target_texts, source_texts)
         self.launch_fill(self.ui.front_fill_button, new_thread)
 
     def refill_front(self):
@@ -562,8 +558,7 @@ class FourLetterBlocksWindow(QMainWindow):
 
     def reset_fill_buttons(self):
         ui = self.ui
-        for button in (ui.back_fill_button,
-                       ui.front_fill_button,
+        for button in (ui.front_fill_button,
                        ui.front_refill_button,
                        ui.puzzle_set_fill_button):
             if button is ui.front_refill_button:
@@ -584,8 +579,7 @@ class FourLetterBlocksWindow(QMainWindow):
         ui = self.ui
         new_thread.status_update.connect(self.on_fill_update_status)
         new_thread.completed.connect(self.on_fill_completed)
-        for fill_button in (ui.back_fill_button,
-                            ui.front_fill_button,
+        for fill_button in (ui.front_fill_button,
                             ui.front_refill_button,
                             ui.puzzle_set_fill_button):
             if fill_button is clicked_button:
@@ -600,11 +594,13 @@ class FourLetterBlocksWindow(QMainWindow):
         ui = self.ui
         if ui.puzzle_set_fill_button.isEnabled():
             ui.puzzle_set_blocks.setPlainText(status.source_texts[0])
-        elif ui.back_fill_button.isEnabled():
-            ui.back_blocks_text.setPlainText(status.target_texts[0])
         else:
             assert ui.front_fill_button.isEnabled()
-            ui.front_blocks_text.setPlainText(status.target_texts[0])
+            if len(status.target_texts) == 1:
+                ui.front_blocks_text.setPlainText(status.target_texts[0])
+            else:
+                ui.back_blocks_text.setPlainText(status.target_texts[0])
+                ui.front_blocks_text.setPlainText(status.target_texts[1])
 
     def on_fill_completed(self,
                           progress: PackingProgress):
@@ -1064,12 +1060,7 @@ class FourLetterBlocksWindow(QMainWindow):
         front_puzzle, back_puzzle = self.pair_puzzles
         assert front_puzzle is not None
         assert back_puzzle is not None
-        packing = None
-        try:
-            with ZipFile(file_name) as zip_file:
-                packing = ZipPath(zip_file, 'packing.txt').read_text()
-        except IOError:
-            pass
+        packing = self.page_packers[0].display()
         grid_size = front_puzzle.grid.width
         packer = BlockPacker(grid_size,
                              grid_size,
