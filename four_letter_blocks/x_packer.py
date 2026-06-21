@@ -133,15 +133,6 @@ class XPacker(BlockPacker):
         for item_name in self.find_open_space_items():
             solver.primary(item_name)
 
-        if is_travel_packing:
-            for item_option in self.find_open_space_options():
-                solver.add(item_option.space_items[0])
-                option_num = solver.add(0)
-                assert option_num != 0
-
-                if option_masks is not None:
-                    option_masks[option_num] = item_option.mask
-
         # Each option is a slot taking up four spaces, plus a shape name.
         option_num = 0
         for option in self.find_options():
@@ -157,6 +148,16 @@ class XPacker(BlockPacker):
             # Save option mask to assemble state from solution.
             if option_masks is not None:
                 option_masks[option_num] = option.mask
+
+        if is_travel_packing:
+            for item_option in self.find_open_space_options():
+                solver.add(item_option.space_items[0])
+                option_num = solver.add(0)
+                assert option_num != 0
+
+                if option_masks is not None:
+                    option_masks[option_num] = item_option.mask
+
         if option_num == 0:
             raise ValueError('No options found.')
         return solver
@@ -226,7 +227,7 @@ class XPacker(BlockPacker):
         all_word_items: list[set[str]] = self.find_word_items()
 
         # Each option is a slot taking up four spaces, plus a shape name.
-        slots = self.find_slots()
+        slots = self.find_slots(self.target_shape_counts)
         all_masks = build_masks(self.width, self.height)
         for shape_name, shape_slots in slots.items():
             shape_masks = all_masks[shape_name]

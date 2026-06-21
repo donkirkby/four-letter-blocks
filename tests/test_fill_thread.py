@@ -79,17 +79,67 @@ def test_source_and_target_run():
         EDDCC
         #DDC#''')
     expected_target_text = dedent('''\
-        #EEE#
-        CCCED
-        AC#DD
-        AABBD
-        #ABB#''')
+        CCC#D
+        #C#DD
+        BBBED
+        AABEE
+        AA##E''')
     thread = FillThread([target_text], [source_text])
 
     thread.run()
     assert thread.progress is not None
     assert thread.progress.is_success
     assert thread.progress.target_texts == (expected_target_text,)
+
+
+def test_source_and_target_partly_filled():
+    target_text = dedent('''\
+        .....
+        CCC.D
+        AC.DD
+        AABBD
+        .ABB.''')
+    source_text = dedent('''\
+        #AAA#
+        EABBB
+        EE#BC
+        EDDCC
+        #DDC#''')
+    expected_shape_targets = {'J1': 1}
+
+    thread = FillThread([target_text], [source_text])
+
+    assert isinstance(thread.packer, XPacker)
+    assert thread.packer.target_shape_counts == expected_shape_targets
+
+
+def test_source_and_target_partly_filled_run():
+    target_text = dedent('''\
+        .....
+        CCC.D
+        AC.DD
+        AABBD
+        .ABB.''')
+    source_text = dedent('''\
+        #AAA#
+        EABBB
+        EE#BC
+        EDDCC
+        #DDC#''')
+    expected_target_text = dedent('''\
+        #EEE#
+        CCCED
+        AC#DD
+        AABBD
+        #ABB#''')
+
+    thread = FillThread([target_text], [source_text])
+
+    thread.run()
+    assert thread.progress is not None
+    assert thread.progress.is_success
+    assert thread.progress.target_texts == (expected_target_text,)
+
 
 def test_front_and_back_init():
     front_target_text = dedent('''\

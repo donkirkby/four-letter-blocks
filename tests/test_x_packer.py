@@ -96,11 +96,11 @@ def test_fill_travel_grid():
         .....
         .....""")
     expected_display = dedent("""\
-        ##AA#
-        #CCAA
-        ##CCB
-        DD##B
-        #DDBB""")
+        AABB#
+        #AABB
+        CC#D#
+        #CCD#
+        ##DD#""")
     packer = XPacker(start_text=start_text)
     packer.target_shape_counts = Counter({'J0': 1, 'Z0': 3})
     packer.force_fours = False

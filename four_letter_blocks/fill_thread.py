@@ -61,15 +61,24 @@ class FillThread(QThread):
         if self.source_texts:
             # Scenario 2 or 3
             start_text = self.target_texts[0].replace('.', '?')
-            self.packer: BlockPacker|DoubleBlockPacker = XPacker(start_text=start_text)
+            target_puzzle = Puzzle.parse_sections('',
+                                                  start_text,
+                                                  '',
+                                                  start_text)
+            target_puzzle.rotations_display = RotationsDisplay.FRONT
+            packed_shape_counts = target_puzzle.shape_counts
+            self.packer: BlockPacker|DoubleBlockPacker = XPacker(
+                start_text=start_text)
             self.packer.force_fours = False
+
             source_puzzle = Puzzle.parse_sections('',
                                                   self.source_texts[0],
                                                   '',
                                                   self.source_texts[0])
             source_puzzle.rotations_display = RotationsDisplay.BACK
-            target_shape_counts = source_puzzle.shape_counts
-            self.packer.target_shape_counts = target_shape_counts
+            self.packer.target_shape_counts = (source_puzzle.shape_counts -
+                                               packed_shape_counts)
+            # Path('problem.dlx').write_text(self.packer.format_dlx())
         elif len(self.target_texts) > 1:
             # Scenario 4
             self.packer = DoubleBlockPacker(*self.target_texts)
