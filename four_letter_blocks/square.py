@@ -54,7 +54,7 @@ class Square:
             draw_gradient_rect(painter,
                                face,
                                self.x + self.size / 16 + face_offset,
-                               self.y + self.size / 16 + face_offset,
+                               self.y + self.size / 16 + abs(face_offset),
                                self.size * 7 / 8,
                                self.size * 7 / 8,
                                self.size * 5 / 16)

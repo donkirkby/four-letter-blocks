@@ -75,6 +75,7 @@ def test_draw_front_slug1(pixmap_differ: PixmapDiffer) -> None:
         y_shift = height - 145.5
         expected.translate(x_shift, y_shift)
         for block in pair.display_blocks(pair.block_packer, pair.front_blocks):
+            assert block.display_y is not None
             if block.display_y < 125:
                 block.draw(expected, is_packed=True)
         black_block = Block(Square(' '))
@@ -116,6 +117,7 @@ def test_draw_front_slug1(pixmap_differ: PixmapDiffer) -> None:
 
         expected.translate(x_shift, y_shift)
         for block in pair.display_blocks(pair.block_packer, pair.front_blocks):
+            assert block.display_y is not None
             if block.display_y < 125:
                 block.tab_count = 2
                 block.border_colour = Block.CUT_COLOUR
@@ -191,6 +193,7 @@ def test_draw_front_slug2(pixmap_differ: PixmapDiffer) -> None:
         y_shift = -129.5
         expected.translate(x_shift, y_shift)
         for block in pair.display_blocks(pair.block_packer, pair.front_blocks):
+            assert block.display_y is not None
             if block.display_y > 125:
                 block.draw(expected, is_packed=True)
 
@@ -235,6 +238,7 @@ def test_draw_front_slug2(pixmap_differ: PixmapDiffer) -> None:
         expected.translate(x_shift, y_shift)
         for block in pair.display_blocks(pair.block_packer, pair.front_blocks):
             block.border_colour = Block.CUT_COLOUR
+            assert block.display_y is not None
             if block.display_y > 125:
                 block.tab_count = 2
                 block.draw_outline(expected)

@@ -538,7 +538,7 @@ def xtest_group_enumerate():
         digit_counts = Counter(index_text)
         if digit_counts['0'] == len(index_text) - 1:
             timestamp = datetime.now()
-            print(timestamp, i)
+            print(timestamp.strftime("%Y-%m-%d, %H:%M:%S"), i)
     assert 1 == 0
     # is_filled = packer.fill()
     # assert is_filled
@@ -617,7 +617,10 @@ def xtest_group_enumerate_unique():
         if digit_counts['0'] == len(index_text) - 1:
             found_count = len(found_combinations)
             timestamp = datetime.now()
-            print(timestamp, i, found_count, round(found_count / i * 100))
+            print(timestamp.strftime("%Y-%m-%d, %H:%M:%S"),
+                  i,
+                  found_count,
+                  round(found_count / i * 100))
     assert 1 == 0
     # is_filled = packer.fill()
     # assert is_filled

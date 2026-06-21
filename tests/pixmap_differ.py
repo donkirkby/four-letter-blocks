@@ -9,6 +9,42 @@ from space_tracer import LiveImageDiffer, LivePainter
 from space_tracer.live_image import LiveImage
 
 
+class LiveQPainter(LivePainter):
+    WHITE = QColor('white')
+
+    def __init__(self, pixmap: QPixmap, fill: QColor | None = WHITE):
+        self.pixmap = pixmap
+        self.painter = QPainter(self.pixmap)
+        if fill is not None:
+            self.pixmap.fill(fill)
+
+    def set_pixel(self, position: LiveImage.Position, fill: LiveImage.Fill):
+        self.painter.setPen(QColor(*fill))
+        self.painter.drawPoint(*position)
+
+    def get_pixel(self, position: LiveImage.Position) -> LiveImage.Fill:
+        return self.painter.device().toImage().pixelColor(*position).toTuple()
+
+    def get_size(self) -> LiveImage.Size:
+        return self.pixmap.size().toTuple()
+
+    def convert_to_png(self) -> bytes:
+        self.end()
+        image_bytes = QByteArray()
+        buffer = QBuffer(image_bytes)
+        buffer.open(QIODevice.WriteOnly)
+        try:
+            # noinspection PyTypeChecker
+            self.pixmap.toImage().save(buffer, "PNG")
+            return bytes(buffer.data())
+        finally:
+            buffer.close()
+
+    def end(self):
+        if self.painter.isActive():
+            self.painter.end()
+
+
 class PixmapDiffer(LiveImageDiffer):
     def __init__(self, diffs_path: Path = None, request=None, is_displayed=True):
         """ Initialize the object and clean out the diffs path.
@@ -21,12 +57,22 @@ class PixmapDiffer(LiveImageDiffer):
             live canvas.
         """
         super().__init__(diffs_path, request, is_displayed)
-        self.actual: LiveQPainter | None = None
-        self.expected: LiveQPainter | None = None
+        self.actual_painter: LiveQPainter | None = None
+        self.expected_painter: LiveQPainter | None = None
         self.name: typing.Optional[str] = None
         self.default_radius: int = 1
         self.radius = self.default_radius
         self.background = QColor('ivory')
+
+    @property
+    def actual(self) -> LiveQPainter:
+        assert self.actual_painter is not None
+        return self.actual_painter
+
+    @property
+    def expected(self) -> LiveQPainter:
+        assert self.expected_painter is not None
+        return self.expected_painter
 
     @contextmanager
     def create_painters(
@@ -40,7 +86,7 @@ class PixmapDiffer(LiveImageDiffer):
             yield self.start(width, height, name)
         finally:
             self.end()
-        self.assert_equal(self.actual, self.expected)
+        self.assert_equal(self.actual_painter, self.expected_painter)
 
     def start(self,
               width: int,
@@ -55,8 +101,8 @@ class PixmapDiffer(LiveImageDiffer):
         """
         self.name = name
         self.radius = self.default_radius
-        self.actual = LiveQPainter(QPixmap(width, height))
-        self.expected = LiveQPainter(QPixmap(width, height))
+        self.actual_painter = LiveQPainter(QPixmap(width, height))
+        self.expected_painter = LiveQPainter(QPixmap(width, height))
         self.actual.painter.setBackground(self.background)
         self.expected.painter.setBackground(self.background)
         window = self.actual.painter.window()
@@ -65,10 +111,10 @@ class PixmapDiffer(LiveImageDiffer):
         return self.actual.painter, self.expected.painter
 
     def end(self):
-        if self.actual is not None:
-            self.actual.end()
-        if self.expected is not None:
-            self.expected.end()
+        if self.actual_painter is not None:
+            self.actual_painter.end()
+        if self.expected_painter is not None:
+            self.expected_painter.end()
 
     def start_diff(self, size: LiveImage.Size):
         """ Start the comparison by creating a diff painter.
@@ -149,42 +195,6 @@ class PixmapDiffer(LiveImageDiffer):
         if expected is None:
             expected = self.expected
         super().assert_equal(actual, expected, file_prefix)
-
-
-class LiveQPainter(LivePainter):
-    WHITE = QColor('white')
-
-    def __init__(self, pixmap: QPixmap, fill: QColor | None = WHITE):
-        self.pixmap = pixmap
-        self.painter = QPainter(self.pixmap)
-        if fill is not None:
-            self.pixmap.fill(fill)
-
-    def set_pixel(self, position: LiveImage.Position, fill: LiveImage.Fill):
-        self.painter.setPen(QColor(*fill))
-        self.painter.drawPoint(*position)
-
-    def get_pixel(self, position: LiveImage.Position) -> LiveImage.Fill:
-        return self.painter.device().toImage().pixelColor(*position).toTuple()
-
-    def get_size(self) -> LiveImage.Size:
-        return self.pixmap.size().toTuple()
-
-    def convert_to_png(self) -> bytes:
-        self.end()
-        image_bytes = QByteArray()
-        buffer = QBuffer(image_bytes)
-        buffer.open(QIODevice.WriteOnly)
-        try:
-            # noinspection PyTypeChecker
-            self.pixmap.toImage().save(buffer, "PNG")
-            return bytes(buffer.data())
-        finally:
-            buffer.close()
-
-    def end(self):
-        if self.painter.isActive():
-            self.painter.end()
 
 
 class LiveNumpyPainter(LivePainter):

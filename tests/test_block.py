@@ -1,7 +1,7 @@
 from textwrap import dedent
 
 from PySide6.QtCore import QPoint
-from PySide6.QtGui import QPen, Qt, QColor, QPainter, QPainterPath, QFont
+from PySide6.QtGui import QPen, Qt, QColor, QPainter, QPainterPath, QFont, QTransform
 from colorspacious import cspace_convert
 
 from four_letter_blocks.grid import Grid
@@ -551,6 +551,91 @@ def test_draw_face_colour(pixmap_differ: PixmapDiffer):
         actual.fillRect(actual.window(), bg_colour)
         block.face_colour = face_colour
         block.draw(actual, is_packed=True)
+
+
+def test_draw_face_colour_front(pixmap_differ: PixmapDiffer):
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(370, 260) as (actual, expected):
+        lightness = 81
+        chroma = 20
+        bg_hue = 0
+        face_hue = 180
+        bg_rgb = cspace_convert((lightness, chroma, bg_hue), "JCh", "sRGB255")
+        face_rgb = cspace_convert((lightness, chroma, face_hue), "JCh", "sRGB255")
+        bg_colour = QColor.fromRgb(*bg_rgb)
+        face_colour = QColor.fromRgb(*face_rgb)
+        expected.fillRect(expected.window(), bg_colour)
+
+        block = create_basic_block()
+        extra_square = Square(' ')
+        extra_square.size = 100
+        extra_square.face_colour = face_colour
+        for extra_square.x, extra_square.y in ((0, 50),
+                                               (100, 50),
+                                               (200, 50),
+                                               (0, 150)):
+            extra_square.draw(expected, is_packed=True, face_offset=7.5)
+        block.squares[0].number = 12
+        block.squares[0].suit = 'D'
+        block.squares[1].number = 5
+        block.squares[1].suit = 'C'
+        block.face_colour = QColor.fromHsv(0, 0, 0, 0)
+        block.draw(expected, is_packed=True)
+        block.tab_count = 1
+        block.draw_outline(expected)
+
+        actual.fillRect(actual.window(), bg_colour)
+        block.face_colour = face_colour
+        # block.tab_count = 1
+        block.draw(actual, is_packed=True)
+        block.draw_outline(actual)
+
+
+def test_draw_face_colour_back(pixmap_differ: PixmapDiffer):
+    actual: QPainter
+    expected: QPainter
+    with pixmap_differ.create_painters(370, 260) as (actual, expected):
+        lightness = 81
+        chroma = 20
+        bg_hue = 0
+        face_hue = 180
+        bg_rgb = cspace_convert((lightness, chroma, bg_hue), "JCh", "sRGB255")
+        face_rgb = cspace_convert((lightness, chroma, face_hue), "JCh", "sRGB255")
+        bg_colour = QColor.fromRgb(*bg_rgb)
+        face_colour = QColor.fromRgb(*face_rgb)
+        expected.fillRect(expected.window(), bg_colour)
+
+        block = create_basic_block()
+        extra_square = Square(' ')
+        extra_square.size = 100
+        extra_square.face_colour = face_colour
+        for extra_square.x, extra_square.y in ((0, 50),
+                                               (100, 50),
+                                               (200, 50),
+                                               (0, 150)):
+            extra_square.draw(expected, is_packed=True, face_offset=-7.5)
+        block.squares[0].number = 12
+        block.squares[0].suit = 'D'
+        block.squares[1].number = 5
+        block.squares[1].suit = 'C'
+        block.face_colour = QColor.fromHsv(0, 0, 0, 0)
+        block.draw(expected, is_packed=True)
+        block.tab_count = 1
+        block.is_back = True
+        expected.setTransform(QTransform().scale(-1, 1), combine=True)
+        expected.translate(-300, 0)
+        block.squares[1].x = 200
+        block.draw_outline(expected)
+        block.squares[1].x = 0
+
+        actual.fillRect(actual.window(), bg_colour)
+        block.face_colour = face_colour
+        block.draw(actual, is_packed=True)
+        actual.setTransform(QTransform().scale(-1, 1), combine=True)
+        actual.translate(-300, 0)
+        block.squares[1].x = 200
+        block.draw_outline(actual)
 
 
 def test_rotate180(pixmap_differ: PixmapDiffer):

@@ -15,7 +15,7 @@ from four_letter_blocks.square import draw_gradient_rect, Square
 from tests.pixmap_differ import PixmapDiffer
 
 
-def parse_puzzle_pair(block_packer: BlockPacker = None) -> PuzzlePair:
+def parse_puzzle_pair(block_packer: BlockPacker | None = None) -> PuzzlePair:
     puzzle1 = Puzzle.parse(StringIO(dedent("""\
         Front (5x5)
 
@@ -72,6 +72,13 @@ def parse_puzzle_pair(block_packer: BlockPacker = None) -> PuzzlePair:
         BDEEE
         #DDE#
     """)))
+    if block_packer is None:
+        block_packer = BlockPacker(start_text=dedent("""\
+            AAABB
+            .AEEB
+            .CEEB
+            .CDDD
+            CC.D."""))
     pair = PuzzlePair(puzzle1, puzzle2, block_packer=block_packer)
     pair.pack_puzzles()
     puzzle1.face_colour = QColor('transparent')
@@ -334,25 +341,25 @@ def test_draw_cuts(pixmap_differ: PixmapDiffer):
         pen.setColor(Block.CUT_COLOUR)
         pen.setCapStyle(Qt.PenCapStyle.FlatCap)
         expected.setPen(pen)
-        expected.drawLine(4, 4, 496, 4)
-        expected.drawLine(4, 4, 4, 256)
-        expected.drawLine(4, 256, 496, 256)
-        expected.drawLine(496, 4, 496, 256)
+        expected.drawLine(5, 5, 495, 5)
+        expected.drawLine(5, 5, 5, 255)
+        expected.drawLine(5, 255, 495, 255)
+        expected.drawLine(495, 5, 495, 255)
         expected.translate(175, 26)
         for block in puzzle.blocks:
-            block.tab_count = 2
+            block.tab_count = 1
             block.border_colour = block.CUT_COLOUR
             block.draw_outline(expected)
         block = Block(Square(' '))
         block.squares[0].size = puzzle.square_size
-        block.tab_count = 2
+        block.tab_count = 1
         block.border_colour = block.CUT_COLOUR
         for block.x, block.y in ((0, 30), (0, 60), (0, 90), (60, 120), (120, 120)):
             block.draw_outline(expected)
 
         pair2 = parse_puzzle_pair()
         pair2.square_size = 30
-        pair2.tab_count = 2
+        pair2.tab_count = 1
         pair2.draw_cuts(actual, header_fraction=0.1)
 
 

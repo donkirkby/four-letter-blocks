@@ -158,7 +158,7 @@ class PuzzlePair(PuzzleSet):
 
     def draw_cuts(self,
                   painter: QPainter,
-                  nick_radius: int = 0,
+                  nick_radius: float = 0,
                   header_fraction: float = 0.1):
         front_puzzle, back_puzzle = self.puzzles
         grid_size = front_puzzle.grid.width
@@ -180,7 +180,7 @@ class PuzzlePair(PuzzleSet):
 
     def draw_boundary_cuts(self,
                            painter: QPainter,
-                           nick_radius: int = 0):
+                           nick_radius: float = 0):
         pen = painter.pen()
         pen.setWidth(math.floor(self.square_size / 33))
         pen.setCapStyle(Qt.PenCapStyle.FlatCap)
@@ -189,7 +189,7 @@ class PuzzlePair(PuzzleSet):
 
         width = painter.window().width()
         height = painter.window().height()
-        margin = round(height / 66)  # Covers cutter drift
+        margin = math.ceil(height / 60)  # Covers cutter drift
 
         block = Block(Square(' '))
         block.squares[0].size = self.square_size

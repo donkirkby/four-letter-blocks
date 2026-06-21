@@ -7,7 +7,7 @@ import typing
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, OPTIONAL
 from functools import partial
 from pathlib import Path
-from zipfile import ZipFile, ZIP_DEFLATED, Path as ZipPath
+from zipfile import ZipFile, ZIP_DEFLATED
 
 from PySide6.QtCore import QSettings, QSize, QSizeF, QObject, QRectF, QRect, \
     QPoint, QBuffer, QThread, QTimer
@@ -50,9 +50,9 @@ class BlockType(Enum):
 def create_svg_generator(svg_buffer):
     generator = QSvgGenerator()
     generator.setOutputDevice(svg_buffer)
-    generator.setSize(QSize(8250, 10500))
-    generator.setResolution(1000)  # dots per inch
-    generator.setViewBox(QRect(0, 0, 8250, 10500))
+    generator.setSize(QSize(594, 756))
+    generator.setResolution(72)  # dots per inch
+    generator.setViewBox(QRect(0, 0, 594, 756))
     return generator
 
 
@@ -312,6 +312,7 @@ class FourLetterBlocksWindow(QMainWindow):
 
     def add_crosswords(self) -> None:
         save_dir = self.get_save_dir()
+        assert save_dir is not None
         kwargs = get_file_dialog_options()
         file_names: typing.List[str]
         file_names, selected_filter = QFileDialog.getOpenFileNames(
@@ -401,6 +402,7 @@ class FourLetterBlocksWindow(QMainWindow):
     def open_pair_puzzle(self, puzzle_index: int):
         side = ('front', 'back')[puzzle_index]
         save_dir = self.get_save_dir()
+        assert save_dir is not None
         kwargs = get_file_dialog_options()
         file_name, _ = QFileDialog.getOpenFileName(
             self,
@@ -550,6 +552,9 @@ class FourLetterBlocksWindow(QMainWindow):
         #                  report_path=Path(file_name))
 
     def interrupt_fill(self):
+        if self.fill_thread is None:
+            return
+
         self.fill_thread.requestInterruption()
         self.reset_fill_buttons()
         self.statusBar().showMessage('Stopped filling.')
@@ -654,6 +659,8 @@ class FourLetterBlocksWindow(QMainWindow):
         if not self.can_abandon('open a file'):
             return
         save_dir = self.get_save_dir()
+        assert save_dir is not None
+
         kwargs = get_file_dialog_options()
         file_name, _ = QFileDialog.getOpenFileName(
             self,
@@ -762,6 +769,7 @@ class FourLetterBlocksWindow(QMainWindow):
         if not ui.is_puzzle_blocks.isEnabled():
             ui.puzzle_set_blocks.setPlainText('')
         elif self.block_type == BlockType.PUZZLE:
+            assert self.selected_puzzle is not None
             ui.puzzle_set_blocks.setPlainText(
                 self.selected_puzzle.format_blocks())
         else:
@@ -770,8 +778,9 @@ class FourLetterBlocksWindow(QMainWindow):
         if not (ui.is_pair_puzzle_blocks.isEnabled() and self.page_packers):
             ui.front_blocks_text.setPlainText('')
         elif self.pair_block_type == BlockType.PUZZLE:
-            ui.front_blocks_text.setPlainText(
-                self.pair_puzzles[0].format_blocks())
+            front_puzzle = self.pair_puzzles[0]
+            assert front_puzzle is not None
+            ui.front_blocks_text.setPlainText(front_puzzle.format_blocks())
         else:
             page_packer = self.page_packers[0]
             ui.front_blocks_text.setPlainText(page_packer.display())
@@ -811,6 +820,7 @@ class FourLetterBlocksWindow(QMainWindow):
 
     def get_save_file_name(self, caption, file_filter):
         save_dir = self.get_save_dir()
+        assert save_dir is not None
         kwargs = get_file_dialog_options()
         file_name, _ = QFileDialog.getSaveFileName(
             self,
@@ -844,6 +854,7 @@ class FourLetterBlocksWindow(QMainWindow):
             pair.page_packers = self.page_packers
             write_puzzle_set(pair, self.file_path)
         elif current_tab is ui.set_tab:
+            assert self.puzzle_set is not None
             write_puzzle_set(self.puzzle_set, self.file_path)
         else:
             raise RuntimeError("Current tab doesn't support saving yet.")
@@ -860,6 +871,8 @@ class FourLetterBlocksWindow(QMainWindow):
 
     def export(self):
         save_dir = self.get_save_dir()
+        assert save_dir is not None
+
         kwargs = get_file_dialog_options()
         file_name, _ = QFileDialog.getSaveFileName(
             self,
@@ -899,6 +912,8 @@ class FourLetterBlocksWindow(QMainWindow):
             QToolTip.showText(point, "Add more crosswords before exporting.")
             return
         save_dir = self.get_save_dir()
+        assert save_dir is not None
+
         kwargs = get_file_dialog_options()
         file_name, _ = QFileDialog.getSaveFileName(
             self,
@@ -1027,6 +1042,8 @@ class FourLetterBlocksWindow(QMainWindow):
         assert back_puzzle is not None
 
         save_dir = self.get_save_dir()
+        assert save_dir is not None
+
         kwargs = get_file_dialog_options()
         file_name, _ = QFileDialog.getSaveFileName(
             self,
@@ -1082,7 +1099,7 @@ class FourLetterBlocksWindow(QMainWindow):
                                         start_hue=start_hue)
             square_coefficient = 1 / (grid_size - 1)
         puzzle_pair.pack_puzzles()
-        puzzle_pair.tab_count = 2
+        puzzle_pair.tab_count = 1
         front_bg = puzzle_pair.puzzles[0].face_colour
         puzzle_pair.puzzles[0].face_colour = QColor('transparent')
         back_bg = puzzle_pair.puzzles[1].face_colour
@@ -1138,7 +1155,7 @@ class FourLetterBlocksWindow(QMainWindow):
                 rotate_painter(deduper)
                 puzzle_pair.square_size = int(generator.width() *
                                               square_coefficient)
-                nick_radius = 5  # DPI is 1000
+                nick_radius = 0.36  # DPI is 72
                 puzzle_pair.draw_cuts(deduper, nick_radius, header_fraction)
             finally:
                 deduper.end()
@@ -1392,7 +1409,7 @@ class BlockDiagram(QPyTextObject):
                       doc: QTextDocument,
                       posInDocument: int,
                       format: QTextFormat) -> QSizeF:
-        row_index = format.property(DIAGRAM_DATA)
+        row_index: int = format.property(DIAGRAM_DATA)
         row_heights = self.puzzle.row_heights(round(doc.textWidth()))
         row_height = row_heights[row_index]
         return QSizeF(doc.textWidth(), row_height)

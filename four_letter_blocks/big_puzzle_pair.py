@@ -175,7 +175,7 @@ class BigPuzzlePair(PuzzlePair):
 
     def draw_boundary_cuts(self,
                            painter: QPainter,
-                           nick_radius: int = 0):
+                           nick_radius: float = 0):
         pen = painter.pen()
         pen.setWidth(math.floor(self.square_size / 33))
         pen.setCapStyle(Qt.PenCapStyle.FlatCap)
@@ -217,7 +217,7 @@ class BigPuzzlePair(PuzzlePair):
 
     def draw_boundary_cuts2(self,
                             painter: QPainter,
-                            nick_radius: int = 0):
+                            nick_radius: float = 0):
         column_count = self.puzzles[0].grid.width
         grid_width = column_count * self.square_size
         width = painter.window().width()

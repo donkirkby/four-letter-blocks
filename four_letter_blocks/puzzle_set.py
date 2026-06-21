@@ -11,7 +11,7 @@ from colorspacious import cspace_convert  # type:ignore[import]
 
 from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
-from four_letter_blocks.puzzle import Puzzle, draw_rotated_tiles
+from four_letter_blocks.puzzle import Puzzle, draw_rotated_tiles, RotationsDisplay
 from four_letter_blocks.square import Square
 
 
@@ -271,8 +271,10 @@ class PuzzleSet:
     @tab_count.setter
     def tab_count(self, tab_count: int):
         for puzzle in self.puzzles:
+            is_back = puzzle.rotations_display == RotationsDisplay.BACK
             for block in puzzle.blocks:
                 block.tab_count = tab_count
+                block.is_back = is_back
 
     def display_blocks(
             self,
@@ -307,7 +309,7 @@ class PuzzleSet:
         tab_count = self.tab_count
         blocks = self.block_packer.create_blocks()
         for block in blocks:
-            block.tab_count = tab_count
+            block.tab_count = tab_count  # Need to copy tab_count to new blocks.
             for square in block.squares:
                 square.size = square_size
                 square.x = (square.x + 0.5) * square_size
@@ -338,7 +340,7 @@ class PuzzleSet:
         grid_size = self.puzzles[0].grid.width
         block = Block(Square(' '))
         block.squares[0].size = self.square_size
-        block.tab_count = self.tab_count
+        block.tab_count = self.tab_count  # Need to copy tab_counts to new block.
         block.face_colour = QColor('black')
         for x, y in self.black_positions:
             if is_flipped:
@@ -354,7 +356,7 @@ class PuzzleSet:
         block = Block(Square(' '))
         block.squares[0].size = self.square_size
         block.border_colour = Block.CUT_COLOUR
-        block.tab_count = self.tab_count
+        block.tab_count = self.tab_count  # Need to copy tab_counts to new block.
         for x, y in self.black_positions:
             block.x = self.square_size * (x + 0.5)
             block.y = self.square_size * (y + 0.5)

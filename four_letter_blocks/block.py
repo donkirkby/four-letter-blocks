@@ -13,7 +13,7 @@ from four_letter_blocks.grid import Grid
 from four_letter_blocks.square import Square
 
 
-def create_tab_path(path, square_size, nick_radius: int = 0):
+def create_tab_path(path, square_size, nick_radius: float = 0):
     curved_portion = 0.75 * square_size
     tab_width = 0.34 * square_size
     stem_width = 0.23 * square_size
@@ -47,7 +47,9 @@ def create_tab_path(path, square_size, nick_radius: int = 0):
     path.lineTo(square_size / 2, 0)
 
 
-def create_double_tab_path(path, square_size, nick_radius=0):
+def create_double_tab_path(path,
+                           square_size,
+                           nick_radius: float=0):
     tab_radius = 0.1 * square_size
     shoulder_radius = tab_radius * .6667
     theta = math.asin(1/(1+tab_radius/shoulder_radius))
@@ -94,6 +96,7 @@ class Block:
         self.display_y: typing.Optional[int] = None
         self.display_rotation: typing.Optional[int] = None
         self.tab_count = 0
+        self.is_back = False
         self.font: QFont | None = None
 
     def __repr__(self):
@@ -213,10 +216,12 @@ class Block:
             painter.setFont(self.font)
         self.transform_painter(painter, 1)
         size = self.squares[0].size
-        if self.tab_count == 1:
-            face_offset = size * 0.075
+        if self.tab_count != 1:
+            face_offset: float = 0
+        elif self.is_back:
+            face_offset = size * -0.075
         else:
-            face_offset = 0
+            face_offset = size * 0.075
         x0 = self.squares[0].x
         y0 = self.squares[0].y
         scaled_positions = {(round((x-x0)/size), round((y-y0)/size))
@@ -286,7 +291,7 @@ class Block:
 
     def draw_nicked_line(self,
                          painter: QPainter,
-                         nick_radius: int,
+                         nick_radius: float,
                          x1: int,
                          y1: int,
                          x2: int,
