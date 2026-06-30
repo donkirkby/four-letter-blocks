@@ -3,10 +3,10 @@ from PySide6.QtGui import QPainter, Qt, QColor, QFont
 
 from four_letter_blocks.clue_painter import CluePainter
 from four_letter_blocks.puzzle import draw_rotated_tiles
-from four_letter_blocks.puzzle_set import PuzzleSet
 from four_letter_blocks.square import draw_gradient_rect
 from tests.pixmap_differ import PixmapDiffer
 from tests.test_puzzle import parse_basic_puzzle
+from tests.test_puzzle_set import parse_puzzle_set
 
 
 # noinspection DuplicatedCode
@@ -19,8 +19,8 @@ def test_draw_text(pixmap_differ: PixmapDiffer):
         font.setPixelSize(30)
         expected.setFont(font)
 
-        expected.setRenderHint(QPainter.TextAntialiasing, False)
-        expected.setRenderHint(QPainter.Antialiasing, False)
+        expected.setRenderHint(QPainter.RenderHint.TextAntialiasing, False)
+        expected.setRenderHint(QPainter.RenderHint.Antialiasing, False)
         expected.drawText(QRectF(10, 10, 300, 100),
                           0,
                           'Lorem ipsum\ndolores sit amet.')
@@ -44,8 +44,8 @@ def test_draw_text_bold(pixmap_differ: PixmapDiffer):
         bold_font.setBold(True)
         expected.setFont(bold_font)
 
-        expected.setRenderHint(QPainter.TextAntialiasing, False)
-        expected.setRenderHint(QPainter.Antialiasing, False)
+        expected.setRenderHint(QPainter.RenderHint.TextAntialiasing, False)
+        expected.setRenderHint(QPainter.RenderHint.Antialiasing, False)
         expected.drawText(QRectF(10, 10, 300, 100),
                           0,
                           'Lorem ipsum\ndolores sit amet.')
@@ -82,8 +82,8 @@ def test_draw_text_background(pixmap_differ: PixmapDiffer):
         expected.fillRect(text_rect, background_colour)
         expected.drawRect(text_rect)
 
-        expected.setRenderHint(QPainter.TextAntialiasing, False)
-        expected.setRenderHint(QPainter.Antialiasing, False)
+        expected.setRenderHint(QPainter.RenderHint.TextAntialiasing, False)
+        expected.setRenderHint(QPainter.RenderHint.Antialiasing, False)
         expected.drawText(QRectF(10+padding, 10+padding, 300-2*padding, 100),
                           0,
                           'Lorem ipsum\ndolores sit amet.')
@@ -123,8 +123,8 @@ def test_draw_text_gradient(pixmap_differ: PixmapDiffer):
                            text_rect.width(), text_rect.height(),
                            padding)
 
-        expected.setRenderHint(QPainter.TextAntialiasing, False)
-        expected.setRenderHint(QPainter.Antialiasing, False)
+        expected.setRenderHint(QPainter.RenderHint.TextAntialiasing, False)
+        expected.setRenderHint(QPainter.RenderHint.Antialiasing, False)
         expected.drawText(QRectF(10+padding, 10+padding, 300-2*padding, 100),
                           0,
                           'Lorem ipsum\ndolores sit amet.')
@@ -282,10 +282,13 @@ def test_draw_page(pixmap_differ: PixmapDiffer):
 
 # noinspection DuplicatedCode
 def test_draw_page_with_background(pixmap_differ: PixmapDiffer):
-    puzzle = parse_basic_puzzle()
+    puzzle_set = parse_puzzle_set()
+    # puzzle_set.pack_puzzles()
+    puzzle = puzzle_set.puzzles[0]
     puzzle.down_clues[1].text_with_reference = "Run between 1 Across"
-    puzzle_set = PuzzleSet(puzzle)
-    puzzle_set.pack_puzzles()
+    puzzle.across_clues[0].text = 'Part of a sentence'
+    puzzle.across_clues[1].text = 'One at a time'
+    puzzle.across_clues[2].text = 'And another one'
 
     width = 740
     height = 190
@@ -302,7 +305,7 @@ def test_draw_page_with_background(pixmap_differ: PixmapDiffer):
                              width-2*margin, height-2*margin)
         header_rect2 = QRectF(header_rect)
         CluePainter.draw_text(header_rect,
-                              'Basic Puzzle',
+                              'Example 1',
                               expected,
                               is_dry_run=True,
                               background=puzzle.face_colour)
@@ -315,7 +318,7 @@ def test_draw_page_with_background(pixmap_differ: PixmapDiffer):
         expected.setPen(pen)
         expected.drawRect(bg_rect)
         CluePainter.draw_text(header_rect2,
-                              'Basic Puzzle',
+                              'Example 1',
                               expected,
                               is_centred=True,
                               background=puzzle.face_colour,
@@ -324,7 +327,7 @@ def test_draw_page_with_background(pixmap_differ: PixmapDiffer):
         expected.setFont(font)
         CluePainter.draw_text(header_rect,
                               'Clue numbers are shuffled: 1 Across might not '
-                              'be the top left. 3 pieces.',
+                              'be the top left. 5 pieces.',
                               expected)
         line_height = CluePainter.find_text_height('X', expected)
         expected.drawLine(margin, round(header_rect.top() + line_height/2),
@@ -341,16 +344,16 @@ def test_draw_page_with_background(pixmap_differ: PixmapDiffer):
         left_num_rect = QRectF(left_rect)
         left_num_rect.setRight(left_num_rect.left() + number_width)
         left_rect.adjust(padded_width, 0, 0, 0)
-        CluePainter.draw_text(left_num_rect, '1.', expected)
+        CluePainter.draw_text(left_num_rect, '4.', expected)
         CluePainter.draw_text(left_rect,
                               'Part of a sentence',
                               expected)
         right_num_rect = QRectF(right_rect)
         right_num_rect.setWidth(number_width)
         right_rect.adjust(padded_width, 0, 0, 0)
-        CluePainter.draw_text(right_num_rect, '3.', expected)
+        CluePainter.draw_text(right_num_rect, '5.\n6.', expected)
         CluePainter.draw_text(right_rect,
-                              'One at a time',
+                              'One at a time\nAnd another one',
                               expected)
 
         puzzle.font = puzzle_font
@@ -524,9 +527,12 @@ def test_draw_clues_with_suits(pixmap_differ: PixmapDiffer):
 
 # noinspection DuplicatedCode
 def test_draw_clues_face_colour(pixmap_differ: PixmapDiffer):
-    puzzle = parse_basic_puzzle()
-    puzzle_set = PuzzleSet(puzzle)
+    puzzle_set = parse_puzzle_set()
+    puzzle = puzzle_set.puzzles[0]
     puzzle.face_colour = QColor.fromHsv(120, 60, 255)
+    puzzle.across_clues[0].text = 'Part of a sentence'
+    puzzle.across_clues[1].text = 'One at a time'
+    puzzle.across_clues[2].text = 'And another one'
 
     width = 740
     height = 190
@@ -539,10 +545,9 @@ def test_draw_clues_face_colour(pixmap_differ: PixmapDiffer):
         font.setPixelSize(20)
         title_font = QFont(font)
         title_font.setPixelSize(40)
-        puzzle2 = parse_basic_puzzle()
         header_rect = QRectF(margin, margin,
                              width - 2*margin, height - 2*margin)
-        clue_painter1 = CluePainter(puzzle2, font_size=20, margin=margin)
+        clue_painter1 = CluePainter(puzzle, font_size=20, margin=margin)
         clue_painter1.background = puzzle.face_colour
         clue_painter1.background_tile = bg_tile
         clue_painter1.draw_header(title_font, font, header_rect, expected)
@@ -564,15 +569,15 @@ def test_draw_clues_face_colour(pixmap_differ: PixmapDiffer):
                               'Part of a sentence',
                               expected)
         CluePainter.draw_text(num_rect,
-                              '1.',
+                              '4.',
                               expected,
                               is_aligned_right=True)
         CluePainter.draw_text(num_rect2,
-                              '3.',
+                              '5.\n6.',
                               expected,
                               is_aligned_right=True)
         CluePainter.draw_text(down_rect,
-                              'One at a time',
+                              'One at a time\nAnd another one',
                               expected)
 
         clue_painter = CluePainter(puzzle, font_size=20, margin=margin)
@@ -692,9 +697,11 @@ def test_draw_clues_intro(pixmap_differ: PixmapDiffer):
 
 # noinspection DuplicatedCode
 def test_draw_clues_intro_and_tile(pixmap_differ: PixmapDiffer):
-    puzzle = parse_basic_puzzle()
-    puzzle_set = PuzzleSet(puzzle)
-    puzzle_set.pack_puzzles()
+    puzzle_set = parse_puzzle_set()
+    puzzle = puzzle_set.puzzles[0]
+    puzzle.across_clues[0].text = 'Part of a sentence'
+    puzzle.across_clues[1].text = 'One at a time'
+    puzzle.across_clues[2].text = 'And another one'
 
     width = 740
     height = 200
@@ -736,7 +743,7 @@ def test_draw_clues_intro_and_tile(pixmap_differ: PixmapDiffer):
         expected.setFont(font)
         CluePainter.draw_text(header_rect,
                               'Clue numbers are shuffled: 1 Across might not '
-                              'be the top left. 3 pieces.',
+                              'be the top left. 5 pieces.',
                               expected)
         line_height = CluePainter.find_text_height('X', expected)
         y = header_rect.top() + round(line_height / 2)
@@ -751,16 +758,16 @@ def test_draw_clues_intro_and_tile(pixmap_differ: PixmapDiffer):
         num_rect = QRectF(across_rect)
         num_rect.setWidth(number_width)
         across_rect.adjust(padded_width, 0, 0, 0)
-        CluePainter.draw_text(num_rect, '1.', expected, is_aligned_right=True)
+        CluePainter.draw_text(num_rect, '4.', expected, is_aligned_right=True)
         CluePainter.draw_text(across_rect, 'Part of a sentence', expected)
         num_rect = QRectF(down_rect)
         num_rect.setWidth(number_width)
         down_rect.adjust(padded_width, 0, 0, 0)
         CluePainter.draw_text(num_rect,
-                              '3.',
+                              '5.\n6.',
                               expected,
                               is_aligned_right=True)
-        CluePainter.draw_text(down_rect, 'One at a time', expected)
+        CluePainter.draw_text(down_rect, 'One at a time\nAnd another one', expected)
 
         clue_painter = CluePainter(puzzle,
                                    font_size=20,

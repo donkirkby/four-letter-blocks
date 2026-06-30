@@ -3,7 +3,6 @@ from pathlib import Path
 import yaml
 
 from four_letter_blocks.big_puzzle_pair import BigPuzzlePair
-from four_letter_blocks.one_sided_set import OneSidedSet
 from four_letter_blocks.puzzle import Puzzle
 from four_letter_blocks.puzzle_pair import PuzzlePair
 from four_letter_blocks.puzzle_set import PuzzleSet
@@ -33,8 +32,7 @@ def read_puzzle_set(file_path: Path) -> PuzzleSet:
     set_options = yaml.safe_load(set_text)
     set_types = {cls.__name__: cls for cls in (PuzzleSet,
                                                PuzzlePair,
-                                               BigPuzzlePair,
-                                               OneSidedSet)}
+                                               BigPuzzlePair)}
     set_class = set_types[set_options['type']]
     puzzles = []
     for puzzle_file_name in set_options['puzzles']:
@@ -44,6 +42,7 @@ def read_puzzle_set(file_path: Path) -> PuzzleSet:
 
 
 def write_puzzle_set(puzzle_set: PuzzleSet, file_path: Path) -> None:
+    # noinspection PyUnresolvedReferences
     puzzles = [str(puzzle.source_path.relative_to(file_path.parent.absolute(),
                                                   walk_up=True))
                for puzzle in puzzle_set.puzzles

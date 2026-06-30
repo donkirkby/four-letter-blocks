@@ -51,12 +51,6 @@ def test_source_and_target_init():
         EE#BC
         EDDCC
         #DDC#''')
-    expected_target_text = dedent('''\
-        #EEE#
-        CCCED
-        AC#DD
-        AABBD
-        #ABB#''')
     expected_shape_targets = {'J1': 1, 'T0': 1, 'S1': 1, 'O': 1, 'T3': 1}
 
     thread = FillThread([target_text], [source_text])
@@ -149,8 +143,7 @@ def test_front_and_back_init():
         ...#...
         #.#....
         .......
-        #.#....
-    ''')
+        #.#....''')
     back_target_text = dedent('''\
         #.....#
         ...#...
@@ -158,8 +151,7 @@ def test_front_and_back_init():
         .#.#.#.
         .......
         ...#...
-        #.....#
-    ''')
+        #.....#''')
 
     thread = FillThread([front_target_text, back_target_text])
 

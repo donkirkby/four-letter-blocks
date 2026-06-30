@@ -67,8 +67,7 @@ class FillThread(QThread):
                                                   start_text)
             target_puzzle.rotations_display = RotationsDisplay.FRONT
             packed_shape_counts = target_puzzle.shape_counts
-            self.packer: BlockPacker|DoubleBlockPacker = XPacker(
-                start_text=start_text)
+            self.packer: BlockPacker|DoubleBlockPacker = XPacker(start_text=start_text)
             self.packer.force_fours = False
 
             source_puzzle = Puzzle.parse_sections('',
@@ -124,8 +123,7 @@ class FillThread(QThread):
         if is_filled:
             summary = 'Filled.'
             if isinstance(self.packer, DoubleBlockPacker):
-                target_texts = (self.packer.front_packer.display(),
-                                self.packer.back_packer.display())
+                target_texts = self.packer.display_targets()
             else:
                 target_texts = (self.packer.display(),)
         else:

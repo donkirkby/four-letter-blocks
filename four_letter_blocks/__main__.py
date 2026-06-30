@@ -20,6 +20,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialo
 
 import four_letter_blocks
 from four_letter_blocks.big_puzzle_pair import BigPuzzlePair
+from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.clue import Clue
 from four_letter_blocks.clue_overflow import ClueOverflow
@@ -28,13 +29,13 @@ from four_letter_blocks.fill_thread import FillThread, PackingProgress
 from four_letter_blocks.font_list_item import FontListItem
 from four_letter_blocks.line_deduper import LineDeduper
 from four_letter_blocks.main_window import Ui_MainWindow
-from four_letter_blocks.one_sided_set import OneSidedSet
 from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
 from four_letter_blocks.puzzle_pair import PuzzlePair
 from four_letter_blocks.puzzle_set import PuzzleSet
 
 from four_letter_blocks import four_letter_blocks_rc
 from four_letter_blocks.set_loader import write_puzzle_set, read_puzzle_set
+from four_letter_blocks.x_packer import XPacker
 
 assert four_letter_blocks_rc  # Need to import this module to load resources.
 
@@ -81,7 +82,7 @@ class FourLetterBlocksWindow(QMainWindow):
         self.is_back_modified = False
 
         self.pair_puzzles: typing.List[None | Puzzle] = [None, None]
-        self.page_packers: list[BlockPacker] = []
+        self.page_packers: list[XPacker] = []
         ui.main_tabs.setCurrentIndex(0)
 
         ui.about_action.triggered.connect(self.about)
@@ -123,7 +124,6 @@ class FourLetterBlocksWindow(QMainWindow):
         ui.font_add_button.clicked.connect(self.add_font)
         ui.font_remove_button.clicked.connect(self.remove_font)
         ui.font_list.dropped.connect(self.font_list_changed)
-        ui.one_sided_checkbox.setChecked(True)
 
         sys.excepthook = self.on_error
         self.file_path: typing.Optional[Path] = None
@@ -599,13 +599,20 @@ class FourLetterBlocksWindow(QMainWindow):
         ui = self.ui
         if ui.puzzle_set_fill_button.isEnabled():
             ui.puzzle_set_blocks.setPlainText(status.source_texts[0])
-        else:
-            assert ui.front_fill_button.isEnabled()
+        elif ui.front_fill_button.isEnabled():
             if len(status.target_texts) == 1:
                 ui.front_blocks_text.setPlainText(status.target_texts[0])
             else:
                 ui.back_blocks_text.setPlainText(status.target_texts[0])
                 ui.front_blocks_text.setPlainText(status.target_texts[1])
+        else:
+            assert ui.puzzle_set_fill_button.isEnabled()
+            assert self.puzzle_set is not None
+            for puzzle, blocks_text in zip(self.puzzle_set.puzzles, status.target_texts):
+                puzzle.blocks = Block.parse(blocks_text, puzzle.grid)
+            assert self.selected_puzzle is not None
+            ui.puzzle_set_blocks.setPlainText(self.selected_puzzle.format_blocks())
+
 
     def on_fill_completed(self,
                           progress: PackingProgress):
@@ -621,12 +628,8 @@ class FourLetterBlocksWindow(QMainWindow):
             puzzles.append(self.crossword_set[file_name])
 
         set_class: type[PuzzleSet]
-        if self.ui.one_sided_checkbox.isChecked():
-            page_count = (len(puzzles) + 1) // 2
-            set_class = OneSidedSet
-        else:
-            page_count = (len(puzzles) + 3) // 4
-            set_class = PuzzleSet
+        page_count = (len(puzzles) + 3) // 4
+        set_class = PuzzleSet
         while len(self.page_packers) > page_count:
             self.page_packers.pop()
         while len(self.page_packers) < page_count:
@@ -636,11 +639,7 @@ class FourLetterBlocksWindow(QMainWindow):
             else:
                 width = 15
                 height = 19
-            self.page_packers.append(BlockPacker(
-                width,
-                height,
-                tries=10_000,
-                min_tries=1))
+            self.page_packers.append(XPacker(width, height))
         puzzle_set = set_class(*puzzles,
                                page_packers=self.page_packers,
                                start_hue=self.ui.background_hue.value(),
@@ -728,31 +727,24 @@ class FourLetterBlocksWindow(QMainWindow):
             self.puzzle_set_blocks_changed()
             return
 
-        file_name = self.get_save_file_name(
-            'Record filled set solutions',
-            'Log files (*.log);;All files (*.*)')
-        if not file_name:
-            return
-
-        self.fill_puzzle_set_blocks_with_log(Path(file_name))
-
-    def fill_puzzle_set_blocks_with_log(self, log_path: Path):
-        raise NotImplementedError()
-        # self.statusBar().showMessage('Filling puzzle set...')
-        # puzzle_set = self.puzzle_set
-        # assert puzzle_set is not None
-        # page_packer = puzzle_set.page_packers[puzzle_set.page_index]
-        # evo_packer = EvoPacker(start_text=page_packer.display(),
-        #                        tries=page_packer.tries,
-        #                        min_tries=page_packer.min_tries)
-        # packed_shape_counts = evo_packer.packed_shape_counts
-        # puzzle_shape_counts: Counter[str] = Counter()
-        # page_puzzles = puzzle_set.page_puzzles[puzzle_set.page_index]
-        # for puzzle in page_puzzles:
-        #     puzzle.rotations_display = RotationsDisplay.FRONT
-        #     puzzle_shape_counts += puzzle.shape_counts
-        # puzzle_shape_counts -= packed_shape_counts
-        # evo_packer.required_shape_counts = puzzle_shape_counts
+        self.statusBar().showMessage('Filling puzzle set...')
+        puzzle_set = self.puzzle_set
+        assert puzzle_set is not None
+        ui = self.ui
+        if ui.is_puzzle_blocks.isChecked():
+            target_texts = tuple(
+                puzzle.format_blocks().replace('.', '?')
+                for puzzle in puzzle_set.puzzles)
+            source_texts = ()
+            message = 'Filling front and back...'
+        else:
+            target_texts = (ui.puzzle_set_blocks.toPlainText()
+                            .replace('.', '?').replace('#', '?'),)
+            source_texts = (ui.back_blocks_text.toPlainText(),)
+            message = 'Filling travel blocks...'
+        self.statusBar().showMessage(message)
+        new_thread = FillThread(target_texts, source_texts)
+        self.launch_fill(self.ui.front_fill_button, new_thread)
         # self.fill_thread = PageFillThread(self, evo_packer, log_path)
         # self.fill_thread.status_update.connect(self.on_fill_update_status)
         # self.fill_thread.completed.connect(self.on_fill_completed)
@@ -786,10 +778,7 @@ class FourLetterBlocksWindow(QMainWindow):
             ui.front_blocks_text.setPlainText(page_packer.display())
 
     def selected_page_packer(self) -> BlockPacker:
-        if self.ui.one_sided_checkbox.isChecked():
-            selected_page_index = self.selected_crossword_file // 2
-        else:
-            selected_page_index = self.selected_crossword_file // 4
+        selected_page_index = self.selected_crossword_file // 4
         assert self.puzzle_set is not None
         self.puzzle_set.page_index = selected_page_index
         page_packer = self.puzzle_set.page_packers[selected_page_index]
@@ -1077,25 +1066,19 @@ class FourLetterBlocksWindow(QMainWindow):
         front_puzzle, back_puzzle = self.pair_puzzles
         assert front_puzzle is not None
         assert back_puzzle is not None
-        packing = self.page_packers[0].display()
         grid_size = front_puzzle.grid.width
-        packer = BlockPacker(grid_size,
-                             grid_size,
-                             start_text=packing,
-                             tries=10_000_000,
-                             min_tries=1_000)
         start_hue = self.ui.front_hue.value()
         if grid_size <= 9:
             puzzle_pair = PuzzlePair(front_puzzle,
                                      back_puzzle,
-                                     block_packer=packer,
+                                     set_options={'page_packers': self.page_packers},
                                      start_hue=start_hue)
             square_coefficient = 1 / (grid_size + 3)
         else:
-            packer.split_row = grid_size // 2
+            self.page_packers[0].split_row = grid_size // 2
             puzzle_pair = BigPuzzlePair(front_puzzle,
                                         back_puzzle,
-                                        block_packer=packer,
+                                        set_options={'page_packers': self.page_packers},
                                         start_hue=start_hue)
             square_coefficient = 1 / (grid_size - 1)
         puzzle_pair.pack_puzzles()
@@ -1471,7 +1454,7 @@ def main():
     if args.file is not None:
         window.open_file(args.file)
         if args.command == 'fill':
-            window.fill_puzzle_set_blocks_with_log(args.output)
+            window.fill_puzzle_set_blocks()
         elif args.command == 'export':
             if window.puzzle_set is not None:
                 window.export_set_file(args.output)

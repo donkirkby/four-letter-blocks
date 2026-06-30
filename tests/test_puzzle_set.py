@@ -4,55 +4,109 @@ from pathlib import Path
 from textwrap import dedent
 
 import pytest
+import yaml
 from PySide6.QtGui import QPainter, QPixmap, QImage, QColor
 from colorspacious import cspace_convert
 
 from four_letter_blocks.block import Block
-from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.puzzle import Puzzle
 from four_letter_blocks.puzzle_set import PuzzleSet
 from four_letter_blocks import four_letter_blocks_rc
+from four_letter_blocks.square import Square
 from tests.pixmap_differ import PixmapDiffer
 
 assert four_letter_blocks_rc  # Need to import this module to load resources.
 
 
-def parse_puzzle_set(block_packer: BlockPacker = None):
+def parse_puzzle_set(set_options_yaml: str | None = None) -> PuzzleSet:
     puzzle1 = Puzzle.parse(StringIO(dedent("""\
-        Title
+        Example 1
 
-        ABCDE
-        FG##H
-        IJ#KL
-        M##NO
-        PQRST
+        #ABC#
+        DEFG#
+        HIJKL
+        MNOWQ
+        #RST#
 
         -
 
-        ABBBC
-        AB##C
-        AA#CC
-        E##DD
-        EEEDD
-    """)))
+        #DCC#
+        DDCC#
+        DAAAA
+        IIIGG
+        #IGG#
+        """)))
     puzzle2 = Puzzle.parse(StringIO(dedent("""\
-        Title
+        Example 2
 
-        ABCDE
-        FG##H
-        IJ#KL
-        M##NO
-        PQRST
+        #ABC#
+        DEFG#
+        HIJKL
+        MNOWQ
+        #RST#
 
         -
 
-        ABBBB
-        AA##C
-        EA#CC
-        E##CD
-        EEDDD
-    """)))
-    puzzle_set = PuzzleSet(puzzle1, puzzle2, block_packer=block_packer)
+        #FEE#
+        FFEE#
+        FBBBB
+        JJJHH
+        #JHH#
+        """)))
+    puzzle3 = Puzzle.parse(StringIO(dedent("""\
+        Example 3
+
+        #ABC#
+        #DEFG
+        HIJKL
+        MNOWQ
+        #RST#
+
+        -
+
+        #CCD#
+        #CCDD
+        AAAAD
+        GGIII
+        #GGI#
+        """)))
+    puzzle4 = Puzzle.parse(StringIO(dedent("""\
+        Example 4
+
+        #ABC#
+        #DEFG
+        HIJKL
+        MNOWQ
+        #RST#
+
+        -
+
+        #EEF#
+        #EEFF
+        BBBBF
+        HHJJJ
+        #HHJ#
+        """)))
+
+    if set_options_yaml is None:
+        set_options_yaml = """
+            packing_pages:
+                - |
+                    EEEFDDDD
+                    #EFFCCCC
+                    #GFJJJBB
+                    GG##J#BB
+                    GHHII#AA
+                    HHII##AA
+        """
+    set_options = yaml.safe_load(set_options_yaml)
+
+    puzzle_set = PuzzleSet(puzzle1,
+                           puzzle2,
+                           puzzle3,
+                           puzzle4,
+                           set_options=set_options,
+                           frame_lengths=((5, 2), (5,)))
     puzzle_set.pack_puzzles()
     return puzzle_set
 
@@ -66,33 +120,15 @@ def test_empty_set():
 
 def test_summary():
     puzzle_set = parse_puzzle_set()
-    puzzle1, puzzle2 = puzzle_set.puzzles
+    puzzle1, puzzle2, puzzle3, puzzle4 = puzzle_set.puzzles
 
     summary1 = puzzle1.display_block_summary()
-    assert summary1 == 'Block sizes: 5x4, Shapes: J: 2, L: 2, O: 1'
-    summary2 = puzzle2.display_block_summary()
-    assert summary2 == 'Block sizes: 5x4, Shapes: I: 1, L: 2, S: 1, Z: 1'
+    assert summary1 == 'Block sizes: 5x4, Shapes: I1: 1, O: 1, S0: 1, T0: 1, Z1: 1'
+    summary3 = puzzle2.display_block_summary()  # Flipped shapes.
+    assert summary3 == 'Block sizes: 5x4, Shapes: I1: 1, O: 1, S0: 1, T0: 1, Z1: 1'
 
     set_summary = puzzle_set.block_summary
-    assert set_summary == '10 blocks with extras: I: 1(2), JL: 2(1), L: 2, O: 1(1), SZ: 2(2)'
-
-    assert puzzle_set.count_parities == {'I': 1,
-                                         'O': 1,
-                                         'T': 0,
-                                         'SZ': 0,
-                                         'JL': 0}
-    assert puzzle_set.count_diffs == {'SZ': 0,
-                                      'JL': 2}
-    assert puzzle_set.count_min == {'I': 1,
-                                    'O': 1,
-                                    'T': 0,
-                                    'SZ': 2,
-                                    'JL': 2}
-    assert puzzle_set.count_max == {'I': 1,
-                                    'O': 1,
-                                    'T': 0,
-                                    'SZ': 2,
-                                    'JL': 6}
+    assert set_summary == '20 blocks'
 
 
 def test_summary_of_three():
@@ -131,19 +167,13 @@ def test_summary_of_three():
         E##DC
         EEEDD
     """)))
-    set1 = PuzzleSet(puzzle1, puzzle2, puzzle3)
-    set1.pack_puzzles()
-    puzzle_set = set1
-    puzzle1, puzzle2, puzzle3 = puzzle_set.puzzles
+    with pytest.raises(ValueError) as info:
+        PuzzleSet(puzzle1, puzzle2, puzzle3)
 
-    summary1 = puzzle1.display_block_summary()
-    assert summary1 == 'Block sizes: 4x4, Shapes: O: 4'
-    assert puzzle2.display_block_summary() == summary1
-    summary3 = puzzle3.display_block_summary()
-    assert summary3 == 'Block sizes: 5x4, Shapes: I: 2, J: 1, L: 1, O: 1'
-
-    set_summary = puzzle_set.block_summary
-    assert set_summary == '13 blocks with extras: I: 2(3), JL: 2(3), O: 1'
+    expected_message = ("No combination of unused counts and shape counts "
+                        "could be evenly split: (0, 0, 0); O: 4; O: 4; I0: 1, "
+                        "I1: 1, J3: 1, L0: 1, O: 1.")
+    assert info.value.args == (expected_message,)
 
 
 def test_summary_no_extras():
@@ -176,83 +206,7 @@ def test_shape_counts():
 
     shape_counts = puzzle_set.shape_counts
 
-    assert shape_counts == Counter({'I': 1, 'J': 4, 'O': 1, 'S': 2})
-
-
-def test_shape_counts_z_only():
-    puzzle_text = dedent("""\
-        Title
-
-        ABCDE
-        FGHIJ
-        KL#MN
-        OPQRS
-        TUVWX
-
-        -
-
-        AAAAB
-        FFFBB
-        EF#BD
-        ECCDD
-        EECCD
-    """)
-    puzzle1 = Puzzle.parse(StringIO(puzzle_text))
-    puzzle2 = Puzzle.parse(StringIO(puzzle_text))
-    puzzle_set = PuzzleSet(puzzle1, puzzle2, block_packer=None)
-    puzzle_set.pack_puzzles()
-
-    shape_counts = puzzle_set.shape_counts
-
-    assert shape_counts == Counter({'I': 1, 'J': 2, 'T': 2, 'S': 4})
-    block_count = sum(1
-                      for shape_blocks in (puzzle_set.front_blocks,
-                                           puzzle_set.back_blocks)
-                      for blocks in shape_blocks.values()
-                      for block in blocks
-                      if block is not None)
-    assert block_count == 12
-
-
-def test_blocks_fit():
-    blocks1 = dedent("""\
-        FFFDA
-        BFDDA
-        BC#DA
-        BCCEA
-        BCEEE
-    """)
-    puzzle1 = Puzzle.parse_sections('', blocks1, '', blocks1)
-    blocks2 = dedent("""\
-        DJJJGGG
-        DJKBHHG
-        DDKBBHH
-        AAK#BCL
-        AAKEFCL
-        IIEEFCL
-        IIEFFCL
-    """)
-    puzzle2 = Puzzle.parse_sections('', blocks2, '', blocks2)
-    blocks3 = dedent("""\
-        BBBSSGEEE
-        AABSSGRRE
-        AAOJJGRRP
-        QOOJJGIIP
-        QOTD#IIPP
-        QTTDFFFFL
-        QTDDMMCCL
-        NNHMMCCLL
-        NNHHHKKKK
-    """)
-    puzzle3 = Puzzle.parse_sections('', blocks3, '', blocks3)
-
-    assert puzzle1.shape_counts == {'I': 2, 'T': 4}
-    assert puzzle2.shape_counts == {'I': 3, 'O': 2, 'S': 1, 'Z': 2, 'J': 2, 'L': 2}
-    assert puzzle3.shape_counts == {'I': 4, 'O': 5, 'S': 3, 'Z': 2, 'J': 6}
-    puzzle_set = PuzzleSet(puzzle1, puzzle2, puzzle3)
-    puzzle_set.pack_puzzles()
-
-    assert puzzle_set.shape_counts == {'I': 5, 'O': 5, 'S': 5, 'J': 8, 'T': 4}
+    assert shape_counts == Counter({'I1': 2, 'O': 2, 'S0': 2, 'T0': 2, 'Z1': 2})
 
 
 def test_draw_background(pixmap_differ: PixmapDiffer):
@@ -287,31 +241,59 @@ def test_draw_packed(pixmap_differ: PixmapDiffer):
             360,
             180,
             'test_puzzle_draw_packed') as (actual, expected):
-        puzzle_set1 = parse_puzzle_set(BlockPacker(10, 10, tries=1000))
-        puzzle1, puzzle2 = puzzle_set1.puzzles
+        expected_puzzle_set = parse_puzzle_set()
 
+        puzzle1 = expected_puzzle_set.puzzles[0]
         expected.fillRect(expected.window(), puzzle1.face_colour)
         actual.fillRect(expected.window(), puzzle1.face_colour)
 
-        puzzle_set1.square_size = 20
-        blocks = puzzle1.blocks
-        blocks[0].set_display(270, 10, 0)
-        blocks[1].set_display(190, 50, 0)
-        blocks[2].set_display(70, 30, 0)
-        blocks[3].set_display(110, 10, 0)
-        blocks[4].set_display(110, 70, 0)
+        expected_puzzle_set.square_size = 20
+        blocks1 = expected_puzzle_set.puzzles[0].blocks
+        blocks1[0].set_display(100, 20, 1)
+        blocks1[1].set_display(140, 60, 0)
+        blocks1[2].set_display(20, 60, 1)
+        blocks1[3].set_display(60, 100, 0)
+        blocks1[4].set_display(80, 60, 0)
+        blocks2 = expected_puzzle_set.puzzles[1].blocks
+        blocks2[0].set_display(100, 40, 1)
+        blocks2[1].set_display(140, 100, 0)
+        blocks2[2].set_display(60, 20, 1)
+        blocks2[3].set_display(20, 100, 0)
+        blocks2[4].set_display(20, 20, 0)
+        blocks3 = expected_puzzle_set.puzzles[2].blocks
+        blocks3[0].set_display(180, 20, 1)
+        blocks3[1].set_display(180, 60, 0)
+        blocks3[2].set_display(300, 60, 1)
+        blocks3[3].set_display(240, 100, 0)
+        blocks3[4].set_display(220, 60, 0)
+        blocks4 = expected_puzzle_set.puzzles[3].blocks
+        blocks4[0].set_display(180, 40, 1)
+        blocks4[1].set_display(180, 100, 0)
+        blocks4[2].set_display(260, 20, 1)
+        blocks4[3].set_display(280, 100, 0)
+        blocks4[4].set_display(280, 20, 0)
 
-        blocks = puzzle2.blocks
-        blocks[0].set_display(10, 70, 1)
-        blocks[1].set_display(50, 50, 0)
-        blocks[2].set_display(210, 10, 0)
-        blocks[3].set_display(170, 70, 0)
-        blocks[4].set_display(210, 30, 0)
-
-        for block in puzzle1.blocks + puzzle2.blocks:
+        for block in blocks1 + blocks2 + blocks3 + blocks4:
+            block.draw(expected, is_packed=True)
+        square = Square(' ')
+        square.size = 20
+        block = Block(square)
+        block.tab_count = 1
+        block.border_colour = block.CUT_COLOUR
+        block.face_colour = QColor('black')
+        for block.x, block.y in [(20, 40),
+                                 (20, 60),
+                                 (60, 80),
+                                 (80, 80),
+                                 (120, 80),
+                                 (120, 100),
+                                 (100, 120),
+                                 (120, 120)]:
+            block.draw(expected, is_packed=True)
+            block.x = 337 - block.x
             block.draw(expected, is_packed=True)
 
-        puzzle_set2 = parse_puzzle_set(BlockPacker(7, 8, tries=1000))
+        puzzle_set2 = parse_puzzle_set()
         puzzle_set2.square_size = 20
         puzzle_set2.draw_front(actual)
 
@@ -319,33 +301,82 @@ def test_draw_packed(pixmap_differ: PixmapDiffer):
         puzzle_set2.draw_back(actual)
 
 
-def test_draw_cuts(pixmap_differ: PixmapDiffer):
+def test_draw_front(pixmap_differ: PixmapDiffer):
+    actual: QPainter
+    expected: QPainter
     with pixmap_differ.create_painters(
             360,
-            180,
-            'test_puzzle_draw_cuts') as (actual, expected):
-        block_text = dedent("""\
-            #A#BBCC
-            #ABBDCC
-            AAE#DF#
-            G#EDDFH
-            GGE#FFH
-            #GE##HH
-        """)
-        puzzle3 = Puzzle.parse_sections('',
-                                        block_text,
-                                        '',
-                                        block_text)
-        puzzle3.square_size = 20
-        for block in puzzle3.blocks:
-            block.x += 10
-            block.y += 10
-            block.border_colour = Block.CUT_COLOUR
+            180) as (actual, expected):
+        expected_puzzle_set = parse_puzzle_set()
+        expected_puzzle_set.square_size = 20
+        blocks1 = expected_puzzle_set.puzzles[0].blocks
+        blocks1[0].set_display(100, 20, 1)
+        blocks1[1].set_display(140, 60, 0)
+        blocks1[2].set_display(20, 60, 1)
+        blocks1[3].set_display(60, 100, 0)
+        blocks1[4].set_display(80, 60, 0)
+        blocks2 = expected_puzzle_set.puzzles[1].blocks
+        blocks2[0].set_display(100, 40, 1)
+        blocks2[1].set_display(140, 100, 0)
+        blocks2[2].set_display(60, 20, 1)
+        blocks2[3].set_display(20, 100, 0)
+        blocks2[4].set_display(20, 20, 0)
+
+        for block in blocks1 + blocks2:
+            block.border_colour = block.CUT_COLOUR
+            block.draw(expected, is_packed=True)
+            block.draw_outline(expected)
+        square = Square(' ')
+        square.size = 20
+        block = Block(square)
+        block.tab_count = 1
+        block.border_colour = block.CUT_COLOUR
+        block.face_colour = QColor('black')
+        for block.x, block.y in [(20, 40),
+                                 (20, 60),
+                                 (60, 80),
+                                 (80, 80),
+                                 (120, 80),
+                                 (120, 100),
+                                 (100, 120),
+                                 (120, 120)]:
+            block.draw(expected, is_packed=True)
             block.draw_outline(expected)
 
-        puzzle_set = parse_puzzle_set(BlockPacker(7, 8, tries=4000))
-        puzzle_set.square_size = 20
-        puzzle_set.draw_cuts(actual)
+        expected.setPen(block.CUT_COLOUR)
+        expected.drawLine(20, 20, 10, 20)
+        expected.drawLine(10, 20, 10, 10)
+        expected.drawLine(10, 10, 120, 10)
+        expected.drawLine(120, 10, 120, 20)
+
+        expected.drawLine(120, 10, 160, 10)
+        expected.drawLine(160, 10, 160, 20)
+
+        expected.drawLine(180, 20, 180, 10)
+        expected.drawLine(180, 10, 190, 10)
+        expected.drawLine(190, 10, 190, 120)
+        expected.drawLine(190, 120, 180, 120)
+
+        expected.drawLine(180, 140, 190, 140)
+        expected.drawLine(190, 140, 190, 150)
+        expected.drawLine(190, 150, 80, 150)
+        expected.drawLine(80, 150, 80, 140)
+
+        expected.drawLine(80, 150, 40, 150)
+        expected.drawLine(40, 150, 40, 140)
+
+        expected.drawLine(20, 140, 20, 150)
+        expected.drawLine(20, 150, 10, 150)
+        expected.drawLine(10, 150, 10, 40)
+        expected.drawLine(10, 40, 20, 40)
+
+        actual_puzzle_set = parse_puzzle_set()
+
+        assert actual_puzzle_set.page_count == 1
+
+        actual_puzzle_set.square_size = 20
+        actual_puzzle_set.draw_front(actual)
+        actual_puzzle_set.draw_cuts(actual)
 
 
 # noinspection DuplicatedCode
@@ -390,11 +421,7 @@ def test_colours(sizes, start_hue, expected_hues):
                                        '')
         puzzles.append(puzzle)
 
-    puzzle_set = PuzzleSet(
-        *puzzles,
-        block_packer=BlockPacker(20, 20, tries=1000),
-        start_hue=start_hue)
-    puzzle_set.pack_puzzles()
+    PuzzleSet.set_face_colours(puzzles, start_hue)
 
     colours = (puzzle.face_colour for puzzle in puzzles)
     jchs = []

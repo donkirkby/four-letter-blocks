@@ -408,19 +408,6 @@ def test_packed_shape_counts():
     assert packer.packed_shape_counts == expected_counts
 
 
-def test_packed_shape_counts_can_rotate():
-    packer = BlockPacker(start_text=dedent("""\
-        AA#CC
-        AAB.C
-        BBBDC
-        .DDD.
-        ....."""))
-
-    expected_counts = {'O': 1, 'L': 3}
-
-    assert packer.packed_shape_counts == expected_counts
-
-
 def test_packed_shape_counts_skip_letter():
     packer = BlockPacker(start_text=dedent("""\
         AACC.

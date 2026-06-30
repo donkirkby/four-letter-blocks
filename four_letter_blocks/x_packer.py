@@ -26,8 +26,6 @@ class XPacker(BlockPacker):
     def __init__(self,
                  width=0,
                  height=0,
-                 tries=-1,
-                 min_tries=-1,
                  start_text: str | None = None,
                  start_state: np.ndarray | None = None,
                  split_row=0):
@@ -37,10 +35,6 @@ class XPacker(BlockPacker):
 
         :param width: Width of the grid to pack
         :param height: Height of the grid to pack
-        :param tries: Maximum number of cycles to try finding a block that will
-            fit
-        :param min_tries: Minimum number of cycles to try finding a block that
-            will fit
         :param start_text: Text grid to start filling from
         :param start_state: Initial grid state to start filling from
         :param split_row: Index of the first row of the second section, when you
@@ -48,11 +42,9 @@ class XPacker(BlockPacker):
         """
         super().__init__(width,
                          height,
-                         tries,
-                         min_tries,
-                         start_text,
-                         start_state,
-                         split_row)
+                         start_text=start_text,
+                         start_state=start_state,
+                         split_row=split_row)
         self.is_logging = False
         self.force_fours = True
 
@@ -78,6 +70,12 @@ class XPacker(BlockPacker):
         """
         start_state = self.state
         assert start_state is not None
+        if self.is_full:
+            if (self.target_shape_counts is None or
+                    self.target_shape_counts.total() == 0):
+                yield start_state
+            return
+
         option_masks: dict[int, np.ndarray] = {}  # { option_num: [[flag]] }
         try:
             solver = self.prepare_solver(option_masks)

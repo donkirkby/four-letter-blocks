@@ -1,6 +1,7 @@
 import math
 import typing
 from collections import defaultdict, Counter
+from copy import deepcopy
 from functools import cache
 from random import shuffle
 
@@ -109,6 +110,9 @@ class BlockPacker:
         four letters.)
         """
         result = defaultdict(list)
+        if self.state.size == 0:
+            return result
+
         shape_map = shape_rotations()
         max_block = int(np.max(self.state))
         for block in range(2, max_block+1):
@@ -140,14 +144,10 @@ class BlockPacker:
 
     @property
     def packed_shape_counts(self) -> Counter[str]:
-        input_shape_counts: dict[str, int] = (self.target_shape_counts or
-                                              self.required_shape_counts or
-                                              {})
-        can_rotate = all(len(shape) == 1 for shape in input_shape_counts)
         shape_counts: Counter[str] = Counter()
         for shape, shape_positions in self.positions.items():
             for x, y, rotation in shape_positions:
-                if shape == 'O' or can_rotate:
+                if shape == 'O':
                     counted_shape = shape
                 else:
                     counted_shape = f'{shape}{rotation}'
@@ -263,6 +263,8 @@ class BlockPacker:
         if state is None:
             state = self.state
         assert state is not None
+        if state.size == 0:
+            return ''
         last_block = np.amax(state)
         if last_block not in self.BLOCK_CHARS:
             raise RuntimeError('Too many blocks for text display.')
@@ -575,10 +577,12 @@ class BlockPacker:
         self.are_partials_saved = False
         self.fill()
 
-    def flip(self) -> 'BlockPacker':
+    def flip(self) -> typing.Self:
         assert self.state is not None
         flipped_state = np.copy(np.fliplr(self.state))
-        return BlockPacker(start_state=flipped_state, tries=self.tries)
+        flipped_packer = deepcopy(self)
+        flipped_packer.state = flipped_state
+        return flipped_packer
 
 
 @cache

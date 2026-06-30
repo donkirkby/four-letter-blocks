@@ -5,7 +5,6 @@ from PySide6.QtGui import QPainter, QColor, Qt
 
 from four_letter_blocks.big_puzzle_pair import BigPuzzlePair
 from four_letter_blocks.block import Block
-from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.clue_painter import CluePainter
 from four_letter_blocks.puzzle import Puzzle
 from four_letter_blocks.square import Square
@@ -20,8 +19,7 @@ def test_draw_front_slug1(pixmap_differ: PixmapDiffer) -> None:
         front_puzzle = Puzzle.parse(f)
     with back_file.open() as f:
         back_puzzle = Puzzle.parse(f)
-    packer = BlockPacker(width=11, height=11, split_row=5, tries=100)
-    pair = BigPuzzlePair(front_puzzle, back_puzzle, block_packer=packer)
+    pair = BigPuzzlePair(front_puzzle, back_puzzle)
     pair.pack_puzzles()
     pair.margin = 10
     front_puzzle.face_colour = QColor('transparent')
@@ -74,7 +72,7 @@ def test_draw_front_slug1(pixmap_differ: PixmapDiffer) -> None:
         x_shift = (333 - 12 * pair.square_size) / 2
         y_shift = height - 145.5
         expected.translate(x_shift, y_shift)
-        for block in pair.display_blocks(pair.block_packer, pair.front_blocks):
+        for block in pair.display_blocks(pair.page_packers[0], pair.front_blocks):
             assert block.display_y is not None
             if block.display_y < 125:
                 block.draw(expected, is_packed=True)
@@ -82,18 +80,14 @@ def test_draw_front_slug1(pixmap_differ: PixmapDiffer) -> None:
         black_block.squares[0].size = pair.square_size
         black_block.face_colour = QColor('black')
         black_block.border_colour = Block.CUT_COLOUR
-        black_block.tab_count = 2
-        black_positions = ((12.5, 12.5),
-                           (37.5, 12.5),
-                           (112.5, 12.5),
-                           (212.5, 12.5),
-                           (237.5, 12.5),
-                           (112.5, 37.5),
-                           (162.5, 37.5),
-                           (237.5, 37.5),
-                           (62.5, 112.5),
-                           (162.5, 112.5),
-                           (187.5, 112.5))
+        black_block.tab_count = 1
+        black_positions = ((212.5, 62.5),
+                           (237.5, 87.5),
+                           (262.5, 87.5),
+                           (12.5, 112.5),
+                           (37.5, 112.5),
+                           (237.5, 112.5),
+                           (262.5, 112.5))
         for black_block.x, black_block.y in black_positions:
             black_block.draw(expected, is_packed=True)
 
@@ -116,16 +110,16 @@ def test_draw_front_slug1(pixmap_differ: PixmapDiffer) -> None:
                                      329, bottom)
 
         expected.translate(x_shift, y_shift)
-        for block in pair.display_blocks(pair.block_packer, pair.front_blocks):
+        for block in pair.display_blocks(pair.page_packers[0], pair.front_blocks):
             assert block.display_y is not None
             if block.display_y < 125:
-                block.tab_count = 2
+                block.tab_count = 1
                 block.border_colour = Block.CUT_COLOUR
                 block.draw_outline(expected)
         for black_block.x, black_block.y in black_positions:
             black_block.draw_outline(expected)
 
-        pair.tab_count = 2
+        pair.tab_count = 1
         grid_rect = pair.draw_front(actual, font_size=8)
         header_fraction = grid_rect.top() / height
         pair.draw_cuts(actual, header_fraction=header_fraction)
@@ -139,8 +133,7 @@ def test_draw_front_slug2(pixmap_differ: PixmapDiffer) -> None:
         front_puzzle = Puzzle.parse(f)
     with back_file.open() as f:
         back_puzzle = Puzzle.parse(f)
-    packer = BlockPacker(width=11, height=11, split_row=5, tries=100)
-    pair = BigPuzzlePair(front_puzzle, back_puzzle, block_packer=packer)
+    pair = BigPuzzlePair(front_puzzle, back_puzzle)
     pair.pack_puzzles()
     front_puzzle.face_colour = QColor('transparent')
     pair.margin = 10
@@ -192,7 +185,8 @@ def test_draw_front_slug2(pixmap_differ: PixmapDiffer) -> None:
         x_shift = (333 - 12 * pair.square_size) / 2
         y_shift = -129.5
         expected.translate(x_shift, y_shift)
-        for block in pair.display_blocks(pair.block_packer, pair.front_blocks):
+        for block in pair.display_blocks(pair.page_packers[0],
+                                         pair.front_blocks):
             assert block.display_y is not None
             if block.display_y > 125:
                 block.draw(expected, is_packed=True)
@@ -200,17 +194,21 @@ def test_draw_front_slug2(pixmap_differ: PixmapDiffer) -> None:
         black_block = Block(Square(' '))
         black_block.squares[0].size = pair.square_size
         black_block.face_colour = QColor('black')
-        black_block.tab_count = 2
-        black_positions = ((62.5, 137.5),
-                           (62.5, 162.5),
-                           (112.5, 162.5),
-                           (262.5, 187.5),
-                           (262.5, 212.5),
-                           (12.5, 237.5),
-                           (212.5, 237.5),
-                           (237.5, 237.5),
+        black_block.tab_count = 1
+        black_positions = ((137.5, 137.5),
+                           (162.5, 137.5),
+                           (237.5, 137.5),
+                           (262.5, 137.5),
+                           (37.5, 162.5),
+                           (237.5, 187.5),
+                           (87.5, 212.5),
+                           (187.5, 237.5),
                            (262.5, 237.5),
-                           (12.5, 262.5),
+                           (37.5, 262.5),
+                           (62.5, 262.5),
+                           (87.5, 262.5),
+                           (112.5, 262.5),
+                           (162.5, 262.5),
                            (187.5, 262.5),
                            (212.5, 262.5),
                            (237.5, 262.5),
@@ -236,17 +234,18 @@ def test_draw_front_slug2(pixmap_differ: PixmapDiffer) -> None:
                                      round(x_shift+287.5), 8,
                                      329, 8)
         expected.translate(x_shift, y_shift)
-        for block in pair.display_blocks(pair.block_packer, pair.front_blocks):
+        for block in pair.display_blocks(pair.page_packers[0],
+                                         pair.front_blocks):
             block.border_colour = Block.CUT_COLOUR
             assert block.display_y is not None
             if block.display_y > 125:
-                block.tab_count = 2
+                block.tab_count = 1
                 block.draw_outline(expected)
         black_block.border_colour = Block.CUT_COLOUR
         for black_block.x, black_block.y in black_positions:
             black_block.draw_outline(expected)
 
-        pair.tab_count = 2
+        pair.tab_count = 1
         pair.slug_index = 1
         grid_rect = pair.draw_front(actual, font_size=8)
         header_fraction = grid_rect.top() / height

@@ -1,7 +1,7 @@
-import math
 import typing
 from collections import Counter, defaultdict
 from collections.abc import Iterable
+from itertools import chain
 
 import numpy as np
 from PySide6.QtCore import QPoint
@@ -9,10 +9,12 @@ from PySide6.QtGui import QPainter, QColor, QPixmap, QPainterPath, \
     QBrush, QLinearGradient
 from colorspacious import cspace_convert  # type:ignore[import]
 
-from four_letter_blocks.block import Block
+from four_letter_blocks.block import Block, flipped_shapes
 from four_letter_blocks.block_packer import BlockPacker
+from four_letter_blocks.double_block_packer import DoubleBlockPacker
 from four_letter_blocks.puzzle import Puzzle, draw_rotated_tiles, RotationsDisplay
 from four_letter_blocks.square import Square
+from four_letter_blocks.x_packer import XPacker
 
 
 class PuzzleSet:
@@ -20,16 +22,13 @@ class PuzzleSet:
 
     def __init__(self,
                  *puzzles: Puzzle,
-                 block_packer: BlockPacker | None = None,
-                 page_packers: typing.Sequence[BlockPacker] | None = None,
+                 page_packers: typing.Sequence[XPacker] | None = None,
                  start_hue: int = 0,
                  set_options: dict | None = None,
-                 frame_lengths: typing.Sequence[typing.Sequence[int]] = (),
-                 puzzles_per_page: int = 4):
+                 frame_lengths: typing.Sequence[typing.Sequence[int]] = ()):
         """ Initialise a set of puzzles.
 
         :param puzzles: The puzzles to pack.
-        :param block_packer: The block packer to use.
         :param page_packers: The block packers to use for each travel page.
         :param start_hue: The hue of the first puzzle's face colour.
         :param set_options: Other options that can be set in a puzzle set file.
@@ -38,219 +37,130 @@ class PuzzleSet:
         :param puzzles_per_page: The number of puzzles that will fit on a page
             (both sides).
         """
-        if frame_lengths:
-            raise NotImplementedError('Frame lengths not yet implemented.')
+        self.frame_lengths = frame_lengths
         set_options = set_options or {}
         self.puzzles = puzzles
-        self.page_puzzles: list[tuple[Puzzle]] = list(
-            zip(*([iter(puzzles)]*puzzles_per_page)))
         self.shape_counts: typing.Counter[str] = Counter()
         packing_pages = set_options.get('packing_pages', [])
-        self.page_packers: list[BlockPacker] = []
-        if block_packer:
-            self.block_packer = block_packer
-            self.page_packers.append(self.block_packer)
-        elif packing_pages:
+        self.page_packers: list[XPacker] = []
+        start_texts = [puzzle.format_blocks() for puzzle in puzzles]
+        self.block_packer = DoubleBlockPacker(*start_texts)
+        if packing_pages:
             for packing_page in packing_pages:
-                self.page_packers.append(BlockPacker(start_text=packing_page,
-                                                     tries=10_000,
-                                                     min_tries=1))
-            self.block_packer = self.page_packers[0]
+                self.page_packers.append(XPacker(start_text=packing_page))
         elif page_packers:
             self.page_packers = list(page_packers)
-            self.block_packer = self.page_packers[0]
         else:
-            self.block_packer = BlockPacker(16, 20,  # Game Crafter cutout size
-                                            tries=10_000,
-                                            min_tries=1)
-            self.page_packers.append(self.block_packer)
+            # Game Crafter punchout size
+            self.create_page_packers()
         self.page_count = len(self.page_packers)
         self.page_index = 0
+
+        # { front_shape: [block] }
         self.front_blocks: typing.Dict[
             str,
             typing.List[Block | None]] = defaultdict(list)
+
+        # { front_shape: [block] }
         self.back_blocks: typing.Dict[
             str,
             typing.List[Block | None]] = defaultdict(list)
 
         self.block_summary = ''
-        self.combos = {'J': 'JL', 'L': 'JL', 'S': 'SZ', 'Z': 'SZ'}
-        self.pairs = {}
-        for pair in self.combos.values():
-            first: str
-            last: str
-            first, last = pair  # type:ignore[misc]
-            self.pairs[first] = last
-            self.pairs[last] = first
         self.start_hue: int = set_options.get('start_hue', start_hue)
-        self.count_parities: typing.Dict[str, int] = {}
-        self.count_diffs: typing.Dict[str, int] = {}
-        self.count_min: typing.Dict[str, int] = {}
-        self.count_max: typing.Dict[str, int] = {}
         self.can_rotate: bool = set_options.get('can_rotate', True)
         self.black_positions: typing.List[typing.Tuple[int, int]] = []
 
+    def create_page_packers(self):
+        page_packer = XPacker(16, 20)
+        page_packer.force_fours = False
+        self.page_packers = [page_packer]
+
     def pack_black_positions(self):
-        black_coordinates = np.nonzero(self.block_packer.state < 2)
+        block_packer = self.page_packers[0]
+        black_coordinates = np.nonzero(block_packer.state < 2)
         black_rows, black_columns = black_coordinates
         self.black_positions = list(zip(black_columns, black_rows))
 
-    def pack_puzzles(self):
-        combos = self.combos
-        pairs = self.pairs
-        total_counts = Counter()
-        total_block_count = 0
-        max_counts = Counter()
-        max_puzzles = {}  # {combo: index}
-        source_puzzles = defaultdict(list)  # {combo: [index]}
-        for i, puzzle in enumerate(self.puzzles):
-            puzzle_counts = Counter()
-            for label, count in puzzle.shape_counts.items():
-                total_block_count += count
-                combo = combos.get(label, label)
-                puzzle_counts[combo] += count
-                if combo != label:
-                    puzzle_counts[label] += count
-            total_counts += puzzle_counts
-            for combo, count in puzzle_counts.items():
-                source_puzzles[combo].append(i)
-                if count > max_counts[combo]:
-                    max_counts[combo] = count
-                    max_puzzles[combo] = i
-        all_combos = set(Block.shape_names())
-        all_combos.update(combos.values())
-        extras = []
-        for combo in sorted(all_combos):
-            total_count = total_counts[combo]
-            max_count = max_counts[combo]
-            mirror = pairs.get(combo)
-            if mirror is None:
-                extra = 2 * max_count - total_count
-                self.count_parities[combo] = total_count % 2
-                self.count_min[combo] = extra
-                self.count_max[combo] = total_count
-                if extra > 0:
-                    extras.append(f'{combo}: {extra}({max_puzzles[combo] + 1})')
-                elif total_count % 2 != 0:
-                    extras.append(f'{combo}: 1')
-                if len(combo) == 1:
-                    self.shape_counts[combo] = max(math.ceil(total_count / 2),
-                                                   max_count)
-            else:
-                full_combo = combos[combo]
-                max_count = max_counts[full_combo]
-                mirror_count = total_counts[mirror]
-                extra = total_count - mirror_count
-                if extra > 0:
-                    extras.append(f'{combo}: {extra}')
-                if combo < mirror:
-                    self.shape_counts[combo] = max(total_count,
-                                                   mirror_count,
-                                                   max_count)
-                    self.count_diffs[full_combo] = -extra
+    def pack_puzzles(self) -> None:
+        is_filled = self.block_packer.fill()
+        if not is_filled:
+            raise RuntimeError("Blocks wouldn't fit in puzzles.")
 
-        for combo in all_combos:
-            if len(combo) > 1:
-                continue
-            total_count = total_counts[combo]
-            front_shape = combo
-            back_shape = pairs.get(front_shape, front_shape)
-            if front_shape == back_shape:
-                front_count = math.ceil(total_count / 2)
-                back_count = total_count - front_count
-                max_count = max_counts[front_shape]
-            elif front_shape > back_shape:
-                continue
+        for puzzle, target in zip(self.puzzles, self.block_packer.packing_targets):
+            if target.is_front:
+                puzzle.rotations_display = RotationsDisplay.FRONT
+                source_packer = self.block_packer.front_packer
+                side_blocks = self.front_blocks
             else:
-                front_count = total_count
-                back_count = total_counts[back_shape]
-                max_count = max_counts[front_shape + back_shape]
-            block_count = max(front_count, back_count, max_count)
-            front_shape_blocks = [None] * block_count
-            back_shape_blocks = [None] * block_count
-            self.front_blocks[front_shape] = front_shape_blocks
-            self.back_blocks[back_shape] = back_shape_blocks
-            puzzle_counts = [(len(puzzle.shape_blocks[front_shape]) +
-                              len(puzzle.shape_blocks[back_shape]),
-                              i)
-                             for i, puzzle in enumerate(self.puzzles)]
-            puzzle_counts.sort(reverse=True)
-            is_top = False
-            for _, puzzle_index in puzzle_counts:
-                is_top = not is_top
-                puzzle = self.puzzles[puzzle_index]
-                front_source = puzzle.shape_blocks[front_shape]
-                if front_shape == back_shape:
-                    back_source = front_source
-                else:
-                    back_source = puzzle.shape_blocks[back_shape]
-                targets = list(range(block_count))
-                if is_top:
-                    targets.reverse()
-                while targets:
-                    front_room = sum(1
-                                     for target in targets
-                                     if front_shape_blocks[target] is None)
-                    back_room = sum(1
-                                    for target in targets
-                                    if back_shape_blocks[target] is None)
-                    front_extra = front_room - len(front_source)
-                    back_extra = back_room - len(back_source)
-                    target = targets.pop()
-                    front = front_shape_blocks[target]
-                    back = back_shape_blocks[target]
-                    side = None
-                    if front is not None:
-                        if back is None:
-                            side = 'B'
-                    elif back is not None:
-                        side = 'F'
-                    elif front_source and front_extra == 0:
-                        side = 'F'
-                    elif back_source and back_extra == 0:
-                        side = 'B'
-                    elif len(front_source) >= len(back_source):
-                        side = 'F'
-                    else:
-                        side = 'B'
-                    if side == 'F' and front_source:
-                        front_shape_blocks[target] = front_source.pop()
-                    elif side == 'B' and back_source:
-                        back_shape_blocks[target] = back_source.pop()
-                if front_source or back_source:
-                    raise RuntimeError("Blocks wouldn't fit.")
+                puzzle.rotations_display = RotationsDisplay.BACK
+                source_packer = self.block_packer.back_packer
+                side_blocks = self.back_blocks
+            puzzle.blocks = Block.parse(target.display(source_packer),
+                                        puzzle.grid)
+            if target.is_front:
+                self.shape_counts += puzzle.shape_counts
+            for block in puzzle.blocks:
+                shape = block.rotated_shape
+                side_blocks[shape].append(block)
 
-        self.block_summary = f'{total_block_count} blocks'
-        if extras:
-            self.block_summary += ' with extras: ' + ', '.join(extras)
-        self.block_packer.required_shape_counts = Counter(self.shape_counts)
-        raw_shape_counts = self.block_packer.packed_shape_counts
-        if not self.can_rotate:
-            packed_shape_counts = raw_shape_counts
-        else:
-            packed_shape_counts = Counter()
-            for shape, n in raw_shape_counts.items():
-                packed_shape_counts[shape[0]] += n
-        if packed_shape_counts != self.shape_counts:
-            is_filled = self.block_packer.fill()
-            if not is_filled:
-                raise RuntimeError("Blocks wouldn't fit.")
-        self.set_face_colours()
+        page_packer = self.page_packers[0]
+        if page_packer.packed_shape_counts != self.shape_counts:
+            flipped_packer = page_packer.flip()
+            if flipped_packer.packed_shape_counts == self.shape_counts:
+                self.page_packers[0] = page_packer = flipped_packer
+
+        page_packer.target_shape_counts = (self.shape_counts -
+                                           page_packer.packed_shape_counts)
+        if self.shape_counts.total() != 0:
+            is_page_filled = page_packer.fill()
+            if not is_page_filled:
+                self.create_page_packers()
+                page_packer = self.page_packers[0]
+                page_packer.target_shape_counts = self.shape_counts
+                is_page_filled = page_packer.fill()
+            if not is_page_filled:
+                raise RuntimeError("Blocks wouldn't fit in travel page.")
+
+        unused_front_blocks = {
+            shape: list(shape_blocks)
+            for shape, shape_blocks in self.front_blocks.items()}
+        unused_back_blocks = {
+            shape: list(shape_blocks)
+            for shape, shape_blocks in self.back_blocks.items()}
+        block_count = sum(len(shape_blocks)
+                          for shape, shape_blocks in self.front_blocks.items())
+        block_count += sum(len(shape_blocks)
+                           for shape, shape_blocks in self.back_blocks.items())
+        self.block_summary = f'{block_count} blocks'
+        for block in page_packer.create_blocks():
+            shape = block.rotated_shape
+            front_block = unused_front_blocks[shape].pop()
+            assert front_block is not None
+            front_block.set_display(block.x, block.y, 0)
+            back_shape = flipped_shapes()[shape]
+            back_block = unused_back_blocks[back_shape].pop()
+            assert back_block is not None
+            back_block.set_display(page_packer.width - block.x - block.width, block.y, 0)
+
+        self.tab_count = 1
+        self.set_face_colours(self.puzzles, self.start_hue)
         self.pack_black_positions()
 
-    def set_face_colours(self):
-        if not self.puzzles:
+    @staticmethod
+    def set_face_colours(puzzles: typing.Sequence[Puzzle], start_hue: int) -> None:
+        if not puzzles:
             return
 
         size_pairs = [(puzzle.grid.width, i)
-                      for i, puzzle in enumerate(self.puzzles)]
+                      for i, puzzle in enumerate(puzzles)]
         size_pairs.sort()
-        angle = 360 / len(self.puzzles)
+        angle = 360 / len(puzzles)
         for i, (width, puzzle_index) in enumerate(size_pairs):
-            puzzle = self.puzzles[puzzle_index]
+            puzzle = puzzles[puzzle_index]
             lightness = 77
             chroma = 20
-            hue = (self.start_hue + i * angle) % 360
+            hue = (start_hue + i * angle) % 360
             rgb = cspace_convert((lightness, chroma, hue), "JCh", "sRGB255")
             colour = QColor.fromRgb(*rgb)
             puzzle.face_colour = colour
@@ -306,8 +216,9 @@ class PuzzleSet:
 
     def draw_cuts(self, painter, nick_radius=0):
         square_size = self.square_size
+        painter.translate(square_size / 2, square_size / 2)
         tab_count = self.tab_count
-        blocks = self.block_packer.create_blocks()
+        blocks = self.page_packers[0].create_blocks()
         for block in blocks:
             block.tab_count = tab_count  # Need to copy tab_count to new blocks.
             for square in block.squares:
@@ -317,30 +228,41 @@ class PuzzleSet:
             block.border_colour = Block.CUT_COLOUR
             if self.can_draw_block(block):
                 block.draw_outline(painter, nick_radius)
+        self.draw_black_square_cuts(painter, nick_radius)
+        self.draw_frame(painter, nick_radius)
+        painter.translate(-square_size / 2, -square_size / 2)
 
     def draw_front(self, painter: QPainter):
-        for block in self.display_blocks(self.block_packer,
+        painter.translate(self.square_size / 2, self.square_size / 2)
+        block_packer = self.page_packers[0]
+        for block in self.display_blocks(block_packer,
                                          self.front_blocks):
             if self.can_draw_block(block):
                 block.draw(painter, is_packed=True)
+        self.draw_black_squares(painter)
+        painter.translate(-self.square_size / 2, -self.square_size / 2)
 
     # noinspection PyUnusedLocal,PyMethodMayBeStatic
     def can_draw_block(self, block: Block) -> bool:
         return True
 
     def draw_back(self, painter: QPainter):
-        block_packer = self.block_packer.flip()
+        painter.translate(self.square_size / 2, self.square_size / 2)
+        block_packer = self.page_packers[0].flip()
         for block in self.display_blocks(block_packer, self.back_blocks):
             if self.can_draw_block(block):
                 block.draw(painter, is_packed=True)
+        self.draw_black_squares(painter, is_flipped=True)
+        painter.translate(-self.square_size / 2, -self.square_size / 2)
 
     def draw_black_squares(self,
                            painter: QPainter,
                            is_flipped: bool = False) -> None:
-        grid_size = self.puzzles[0].grid.width
+        grid_size = self.page_packers[0].width
         block = Block(Square(' '))
         block.squares[0].size = self.square_size
         block.tab_count = self.tab_count  # Need to copy tab_counts to new block.
+        block.is_back = is_flipped
         block.face_colour = QColor('black')
         for x, y in self.black_positions:
             if is_flipped:
@@ -445,3 +367,136 @@ class PuzzleSet:
         finally:
             tile_painter.end()
         return tile
+
+    def draw_frame(self, painter, nick_radius):
+        if not self.frame_lengths:
+            return
+
+        block_packer = self.page_packers[0]
+        top_frames, right_frames = self.frame_lengths
+        first_block = self.puzzles[0].blocks[0]
+        old_border_colour = first_block.border_colour
+        first_block.border_colour = first_block.CUT_COLOUR
+        old_pen = first_block.set_outline_pen(painter, nick_radius)
+        old_tab_count = first_block.tab_count
+        first_block.tab_count = 0
+        size = first_block.squares[0].size
+        full_width = (block_packer.width + 1) * size
+        full_height = (block_packer.height + 1) * size
+        start_x = 0
+        for top_frame in top_frames:
+            if start_x == 0:
+                # Top start
+                first_block.draw_nicked_line(painter,
+                                             nick_radius,
+                                             size // 2, size // 2,
+                                             0, size // 2)
+                first_block.draw_nicked_line(painter,
+                                             nick_radius,
+                                             0, size // 2,
+                                             0, 0)
+                first_block.draw_nicked_line(painter,
+                                             nick_radius,
+                                             0, 0,
+                                             size // 2, 0)
+
+                # Bottom start
+                first_block.draw_nicked_line(
+                    painter,
+                    nick_radius,
+                    full_width - size // 2, full_height - size // 2,
+                    full_width, full_height - size // 2)
+                first_block.draw_nicked_line(
+                    painter,
+                    nick_radius,
+                    full_width, full_height - size // 2,
+                    full_width, full_height)
+                first_block.draw_nicked_line(
+                    painter,
+                    nick_radius,
+                    full_width, full_height,
+                    full_width - size // 2, full_height)
+
+            # Top
+            end_x = start_x + top_frame
+            first_block.draw_nicked_line(painter,
+                                         nick_radius,
+                                         start_x * size + size // 2, 0,
+                                         end_x * size + size // 2, 0)
+            first_block.draw_nicked_line(painter,
+                                         nick_radius,
+                                         end_x * size + size // 2, 0,
+                                         end_x * size + size // 2, size // 2)
+
+            # Bottom
+            first_block.draw_nicked_line(
+                painter,
+                nick_radius,
+                full_width - (start_x * size + size // 2), full_height,
+                full_width - (end_x * size + size // 2), full_height)
+            first_block.draw_nicked_line(
+                painter,
+                nick_radius,
+                full_width - (end_x * size + size // 2), full_height,
+                full_width - (end_x * size + size // 2), full_height - size // 2)
+            start_x = end_x
+
+        start_y = 0
+        for right_frame in right_frames:
+            if start_y == 0:
+                # Right start
+                first_block.draw_nicked_line(painter,
+                                             nick_radius,
+                                             full_width - size//2, size//2,
+                                             full_width - size//2, 0)
+                first_block.draw_nicked_line(painter,
+                                             nick_radius,
+                                             full_width - size//2, 0,
+                                             full_width, 0)
+                first_block.draw_nicked_line(painter,
+                                             nick_radius,
+                                             full_width, 0,
+                                             full_width, size//2)
+
+                # Left start
+                first_block.draw_nicked_line(painter,
+                                             nick_radius,
+                                             size//2, full_height - size//2,
+                                             size//2, full_height)
+                first_block.draw_nicked_line(painter,
+                                             nick_radius,
+                                             size//2, full_height,
+                                             0, full_height)
+                first_block.draw_nicked_line(painter,
+                                             nick_radius,
+                                             0, full_height,
+                                             0, full_height - size//2)
+
+            # Top
+            end_y = start_y + right_frame
+            first_block.draw_nicked_line(
+                painter,
+                nick_radius,
+                full_width, start_y * size + size//2,
+                full_width, end_y * size + size//2)
+            first_block.draw_nicked_line(
+                painter,
+                nick_radius,
+                full_width, end_y * size + size//2,
+                full_width - size//2, end_y * size + size//2)
+
+            # Bottom
+            first_block.draw_nicked_line(
+                painter,
+                nick_radius,
+                0, full_height - (start_y * size + size//2),
+                0, full_height - (end_y * size + size//2))
+            first_block.draw_nicked_line(
+                painter,
+                nick_radius,
+                0, full_height - (end_y * size + size//2),
+                size//2, full_height - (end_y * size + size//2))
+            start_y = end_y
+        first_block.tab_count = old_tab_count
+        first_block.border_colour = old_border_colour
+        painter.setPen(old_pen)

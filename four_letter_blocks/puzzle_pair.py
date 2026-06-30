@@ -1,108 +1,42 @@
 import math
-from collections import Counter
 
 from PySide6.QtCore import QPoint, QRectF
 from PySide6.QtGui import QPainter, QPainterPath, Qt
 
-from four_letter_blocks.block import Block, flipped_shapes
-from four_letter_blocks.block_packer import BlockPacker
+from four_letter_blocks.block import Block
 from four_letter_blocks.clue_overflow import ClueOverflow
 from four_letter_blocks.clue_painter import CluePainter
-from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
+from four_letter_blocks.puzzle import Puzzle
 from four_letter_blocks.puzzle_set import PuzzleSet
 from four_letter_blocks.square import Square
+from four_letter_blocks.x_packer import XPacker
 
 
 class PuzzlePair(PuzzleSet):
     def __init__(self,
                  *puzzles: Puzzle,
-                 block_packer: BlockPacker | None = None,
                  start_hue: int = 0,
                  set_options: dict | None = None):
         """ Initialise a pair of puzzles.
 
         :param puzzles: The puzzles to pack.
-        :param block_packer: The block packer to use.
         :param start_hue: The hue of the first puzzle's face colour.
         :param set_options: Other options that can be set in a puzzle set file.
         """
-        assert len(puzzles) == 2
-        if set_options is None:
-            packing_pages = None
-        else:
-            packing_pages = set_options.get('packing_pages')
-        if not packing_pages:
-            width = puzzles[0].grid.width
-            height = puzzles[0].grid.height
-            packing_pages = [BlockPacker(width,
-                                         height,
-                                         tries=10_000,
-                                         min_tries=1)]
+        if len(puzzles) != 2:
+            raise ValueError(f"Expected exactly 2 puzzles, got {len(puzzles)}.")
 
         super().__init__(*puzzles,
-                         block_packer=block_packer,
                          start_hue=start_hue,
-                         page_packers=packing_pages,
                          set_options=set_options)
         self.slug_count = 1
         self.slug_index = 0
 
-    def pack_puzzles(self):
-        front_puzzle, back_puzzle = self.puzzles
-        front_puzzle.rotations_display = RotationsDisplay.FRONT
-        self.shape_counts = front_puzzle.shape_counts
-        self.block_packer.required_shape_counts = Counter(self.shape_counts)
-        packed_shape_counts = self.block_packer.packed_shape_counts
-        flipped_packer = self.block_packer.flip()
-        flipped_packer.required_shape_counts = Counter(self.shape_counts)
-        flipped_shape_counts = flipped_packer.packed_shape_counts
-        if packed_shape_counts == self.shape_counts:
-            pass
-        elif flipped_shape_counts == self.shape_counts:
-            self.block_packer = flipped_packer
-        else:
-            grid_size = front_puzzle.grid.width
-            self.block_packer = BlockPacker(
-                grid_size,
-                grid_size,
-                self.block_packer.tries,
-                split_row=self.block_packer.split_row)
-            self.block_packer.required_shape_counts = Counter(self.shape_counts)
-            is_filled = self.block_packer.fill()
-            if not is_filled:
-                raise RuntimeError("Blocks didn't fit.")
-        for block in front_puzzle.blocks:
-            shape = block.shape
-            rotation = block.shape_rotation
-            if shape == 'O':
-                front_combo = shape
-            else:
-                front_combo = f'{shape}{rotation}'
-            self.front_blocks[front_combo].append(block)
-        flipped_shapes_dict = flipped_shapes()
-        remaining_counts = Counter(self.shape_counts)
-        for block in back_puzzle.blocks:
-            shape = block.rotated_shape
-            if shape == 'O':
-                self.back_blocks[shape].append(block)
-                remaining_counts[shape] -= 1
-            else:
-                front_shape = flipped_shapes_dict[shape]
-                if remaining_counts[front_shape]:
-                    remaining_counts[front_shape] -= 1
-                self.back_blocks[shape].append(block)
-
-        warnings = []
-        for shape, count in remaining_counts.items():
-            if count:
-                warnings.append(f"{count}x{shape}")
-        if warnings:
-            raise ValueError(f'Extra shape counts in {front_puzzle.title}: '
-                             f'{", ".join(warnings)}.')
-
-        front_puzzle.rotations_display = RotationsDisplay.OFF
-        self.set_face_colours()
-        self.pack_black_positions()
+    def create_page_packers(self):
+        grid = self.puzzles[0].grid
+        page_packer = XPacker(grid.width, grid.height)
+        page_packer.force_fours = False
+        self.page_packers = [page_packer]
 
     # noinspection DuplicatedCode
     def draw_front(self,
@@ -137,8 +71,9 @@ class PuzzlePair(PuzzleSet):
         return grid_rect
 
     def draw_front_blocks(self, painter: QPainter):
+        painter.translate(-self.square_size / 2, -self.square_size / 2)
         super().draw_front(painter)
-        self.draw_black_squares(painter)
+        painter.translate(self.square_size / 2, self.square_size / 2)
 
     # noinspection DuplicatedCode
     def draw_back(self,
@@ -168,12 +103,11 @@ class PuzzlePair(PuzzleSet):
                            window.height()*header_fraction,
                            grid_length,
                            grid_length)
-        shift = self.square_size / 2
+        shift = self.square_size
         x_shift = grid_rect.left() - shift
         y_shift = grid_rect.top() - shift
         painter.translate(x_shift, y_shift)
         super().draw_cuts(painter, nick_radius)
-        self.draw_black_square_cuts(painter, nick_radius)
 
         painter.translate(-x_shift, -y_shift)
         self.draw_boundary_cuts(painter, nick_radius)

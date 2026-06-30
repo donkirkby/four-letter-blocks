@@ -4,7 +4,6 @@ from PySide6.QtCore import QRectF
 from PySide6.QtGui import QPainter, Qt
 
 from four_letter_blocks.block import Block
-from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.clue_overflow import ClueOverflow
 from four_letter_blocks.clue_painter import CluePainter
 from four_letter_blocks.puzzle import Puzzle
@@ -15,13 +14,19 @@ from four_letter_blocks.square import Square
 class BigPuzzlePair(PuzzlePair):
     def __init__(self,
                  *puzzles: Puzzle,
-                 block_packer: BlockPacker | None = None,
                  start_hue: int = 0,
                  set_options: dict | None = None):
+        """ Initialise a pair of big puzzles.
+
+        :param puzzles: The puzzles to pack.
+        :param start_hue: The hue of the first puzzle's face colour.
+        :param set_options: Other options that can be set in a puzzle set file.
+        """
         super().__init__(*puzzles,
-                         block_packer=block_packer,
                          start_hue=start_hue,
                          set_options=set_options)
+        page_packer = self.page_packers[0]
+        page_packer.split_row = page_packer.height // 2
         self.slug_count = 2
 
     def draw_header(self,

@@ -16,12 +16,12 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
     QIcon, QImage, QKeySequence, QLinearGradient,
     QPainter, QPalette, QPixmap, QRadialGradient,
     QTransform)
-from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComboBox,
-    QGridLayout, QHBoxLayout, QLabel, QLineEdit,
-    QListWidget, QListWidgetItem, QMainWindow, QMenu,
-    QMenuBar, QPlainTextEdit, QPushButton, QRadioButton,
-    QSizePolicy, QSpacerItem, QSpinBox, QStackedWidget,
-    QStatusBar, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QAbstractItemView, QApplication, QComboBox, QGridLayout,
+    QHBoxLayout, QLabel, QLineEdit, QListWidget,
+    QListWidgetItem, QMainWindow, QMenu, QMenuBar,
+    QPlainTextEdit, QPushButton, QRadioButton, QSizePolicy,
+    QSpacerItem, QSpinBox, QStackedWidget, QStatusBar,
+    QVBoxLayout, QWidget)
 
 from four_letter_blocks.draggable_list import DraggableList
 from four_letter_blocks.focused_plain_text_edit import FocusedPlainTextEdit
@@ -254,76 +254,39 @@ class Ui_MainWindow(object):
         self.set_tab.setObjectName(u"set_tab")
         self.gridLayout = QGridLayout(self.set_tab)
         self.gridLayout.setObjectName(u"gridLayout")
-        self.puzzle_set_font_label = QLabel(self.set_tab)
-        self.puzzle_set_font_label.setObjectName(u"puzzle_set_font_label")
-
-        self.gridLayout.addWidget(self.puzzle_set_font_label, 7, 0, 1, 1)
-
         self.crossword_label = QLabel(self.set_tab)
         self.crossword_label.setObjectName(u"crossword_label")
 
         self.gridLayout.addWidget(self.crossword_label, 0, 0, 1, 8)
+
+        self.crossword_spacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.gridLayout.addItem(self.crossword_spacer, 2, 3, 1, 1)
+
+        self.puzzle_set_blocks = QPlainTextEdit(self.set_tab)
+        self.puzzle_set_blocks.setObjectName(u"puzzle_set_blocks")
+
+        self.gridLayout.addWidget(self.puzzle_set_blocks, 8, 1, 1, 7)
+
+        self.label = QLabel(self.set_tab)
+        self.label.setObjectName(u"label")
+
+        self.gridLayout.addWidget(self.label, 7, 0, 1, 1)
 
         self.puzzle_set_clear_button = QPushButton(self.set_tab)
         self.puzzle_set_clear_button.setObjectName(u"puzzle_set_clear_button")
 
         self.gridLayout.addWidget(self.puzzle_set_clear_button, 2, 4, 1, 1)
 
-        self.remove_button = QPushButton(self.set_tab)
-        self.remove_button.setObjectName(u"remove_button")
-
-        self.gridLayout.addWidget(self.remove_button, 2, 7, 1, 1)
-
         self.puzzle_set_fill_button = QPushButton(self.set_tab)
         self.puzzle_set_fill_button.setObjectName(u"puzzle_set_fill_button")
 
         self.gridLayout.addWidget(self.puzzle_set_fill_button, 2, 5, 1, 1)
 
-        self.background_hue_label = QLabel(self.set_tab)
-        self.background_hue_label.setObjectName(u"background_hue_label")
+        self.remove_button = QPushButton(self.set_tab)
+        self.remove_button.setObjectName(u"remove_button")
 
-        self.gridLayout.addWidget(self.background_hue_label, 6, 0, 1, 1)
-
-        self.crossword_spacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-
-        self.gridLayout.addItem(self.crossword_spacer, 2, 3, 1, 1)
-
-        self.puzzle_set_blocks_label = QLabel(self.set_tab)
-        self.puzzle_set_blocks_label.setObjectName(u"puzzle_set_blocks_label")
-        self.puzzle_set_blocks_label.setAlignment(Qt.AlignLeading|Qt.AlignLeft|Qt.AlignTop)
-
-        self.gridLayout.addWidget(self.puzzle_set_blocks_label, 9, 0, 1, 1)
-
-        self.crossword_files = QListWidget(self.set_tab)
-        self.crossword_files.setObjectName(u"crossword_files")
-
-        self.gridLayout.addWidget(self.crossword_files, 1, 0, 1, 8)
-
-        self.add_button = QPushButton(self.set_tab)
-        self.add_button.setObjectName(u"add_button")
-
-        self.gridLayout.addWidget(self.add_button, 2, 6, 1, 1)
-
-        self.puzzle_set_font_list = QComboBox(self.set_tab)
-        self.puzzle_set_font_list.setObjectName(u"puzzle_set_font_list")
-
-        self.gridLayout.addWidget(self.puzzle_set_font_list, 7, 1, 1, 7)
-
-        self.puzzle_set_blocks = QPlainTextEdit(self.set_tab)
-        self.puzzle_set_blocks.setObjectName(u"puzzle_set_blocks")
-
-        self.gridLayout.addWidget(self.puzzle_set_blocks, 9, 1, 1, 7)
-
-        self.background_hue = QSpinBox(self.set_tab)
-        self.background_hue.setObjectName(u"background_hue")
-        self.background_hue.setMaximum(360)
-
-        self.gridLayout.addWidget(self.background_hue, 6, 1, 1, 7)
-
-        self.label = QLabel(self.set_tab)
-        self.label.setObjectName(u"label")
-
-        self.gridLayout.addWidget(self.label, 8, 0, 1, 1)
+        self.gridLayout.addWidget(self.remove_button, 2, 7, 1, 1)
 
         self.widget = QWidget(self.set_tab)
         self.widget.setObjectName(u"widget")
@@ -341,12 +304,44 @@ class Ui_MainWindow(object):
         self.horizontalLayout.addWidget(self.is_puzzle_blocks)
 
 
-        self.gridLayout.addWidget(self.widget, 8, 3, 1, 5)
+        self.gridLayout.addWidget(self.widget, 7, 3, 1, 5)
 
-        self.one_sided_checkbox = QCheckBox(self.set_tab)
-        self.one_sided_checkbox.setObjectName(u"one_sided_checkbox")
+        self.puzzle_set_font_list = QComboBox(self.set_tab)
+        self.puzzle_set_font_list.setObjectName(u"puzzle_set_font_list")
 
-        self.gridLayout.addWidget(self.one_sided_checkbox, 4, 3, 1, 1)
+        self.gridLayout.addWidget(self.puzzle_set_font_list, 6, 1, 1, 7)
+
+        self.crossword_files = QListWidget(self.set_tab)
+        self.crossword_files.setObjectName(u"crossword_files")
+
+        self.gridLayout.addWidget(self.crossword_files, 1, 0, 1, 8)
+
+        self.background_hue = QSpinBox(self.set_tab)
+        self.background_hue.setObjectName(u"background_hue")
+        self.background_hue.setMaximum(360)
+
+        self.gridLayout.addWidget(self.background_hue, 5, 1, 1, 7)
+
+        self.puzzle_set_blocks_label = QLabel(self.set_tab)
+        self.puzzle_set_blocks_label.setObjectName(u"puzzle_set_blocks_label")
+        self.puzzle_set_blocks_label.setAlignment(Qt.AlignLeading|Qt.AlignLeft|Qt.AlignTop)
+
+        self.gridLayout.addWidget(self.puzzle_set_blocks_label, 8, 0, 1, 1)
+
+        self.background_hue_label = QLabel(self.set_tab)
+        self.background_hue_label.setObjectName(u"background_hue_label")
+
+        self.gridLayout.addWidget(self.background_hue_label, 5, 0, 1, 1)
+
+        self.add_button = QPushButton(self.set_tab)
+        self.add_button.setObjectName(u"add_button")
+
+        self.gridLayout.addWidget(self.add_button, 2, 6, 1, 1)
+
+        self.puzzle_set_font_label = QLabel(self.set_tab)
+        self.puzzle_set_font_label.setObjectName(u"puzzle_set_font_label")
+
+        self.gridLayout.addWidget(self.puzzle_set_font_label, 6, 0, 1, 1)
 
         self.main_tabs.addWidget(self.set_tab)
         self.fonts_tab = QWidget()
@@ -433,7 +428,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-        self.main_tabs.setCurrentIndex(1)
+        self.main_tabs.setCurrentIndex(2)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
@@ -510,19 +505,18 @@ class Ui_MainWindow(object):
         self.front_save_button.setText(QCoreApplication.translate("MainWindow", u"S&ave", None))
         self.front_refill_button.setText(QCoreApplication.translate("MainWindow", u"Refill...", None))
         self.back_save_button.setText(QCoreApplication.translate("MainWindow", u"S&ave", None))
-        self.puzzle_set_font_label.setText(QCoreApplication.translate("MainWindow", u"First font", None))
         self.crossword_label.setText(QCoreApplication.translate("MainWindow", u"Crossword Files", None))
-        self.puzzle_set_clear_button.setText(QCoreApplication.translate("MainWindow", u"Clear", None))
-        self.remove_button.setText(QCoreApplication.translate("MainWindow", u"Remove", None))
-        self.puzzle_set_fill_button.setText(QCoreApplication.translate("MainWindow", u"Fill", None))
-        self.background_hue_label.setText(QCoreApplication.translate("MainWindow", u"Background hue", None))
-        self.puzzle_set_blocks_label.setText(QCoreApplication.translate("MainWindow", u"Blocks", None))
-        self.add_button.setText(QCoreApplication.translate("MainWindow", u"Add...", None))
-        self.background_hue.setSuffix(QCoreApplication.translate("MainWindow", u"\u00b0", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"Block Type", None))
+        self.puzzle_set_clear_button.setText(QCoreApplication.translate("MainWindow", u"Clear", None))
+        self.puzzle_set_fill_button.setText(QCoreApplication.translate("MainWindow", u"Fill", None))
+        self.remove_button.setText(QCoreApplication.translate("MainWindow", u"Remove", None))
         self.is_travel_blocks.setText(QCoreApplication.translate("MainWindow", u"Travel Blocks", None))
         self.is_puzzle_blocks.setText(QCoreApplication.translate("MainWindow", u"Puzzle Blocks", None))
-        self.one_sided_checkbox.setText(QCoreApplication.translate("MainWindow", u"One Sided", None))
+        self.background_hue.setSuffix(QCoreApplication.translate("MainWindow", u"\u00b0", None))
+        self.puzzle_set_blocks_label.setText(QCoreApplication.translate("MainWindow", u"Blocks", None))
+        self.background_hue_label.setText(QCoreApplication.translate("MainWindow", u"Background hue", None))
+        self.add_button.setText(QCoreApplication.translate("MainWindow", u"Add...", None))
+        self.puzzle_set_font_label.setText(QCoreApplication.translate("MainWindow", u"First font", None))
         self.font_add_button.setText(QCoreApplication.translate("MainWindow", u"&Add...", None))
         self.font_remove_button.setText(QCoreApplication.translate("MainWindow", u"&Remove", None))
         self.file_menu.setTitle(QCoreApplication.translate("MainWindow", u"&File", None))

@@ -1,4 +1,6 @@
+import typing
 from collections import Counter, defaultdict
+from dataclasses import dataclass
 from itertools import permutations
 
 import numpy as np
@@ -6,6 +8,7 @@ from miniexact import miniexacts_x
 from scipy.ndimage import label
 
 from four_letter_blocks.block import flipped_shapes
+from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
 from four_letter_blocks.x_packer import XPacker, PackingOption
 
@@ -22,11 +25,13 @@ class DoubleBlockPacker:
 
         :param start_texts: a sequence of packing strings that need to be packed
         with blocks. It will split them up evenly between front and back.
-        :param titles: the titles of the puzzles to pack.
+        :param titles: the titles of the puzzles to pack, in the same order as
+        start_texts.
         """
         self.is_logging = False
         self.titles = titles or []
         self.start_packers: list[XPacker] = []
+        self.packing_targets: list[PackingTarget] = []
         self.front_text, self.back_text = self.combine_start_texts(start_texts)
         self.front_packer = XPacker(start_text=self.front_text)
         self.width = self.front_packer.width
@@ -66,10 +71,6 @@ class DoubleBlockPacker:
         assert self.front_packer.target_shape_counts is None
         assert self.back_packer.target_shape_counts is None
 
-        # Disable rotation
-        self.front_packer.target_shape_counts = Counter({'S0': 1})
-        self.back_packer.target_shape_counts = Counter({'S0': 1})
-
         front_shape_counts = self.front_packer.packed_shape_counts
         back_shape_counts = self.count_back_shapes(self.back_packer.state)
         missing_back_counts = front_shape_counts - back_shape_counts
@@ -78,8 +79,6 @@ class DoubleBlockPacker:
                             for shape_name in missing_back_counts.keys()]
         missing_messages.extend(f'shape {shape_name} in front'
                                 for shape_name in missing_front_counts.keys())
-        self.back_packer.target_shape_counts = None
-        self.front_packer.target_shape_counts = None
         if missing_messages:
             raise ValueError(f"Missing {', '.join(missing_messages)}.")
 
@@ -139,7 +138,12 @@ class DoubleBlockPacker:
     def state(self):
         return np.concatenate((self.front_packer.state, self.back_packer.state))
 
-    def combine_start_texts(self, start_texts):
+    def combine_start_texts(self, start_texts: typing.Sequence[str]) -> list[str]:
+        """ Combine all start texts into two: front side and back side.
+
+        :param start_texts: target packing grids, in any order, of mixed sizes
+        :return: [front_text, back_text]
+        """
         if not self.titles:
             for start_text in start_texts:
                 lines = start_text.splitlines()
@@ -148,7 +152,7 @@ class DoubleBlockPacker:
                 title = f'{width}x{height}'
                 self.titles.append(title)
             title_totals = Counter(self.titles)
-            title_counts = Counter()
+            title_counts: Counter[str] = Counter()
             for i, title in enumerate(self.titles):
                 if title_totals[title] > 1:
                     title_suffix = chr(ord('A') + title_counts[title])
@@ -160,41 +164,95 @@ class DoubleBlockPacker:
                          for start_text in start_texts]
         self.start_packers = start_packers
 
-        if len(start_texts) <= 2:
-            return start_texts
+        if not start_texts:
+            return ['', '']
+
         head_packer = start_packers[0]
         split_packers = []
+        has_valid_gap_counts = False
         for tail_packers in permutations(start_packers[1:]):
             ordered_packers = [head_packer]
             ordered_packers.extend(tail_packers)
-            ordered_counts = [packer.unused_count for packer in ordered_packers]
+            ordered_gap_counts = [packer.unused_count
+                                  for packer in ordered_packers]
+            ordered_shape_counts = [packer.packed_shape_counts
+                                    for packer in ordered_packers]
             for front_count in range(1, len(ordered_packers)):
-                front_total = sum(ordered_counts[:front_count])
-                back_total = sum(ordered_counts[front_count:])
-                if front_total == back_total:
-                    split_packers = [ordered_packers[:front_count],
-                                     ordered_packers[front_count:]]
-                    break
+                front_gap_total = sum(ordered_gap_counts[:front_count])
+                back_gap_total = sum(ordered_gap_counts[front_count:])
+                front_shape_counts = sum(ordered_shape_counts[:front_count],
+                                         start=Counter())
+                back_shape_counts = sum(ordered_shape_counts[front_count:],
+                                        start=Counter())
+                flipped_back_shape_counts = {
+                    flipped_shapes()[shape]: shape_count
+                    for shape, shape_count in back_shape_counts.items()
+                }
+                if front_gap_total == back_gap_total:
+                    has_valid_gap_counts = True
+                    if front_shape_counts == flipped_back_shape_counts:
+                        split_packers = [ordered_packers[:front_count],
+                                         ordered_packers[front_count:]]
+                        break
             if split_packers:
                 break
 
         if not split_packers:
+            if not has_valid_gap_counts:
+                extra_diff = extra_counts = ''
+            else:
+                extra_diff = ' and shape counts'
+                extra_counts = '; ' + '; '.join(
+                    ', '.join(
+                        f'{shape}: {n}'
+                        for shape, n in sorted(packer.packed_shape_counts.items()))
+                    for packer in start_packers)
             start_counts = tuple(packer.unused_count
                                  for packer in start_packers)
-            raise ValueError(f'No combination of unused counts could be evenly '
-                             f'split: {start_counts}.')
+            raise ValueError(f'No combination of unused counts{extra_diff} '
+                             f'could be evenly split: {start_counts}'
+                             f'{extra_counts}.')
 
+        all_packing_targets: list[PackingTarget|None] = [None] * len(start_packers)
         combined_start_texts = []
+        front_shape_block_nums = defaultdict(list)  # {shape: [block_letter]}
         max_width = max(packer.width for packer in start_packers)
-        for side_packers in split_packers:
+        for side_num, side_packers in enumerate(split_packers):
+            is_front = side_num == 0
+            next_block_num = BlockPacker.GAP + 1
             side_text_lines = []
             for i, packer in enumerate(side_packers):
                 if i > 0:
                     side_text_lines.append('#' * max_width)
-                packer_lines = packer.display().splitlines()
+                source_state = packer.state
+                assert source_state is not None
+                renumbered_state = source_state.copy()
+                for old_block_num, block in packer.create_blocks_with_block_num():
+                    if block.shape is None:
+                        # Weird block shape will be complained about elsewhere.
+                        continue
+                    if is_front:
+                        shape_name = block.rotated_shape
+                        new_block_num = next_block_num
+                        next_block_num += 1
+                        front_shape_block_nums[shape_name].append(new_block_num)
+                    else:
+                        front_shape_name = flipped_shapes()[block.rotated_shape]
+                        new_block_num = front_shape_block_nums[front_shape_name].pop()
+                    renumbered_state[source_state == old_block_num] = new_block_num
+                packer_num = start_packers.index(packer)
+                all_packing_targets[packer_num] = PackingTarget(
+                    packer,
+                    is_front,
+                    len(side_text_lines))
+                packer_lines = packer.display(renumbered_state).splitlines()
                 padding = (max_width - packer.width) * '#'
                 side_text_lines.extend(line + padding for line in packer_lines)
             combined_start_texts.append('\n'.join(side_text_lines))
+
+        for packing_target in all_packing_targets:
+            assert packing_target is not None
+            self.packing_targets.append(packing_target)
         return combined_start_texts
 
     def fill(self) -> bool:
@@ -293,3 +351,33 @@ class DoubleBlockPacker:
         front_display = self.front_packer.display()
         back_display = self.back_packer.display()
         return f"{front_display}\n\n{back_display}"
+
+    def display_targets(self) -> tuple[str, ...]:
+        displays: list[str] = []
+        for packing_target in self.packing_targets:
+            if packing_target.is_front:
+                source_packer = self.front_packer
+            else:
+                source_packer = self.back_packer
+            display = packing_target.display(source_packer)
+            displays.append(display)
+        return tuple(displays)
+
+
+@dataclass
+class PackingTarget:
+    target_packer: XPacker  # Packer for just one grid.
+    is_front: bool
+    source_line: int = -1  # First related line in combined grid
+
+    def display(self, source_packer: XPacker) -> str:
+        target_packer = self.target_packer
+        source_line = self.source_line
+        height = target_packer.height
+        width = target_packer.width
+        source_state = source_packer.state
+        assert source_state is not None
+        state_section = source_state[
+            source_line:source_line + height, :width]
+        display = self.target_packer.display(state_section)
+        return display

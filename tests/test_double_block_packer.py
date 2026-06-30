@@ -1,12 +1,9 @@
-from collections import Counter
-from datetime import datetime
 from textwrap import dedent
 
 import numpy as np
 import pytest
 
 from four_letter_blocks.double_block_packer import DoubleBlockPacker
-from four_letter_blocks.x_packer import XPacker
 
 
 def test_different_space_count():
@@ -26,7 +23,9 @@ def test_different_space_count():
         #.....#
         ...#...
         #.....#""")
-    with pytest.raises(ValueError, match=r'Different space counts: 40 and 36\.'):
+    with pytest.raises(ValueError,
+                       match=r'No combination of unused counts could be evenly '
+                             r'split: \(40, 36\)\.'):
         DoubleBlockPacker(front_text, back_text)
 
 
@@ -136,9 +135,9 @@ def test_already_filled():
 
         #A#C#
         AAACC
-        EEEEC
-        DDDBB
-        #DBB#""")
+        DDDDC
+        EEEBB
+        #EBB#""")
     packer = DoubleBlockPacker(front_text, back_text)
     is_filled = packer.fill()
 
@@ -306,7 +305,9 @@ def test_validate_shapes():
         BB...
         #B..#""")
 
-    expected_error = r'Missing shape S0 in back, shape Z1 in front\.'
+    expected_error = (r'No combination of unused counts and shape counts could '
+                      r'be evenly split: \(12, 12\); '
+                      r'T2: 1, Z0: 1; S1: 1, T2: 1\.')
     with pytest.raises(ValueError, match=expected_error):
         DoubleBlockPacker(front_text, back_text)
 
@@ -317,13 +318,13 @@ def test_validate_block_sizes():
         AAAB.
         .....
         .....
-        #.#.#""")
+        ###.#""")
     back_text = dedent("""\
-        #A#.#
-        AAA..
-        BA...
-        BB...
-        #B..#""")
+        #B#.#
+        BBB..
+        AA...
+        AA...
+        #A...""")
 
     expected_error = r'Bad block size for A in back, B in front\.'
     with pytest.raises(ValueError, match=expected_error):
@@ -357,11 +358,11 @@ def test_validate_unsolvable():
         .BB..
         #B#.#""")
     back_text = dedent("""\
-        #.#.#
+        #.##.
         ..B..
-        ..BB.
-        ..BAA
-        #.AA#""")
+        .BB..
+        AAB..
+        #AA.#""")
 
     expected_error = r'Fill failed in 5x5 A\.'
     with pytest.raises(ValueError, match=expected_error):
@@ -406,6 +407,303 @@ def test_validate_warnings_with_puzzle_titles():
                       r'\(4, 1\) in Example 1 \(5x5\)\.')
     with pytest.raises(ValueError, match=expected_error):
         DoubleBlockPacker(front_text, back_text, titles=['Example 1 (5x5)', 'Example 2 (5x5)'])
+
+
+def test_small_group_init():
+    # 24 spaces
+    start_text5x5 = dedent("""\
+        .....
+        .....
+        ..#..
+        .....
+        .....""")
+
+    # 48 spaces
+    start_text7x7 = dedent("""\
+        .......
+        .......
+        .......
+        ...#...
+        .......
+        .......
+        .......""")
+
+    # 68 spaces
+    start_text9x9 = dedent("""\
+        #...#...#
+        ........#
+        ........#
+        .........
+        #...#...#
+        .........
+        #........
+        #........
+        #...#...#""")
+
+    # 44 spaces
+    start_text7x7b = dedent("""\
+        #.....#
+        .......
+        .......
+        ...#...
+        .......
+        .......
+        #.....#""")
+    expected_display = dedent("""\
+        .....####
+        .....####
+        ..#..####
+        .....####
+        .....####
+        #########
+        #...#...#
+        ........#
+        ........#
+        .........
+        #...#...#
+        .........
+        #........
+        #........
+        #...#...#
+        
+        .......##
+        .......##
+        .......##
+        ...#...##
+        .......##
+        .......##
+        .......##
+        #########
+        #.....###
+        .......##
+        .......##
+        ...#...##
+        .......##
+        .......##
+        #.....###""")
+
+    packer = DoubleBlockPacker(start_text5x5,
+                               start_text7x7,
+                               start_text9x9,
+                               start_text7x7b)
+
+    assert packer.display() == expected_display
+
+    can_run_slow = False
+    if can_run_slow:
+        is_filled = packer.fill()
+        assert is_filled
+        expected_5x5 = dedent("""\
+            DECCC
+            DEEGC
+            DE#GI
+            DJGGI
+            JJJII""")
+        expected_9x9 = dedent("""\
+            #AAU#OFF#
+            BAAUOOOF#
+            BBBUUHHF#
+            VVWWWHRRR
+            #VVW#HRQ#
+            KKKKSSLQQ
+            #PPSSTLQM
+            #PNNTTLMM
+            #PNN#TLM#""")
+        expected_7x7 = dedent("""\
+            AACCCBD
+            AACBBBD
+            FFEHHGD
+            FEE#HGD
+            FJEMHGG
+            JJJMMNN
+            KKKKMNN""")
+        expected_7x7b = dedent("""\
+            #IRRRT#
+            LISSRTT
+            LIISSTU
+            LPP#VVU
+            LQPVVUU
+            QQPOWWW
+            #QOOOW#""")
+        expected_target_displays = [expected_5x5,
+                                    expected_7x7,
+                                    expected_9x9,
+                                    expected_7x7b]
+        assert expected_target_displays == packer.display_targets()
+
+
+def test_small_group_fill():
+    # 24 spaces
+    start_text5x5 = dedent("""\
+        DECCC
+        DEEGC
+        DE#GI
+        DJGGI
+        JJJII""")
+
+    # 48 spaces
+    start_text7x7 = dedent("""\
+        AACCCBD
+        AACBBBD
+        FFEHHGD
+        FEE#HGD
+        FJEMHGG
+        JJJMMNN
+        KKKKMNN""")
+
+    # 72 spaces
+    start_text9x9 = dedent("""\
+        #AAU#OFF#
+        BAAUOOOF#
+        BBBUUHHF#
+        .....HRRR
+        #...#HRQ#
+        KKKKSSLQQ
+        #PPSSTLQM
+        #PNNTTLMM
+        #PNN#TLM#""")
+
+    # 48 spaces
+    start_text7x7b = dedent("""\
+        #IRRRT#
+        LISSRTT
+        LIISSTU
+        LPP#..U
+        LQP..UU
+        QQPO...
+        #QOOO.#""")
+
+    packer = DoubleBlockPacker(start_text5x5,
+                               start_text7x7,
+                               start_text9x9,
+                               start_text7x7b)
+
+    is_filled = packer.fill()
+    assert is_filled
+    expected_5x5 = dedent("""\
+        BCAAA
+        BCCDA
+        BC#DE
+        BFDDE
+        FFFEE""")
+    expected_9x9 = dedent("""\
+        #GGU#OII#
+        HGGUOOOI#
+        HHHUUJJI#
+        VVWWWJRRR
+        #VVW#JRQ#
+        KKKKSSLQQ
+        #PPSSTLQM
+        #PNNTTLMM
+        #PNN#TLM#""")
+    expected_7x7 = dedent("""\
+        NNAAAHL
+        NNAHHHL
+        IIQPPEL
+        IQQ#PEL
+        IOQMPEE
+        OOOMMGG
+        KKKKMGG""")
+    expected_7x7b = dedent("""\
+        #DRRRT#
+        BDSSRTT
+        BDDSSTU
+        BJJ#VVU
+        BCJVVUU
+        CCJFWWW
+        #CFFFW#""")
+    expected_target_displays = (expected_5x5,
+                                expected_7x7,
+                                expected_9x9,
+                                expected_7x7b)
+    assert expected_target_displays == packer.display_targets()
+
+
+def test_small_group_already_filled():
+    # 24 spaces
+    start_text5x5 = dedent("""\
+        ABCCC
+        ABBDC
+        AB#DE
+        AFDDE
+        FFFEE""")
+
+    # 48 spaces
+    start_text7x7 = dedent("""\
+        AACCCBD
+        AACBBBD
+        FFEHHGD
+        FEE#HGD
+        FJELHGG
+        JJJLLII
+        KKKKLII""")
+
+    # 72 spaces
+    start_text9x9 = dedent("""\
+        #AAC#IFF#
+        BAACIIIF#
+        BBBCCHHF#
+        VVWWWHRRR
+        #VVW#HRG#
+        KKKKEELGG
+        #NNEEDLGM
+        #NJJDDLMM
+        #NJJ#DLM#""")
+
+    # 48 spaces
+    start_text7x7b = dedent("""\
+        #ABBBC#
+        DAEEBCC
+        DAAEECF
+        DGG#HHF
+        DIGHHFF
+        IIGJKKK
+        #IJJJK#""")
+
+    packer = DoubleBlockPacker(start_text5x5,
+                               start_text7x7,
+                               start_text9x9,
+                               start_text7x7b)
+
+    is_filled = packer.fill()
+    assert is_filled
+    expected_5x5 = dedent("""\
+        ABCCC
+        ABBDC
+        AB#DE
+        AFDDE
+        FFFEE""")
+    expected_9x9 = dedent("""\
+        #GGI#OLL#
+        HGGIOOOL#
+        HHHIINNL#
+        VVWWWNUUU
+        #VVW#NUM#
+        QQQQKKRMM
+        #TTKKJRMS
+        #TPPJJRSS
+        #TPP#JRS#""")
+    expected_7x7 = dedent("""\
+        PPCCCHR
+        PPCHHHR
+        LLMTTER
+        LMM#TER
+        LOMSTEE
+        OOOSSGG
+        QQQQSGG""")
+    expected_7x7b = dedent("""\
+        #DUUUJ#
+        ADKKUJJ
+        ADDKKJI
+        ANN#VVI
+        ABNVVII
+        BBNFWWW
+        #BFFFW#""")
+    expected_target_displays = (expected_5x5,
+                                expected_7x7,
+                                expected_9x9,
+                                expected_7x7b)
+    assert expected_target_displays == packer.display_targets()
 
 
 def xtest_group_fill():
@@ -472,155 +770,3 @@ def xtest_group_fill():
     # assert packer.display() == expected_display
     is_filled = packer.fill()
     assert is_filled
-
-
-def xtest_group_enumerate():
-    start_text9x9 = dedent("""\
-        .....#...
-        .....#...
-        .........
-        .###....#
-        ....#....
-        #....###.
-        .........
-        ...#.....
-        ...#.....""")
-
-    start_text11x11 = dedent("""\
-        ....#......
-        ...#...#...
-        ....#......
-        ...........
-        .##...#...#
-        .....#.....
-        #...#...##.
-        ...........
-        ......#....
-        ...#...#...
-        ......#....""")
-
-    start_text13x13 = dedent("""\
-        ....#...#....
-        ....#...#....
-        ....#...#....
-        ....#......##
-        .........#...
-        ###....#.....
-        ......#......
-        .....#....###
-        ...#.........
-        ##......#....
-        ....#...#....
-        ....#...#....
-        ....#...#....""")
-
-    start_text11x11b = dedent("""\
-        ......#....
-        ...#.......
-        ......#....
-        .......#...
-        .##...#...#
-        .....#.....
-        #...#...##.
-        ...#.......
-        ....#......
-        .......#...
-        ....#......""")
-
-    packer = DoubleBlockPacker(start_text9x9,
-                               start_text11x11,
-                               start_text13x13,
-                               start_text11x11b)
-
-    # assert packer.display() == expected_display
-    for i, _ in enumerate(packer.front_packer.find_fillings(yield_states=False)):
-        index_text = str(i)
-        digit_counts = Counter(index_text)
-        if digit_counts['0'] == len(index_text) - 1:
-            timestamp = datetime.now()
-            print(timestamp.strftime("%Y-%m-%d, %H:%M:%S"), i)
-    assert 1 == 0
-    # is_filled = packer.fill()
-    # assert is_filled
-
-
-def xtest_group_enumerate_unique():
-    start_text9x9 = dedent("""\
-        .....#...
-        .....#...
-        .........
-        .###....#
-        ....#....
-        #....###.
-        .........
-        ...#.....
-        ...#.....""")
-
-    start_text11x11 = dedent("""\
-        ....#......
-        ...#...#...
-        ....#......
-        ...........
-        .##...#...#
-        .....#.....
-        #...#...##.
-        ...........
-        ......#....
-        ...#...#...
-        ......#....""")
-
-    start_text13x13 = dedent("""\
-        ....#...#....
-        ....#...#....
-        ....#...#....
-        ....#......##
-        .........#...
-        ###....#.....
-        ......#......
-        .....#....###
-        ...#.........
-        ##......#....
-        ....#...#....
-        ....#...#....
-        ....#...#....""")
-
-    start_text11x11b = dedent("""\
-        ......#....
-        ...#.......
-        ......#....
-        .......#...
-        .##...#...#
-        .....#.....
-        #...#...##.
-        ...#.......
-        ....#......
-        .......#...
-        ....#......""")
-
-    packer = DoubleBlockPacker(start_text9x9,
-                               start_text11x11,
-                               start_text13x13,
-                               start_text11x11b)
-
-    # assert packer.display() == expected_display
-    found_combinations = set()
-    display_packer = XPacker(packer.width, packer.height)
-    display_packer.target_shape_counts = Counter({'L1': 1})
-    for i, state in enumerate(packer.front_packer.find_fillings()):
-        display_packer.state = state
-        shape_counts = display_packer.packed_shape_counts
-        shape_counts_text = ', '.join(
-            f'{shape}: {n}' for shape, n in sorted(shape_counts.items()))
-        found_combinations.add(shape_counts_text)
-        index_text = str(i)
-        digit_counts = Counter(index_text)
-        if digit_counts['0'] == len(index_text) - 1:
-            found_count = len(found_combinations)
-            timestamp = datetime.now()
-            print(timestamp.strftime("%Y-%m-%d, %H:%M:%S"),
-                  i,
-                  found_count,
-                  round(found_count / i * 100))
-    assert 1 == 0
-    # is_filled = packer.fill()
-    # assert is_filled
