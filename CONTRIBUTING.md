@@ -63,8 +63,8 @@ Four-Letter Blocks with pip. Releasing a new version means publishing it on the
 ## PySide6 Tools
 To edit the GUI, do the following:
 
-1. Download and install [Qt Creator].
-2. Run Qt Creator, and open the `.ui` file for the screen you want to change.
+1. Activate the project's virtualenv, then run `pyside6-designer`.
+2. Open the `.ui` file for the screen you want to change.
 3. Read the [Qt Designer documentation], and make the changes you want.
 4. Compile the `.ui` file into a Python source file with a command like this:
 

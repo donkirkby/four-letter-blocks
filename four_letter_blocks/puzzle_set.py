@@ -1,7 +1,6 @@
 import typing
 from collections import Counter, defaultdict
 from collections.abc import Iterable
-from itertools import chain
 
 import numpy as np
 from PySide6.QtCore import QPoint
@@ -78,6 +77,7 @@ class PuzzleSet:
 
     def pack_black_positions(self):
         block_packer = self.page_packers[0]
+        assert block_packer.state is not None
         black_coordinates = np.nonzero(block_packer.state < 2)
         black_rows, black_columns = black_coordinates
         self.black_positions = list(zip(black_columns, black_rows))

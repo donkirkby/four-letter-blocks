@@ -1,41 +1,8 @@
 from textwrap import dedent
 
-from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.double_block_packer import DoubleBlockPacker
 from four_letter_blocks.fill_thread import FillThread
 from four_letter_blocks.x_packer import XPacker
-
-
-# def test_single_target_init():
-#     target_text = dedent('''\
-#         .....
-#         .....
-#         ..#..
-#         .....
-#         .....''')
-#     expected_shape_targets = BlockPacker.calculate_target_shape_counts(6)
-#
-#     thread = FillThread([target_text])
-#
-#     assert isinstance(thread.packer, XPacker)
-#     assert thread.packer.target_shape_counts == expected_shape_targets
-#
-#
-# def test_single_target_run():
-#     target_text = dedent('''\
-#         .....
-#         .###.
-#         .###.
-#         .###.
-#         .....''')
-#
-#     thread = FillThread([target_text])
-#     thread.packer.epochs = 1
-#     thread.packer.pool_size = 10
-#     thread.packer.is_logging = True
-#     thread.run()  # Runs in current thread, not a new one like start().
-#
-#     assert thread.solutions
 
 
 def test_source_and_target_init():
@@ -203,3 +170,93 @@ def test_front_and_back_run():
     assert thread.progress.is_success
     assert thread.progress.target_texts == (expected_front_text,
                                             expected_back_text)
+
+
+def test_multiple_sources_and_target_init():
+    target_text = dedent('''\
+        ........
+        ........
+        ........
+        ........
+        ........
+        ........''')
+    source_text1 = dedent("""\
+        #DCC#
+        DDCC#
+        DAAAA
+        IIIGG
+        #IGG#
+        """)
+    source_text2 = dedent("""\
+        #FEE#
+        FFEE#
+        FBBBB
+        JJJHH
+        #JHH#
+        """)
+    source_text3 = dedent("""\
+        #CCD#
+        #CCDD
+        AAAAD
+        GGIII
+        #GGI#
+        """)
+    source_text4 = dedent("""\
+        #EEF#
+        #EEFF
+        BBBBF
+        HHJJJ
+        #HHJ#
+        """)
+    expected_shape_targets = {'I1': 2, 'O': 2, 'S0': 2, 'T0': 2, 'Z1': 2}
+
+    thread = FillThread([target_text], [source_text1, source_text2, source_text3, source_text4])
+
+    assert isinstance(thread.packer, XPacker)
+    assert (thread.packer.width, thread.packer.height) == (8, 6)
+    assert thread.packer.target_shape_counts == expected_shape_targets
+
+
+def test_multiple_sources_and_target_partly_filled():
+    target_text = dedent('''\
+        AA......
+        AA......
+        ........
+        ........
+        ........
+        ........''')
+    source_text1 = dedent("""\
+        #DCC#
+        DDCC#
+        DAAAA
+        IIIGG
+        #IGG#
+        """)
+    source_text2 = dedent("""\
+        #FEE#
+        FFEE#
+        FBBBB
+        JJJHH
+        #JHH#
+        """)
+    source_text3 = dedent("""\
+        #CCD#
+        #CCDD
+        AAAAD
+        GGIII
+        #GGI#
+        """)
+    source_text4 = dedent("""\
+        #EEF#
+        #EEFF
+        BBBBF
+        HHJJJ
+        #HHJ#
+        """)
+    expected_shape_targets = {'I1': 2, 'O': 1, 'S0': 2, 'T0': 2, 'Z1': 2}
+
+    thread = FillThread([target_text], [source_text1, source_text2, source_text3, source_text4])
+
+    assert isinstance(thread.packer, XPacker)
+    assert (thread.packer.width, thread.packer.height) == (8, 6)
+    assert thread.packer.target_shape_counts == expected_shape_targets

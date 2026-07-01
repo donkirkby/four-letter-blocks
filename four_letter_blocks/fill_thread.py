@@ -58,8 +58,11 @@ class FillThread(QThread):
         self.target_texts = list(target_texts)
         self.source_texts = list(source_texts)
         self.report_path = report_path
-        if self.source_texts:
-            # Scenario 2 or 3
+        if not self.source_texts:
+            # Scenario 1 or 4
+            self.packer: BlockPacker|DoubleBlockPacker = DoubleBlockPacker(*self.target_texts)
+        elif len(self.source_texts) == 1:
+            # Scenario 2
             start_text = self.target_texts[0].replace('.', '?')
             target_puzzle = Puzzle.parse_sections('',
                                                   start_text,
@@ -67,7 +70,7 @@ class FillThread(QThread):
                                                   start_text)
             target_puzzle.rotations_display = RotationsDisplay.FRONT
             packed_shape_counts = target_puzzle.shape_counts
-            self.packer: BlockPacker|DoubleBlockPacker = XPacker(start_text=start_text)
+            self.packer = XPacker(start_text=start_text)
             self.packer.force_fours = False
 
             source_puzzle = Puzzle.parse_sections('',
@@ -78,20 +81,13 @@ class FillThread(QThread):
             self.packer.target_shape_counts = (source_puzzle.shape_counts -
                                                packed_shape_counts)
             # Path('problem.dlx').write_text(self.packer.format_dlx())
-        elif len(self.target_texts) > 1:
-            # Scenario 4
-            self.packer = DoubleBlockPacker(*self.target_texts)
-        # self.attempt_count = 0
-        # self.top_fitness = FitnessScore(-100, -1)
-        # self.solutions: list[PackingProgress] = []
-        #
-        # gap_count = sum(c == '.' for c in self.target_texts[0])
-        # block_count = gap_count // 4
-        #
-        # if not source_texts:
-        #     target_shape_counts = EvoPacker.calculate_target_shape_counts(
-        #         block_count)
-        # else:
+        else:
+            # Scenario 3
+            source_packer = DoubleBlockPacker(*self.source_texts)
+            self.packer = XPacker(start_text=self.target_texts[0])
+            self.packer.force_fours = False
+            self.packer.target_shape_counts = (source_packer.front_packer.packed_shape_counts -
+                                               self.packer.packed_shape_counts)
         self.progress: PackingProgress | None = None
 
     def run(self):

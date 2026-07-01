@@ -70,7 +70,7 @@ class Ui_MainWindow(object):
         font = QFont()
         font.setPointSize(22)
         self.main_title.setFont(font)
-        self.main_title.setAlignment(Qt.AlignCenter)
+        self.main_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.verticalLayout.addWidget(self.main_title)
 
@@ -145,7 +145,7 @@ class Ui_MainWindow(object):
 
         self.back_name = QLineEdit(self.pair_tab)
         self.back_name.setObjectName(u"back_name")
-        self.back_name.setFocusPolicy(Qt.ClickFocus)
+        self.back_name.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         self.back_name.setReadOnly(True)
 
         self.gridLayout_2.addWidget(self.back_name, 2, 1, 1, 7)
@@ -219,7 +219,7 @@ class Ui_MainWindow(object):
 
         self.front_name = QLineEdit(self.pair_tab)
         self.front_name.setObjectName(u"front_name")
-        self.front_name.setFocusPolicy(Qt.ClickFocus)
+        self.front_name.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         self.front_name.setReadOnly(True)
 
         self.gridLayout_2.addWidget(self.front_name, 7, 1, 1, 7)
@@ -268,10 +268,10 @@ class Ui_MainWindow(object):
 
         self.gridLayout.addWidget(self.puzzle_set_blocks, 8, 1, 1, 7)
 
-        self.label = QLabel(self.set_tab)
-        self.label.setObjectName(u"label")
+        self.puzzle_set_block_types = QLabel(self.set_tab)
+        self.puzzle_set_block_types.setObjectName(u"puzzle_set_block_types")
 
-        self.gridLayout.addWidget(self.label, 7, 0, 1, 1)
+        self.gridLayout.addWidget(self.puzzle_set_block_types, 7, 0, 1, 1)
 
         self.puzzle_set_clear_button = QPushButton(self.set_tab)
         self.puzzle_set_clear_button.setObjectName(u"puzzle_set_clear_button")
@@ -324,7 +324,7 @@ class Ui_MainWindow(object):
 
         self.puzzle_set_blocks_label = QLabel(self.set_tab)
         self.puzzle_set_blocks_label.setObjectName(u"puzzle_set_blocks_label")
-        self.puzzle_set_blocks_label.setAlignment(Qt.AlignLeading|Qt.AlignLeft|Qt.AlignTop)
+        self.puzzle_set_blocks_label.setAlignment(Qt.AlignmentFlag.AlignLeading|Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignTop)
 
         self.gridLayout.addWidget(self.puzzle_set_blocks_label, 8, 0, 1, 1)
 
@@ -355,8 +355,8 @@ class Ui_MainWindow(object):
 
         self.font_list = DraggableList(self.fonts_tab)
         self.font_list.setObjectName(u"font_list")
-        self.font_list.setDragDropMode(QAbstractItemView.InternalMove)
-        self.font_list.setDefaultDropAction(Qt.MoveAction)
+        self.font_list.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
+        self.font_list.setDefaultDropAction(Qt.DropAction.MoveAction)
 
         self.gridLayout_3.addWidget(self.font_list, 1, 0, 1, 2)
 
@@ -506,7 +506,7 @@ class Ui_MainWindow(object):
         self.front_refill_button.setText(QCoreApplication.translate("MainWindow", u"Refill...", None))
         self.back_save_button.setText(QCoreApplication.translate("MainWindow", u"S&ave", None))
         self.crossword_label.setText(QCoreApplication.translate("MainWindow", u"Crossword Files", None))
-        self.label.setText(QCoreApplication.translate("MainWindow", u"Block Type", None))
+        self.puzzle_set_block_types.setText(QCoreApplication.translate("MainWindow", u"Block Type", None))
         self.puzzle_set_clear_button.setText(QCoreApplication.translate("MainWindow", u"Clear", None))
         self.puzzle_set_fill_button.setText(QCoreApplication.translate("MainWindow", u"Fill", None))
         self.remove_button.setText(QCoreApplication.translate("MainWindow", u"Remove", None))

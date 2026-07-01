@@ -298,6 +298,8 @@ class FourLetterBlocksWindow(QMainWindow):
         if not self.can_abandon('start a new set of puzzles'):
             return
         ui = self.ui
+        ui.puzzle_set_blocks.clear()
+        ui.crossword_files.clear()
         ui.main_tabs.setCurrentWidget(ui.set_tab)
         self.file_path = None
         self.record_clean_state()
@@ -312,7 +314,6 @@ class FourLetterBlocksWindow(QMainWindow):
 
     def add_crosswords(self) -> None:
         save_dir = self.get_save_dir()
-        assert save_dir is not None
         kwargs = get_file_dialog_options()
         file_names: typing.List[str]
         file_names, selected_filter = QFileDialog.getOpenFileNames(
@@ -402,7 +403,6 @@ class FourLetterBlocksWindow(QMainWindow):
     def open_pair_puzzle(self, puzzle_index: int):
         side = ('front', 'back')[puzzle_index]
         save_dir = self.get_save_dir()
-        assert save_dir is not None
         kwargs = get_file_dialog_options()
         file_name, _ = QFileDialog.getOpenFileName(
             self,
@@ -598,7 +598,10 @@ class FourLetterBlocksWindow(QMainWindow):
         self.statusBar().showMessage(status.summary)
         ui = self.ui
         if ui.puzzle_set_fill_button.isEnabled():
-            ui.puzzle_set_blocks.setPlainText(status.source_texts[0])
+            ui.puzzle_set_blocks.setPlainText(status.target_texts[0])
+            self.page_packers[0] = XPacker(start_text=status.target_texts[0])
+            assert self.puzzle_set is not None
+            self.puzzle_set.page_packers[0] = self.page_packers[0]
         elif ui.front_fill_button.isEnabled():
             if len(status.target_texts) == 1:
                 ui.front_blocks_text.setPlainText(status.target_texts[0])
@@ -627,9 +630,7 @@ class FourLetterBlocksWindow(QMainWindow):
             file_name = crossword_files.item(i).toolTip()
             puzzles.append(self.crossword_set[file_name])
 
-        set_class: type[PuzzleSet]
         page_count = (len(puzzles) + 3) // 4
-        set_class = PuzzleSet
         while len(self.page_packers) > page_count:
             self.page_packers.pop()
         while len(self.page_packers) < page_count:
@@ -640,25 +641,31 @@ class FourLetterBlocksWindow(QMainWindow):
                 width = 15
                 height = 19
             self.page_packers.append(XPacker(width, height))
-        puzzle_set = set_class(*puzzles,
+        puzzle_set = PuzzleSet(*puzzles,
                                page_packers=self.page_packers,
                                start_hue=self.ui.background_hue.value(),
                                frame_lengths=[(9, 4), (9, 4, 2, 2)])
         return puzzle_set
 
     def summarize_crossword_set(self):
-        if self.ui.crossword_files.count() == 0:
+        ui = self.ui
+        if ui.crossword_files.count() == 0:
             self.statusBar().showMessage('Add some crossword files.')
             return
-        puzzle_set = self.build_puzzle_set()
-        self.statusBar().showMessage(puzzle_set.block_summary)
-        self.puzzle_set = puzzle_set
+        try:
+            puzzle_set = self.build_puzzle_set()
+            self.statusBar().showMessage(puzzle_set.block_summary)
+            ui.puzzle_set_blocks.clear()
+            self.puzzle_set = puzzle_set
+        except ValueError as ex:
+            self.statusBar().showMessage('Add more crossword files.')
+            ui.puzzle_set_blocks.setPlainText(ex.args[0].replace('; ', '\n'))
+            self.puzzle_set = None
 
     def open(self):
         if not self.can_abandon('open a file'):
             return
         save_dir = self.get_save_dir()
-        assert save_dir is not None
 
         kwargs = get_file_dialog_options()
         file_name, _ = QFileDialog.getOpenFileName(
@@ -740,16 +747,12 @@ class FourLetterBlocksWindow(QMainWindow):
         else:
             target_texts = (ui.puzzle_set_blocks.toPlainText()
                             .replace('.', '?').replace('#', '?'),)
-            source_texts = (ui.back_blocks_text.toPlainText(),)
+            source_texts = tuple(puzzle.format_blocks()
+                                 for puzzle in puzzle_set.puzzles)
             message = 'Filling travel blocks...'
         self.statusBar().showMessage(message)
         new_thread = FillThread(target_texts, source_texts)
-        self.launch_fill(self.ui.front_fill_button, new_thread)
-        # self.fill_thread = PageFillThread(self, evo_packer, log_path)
-        # self.fill_thread.status_update.connect(self.on_fill_update_status)
-        # self.fill_thread.completed.connect(self.on_fill_completed)
-        # self.fill_thread.start()
-        # self.ui.puzzle_set_fill_button.setText('Stop')
+        self.launch_fill(self.ui.puzzle_set_fill_button, new_thread)
 
     def clear_puzzle_set_blocks(self):
         blocks_text = self.ui.puzzle_set_blocks.toPlainText()
@@ -809,7 +812,6 @@ class FourLetterBlocksWindow(QMainWindow):
 
     def get_save_file_name(self, caption, file_filter):
         save_dir = self.get_save_dir()
-        assert save_dir is not None
         kwargs = get_file_dialog_options()
         file_name, _ = QFileDialog.getSaveFileName(
             self,
@@ -820,10 +822,10 @@ class FourLetterBlocksWindow(QMainWindow):
         self.settings.setValue('save_path', file_name)
         return file_name
 
-    def get_save_dir(self):
+    def get_save_dir(self) -> str:
         save_path = self.settings.value('save_path')
         if save_path is None:
-            return None
+            return ''
         save_path = Path(str(save_path))
         save_dir = str(save_path.parent)
         return save_dir
@@ -860,7 +862,6 @@ class FourLetterBlocksWindow(QMainWindow):
 
     def export(self):
         save_dir = self.get_save_dir()
-        assert save_dir is not None
 
         kwargs = get_file_dialog_options()
         file_name, _ = QFileDialog.getSaveFileName(
@@ -901,7 +902,6 @@ class FourLetterBlocksWindow(QMainWindow):
             QToolTip.showText(point, "Add more crosswords before exporting.")
             return
         save_dir = self.get_save_dir()
-        assert save_dir is not None
 
         kwargs = get_file_dialog_options()
         file_name, _ = QFileDialog.getSaveFileName(
@@ -1031,7 +1031,6 @@ class FourLetterBlocksWindow(QMainWindow):
         assert back_puzzle is not None
 
         save_dir = self.get_save_dir()
-        assert save_dir is not None
 
         kwargs = get_file_dialog_options()
         file_name, _ = QFileDialog.getSaveFileName(
@@ -1255,6 +1254,9 @@ class FourLetterBlocksWindow(QMainWindow):
             self.statusBar().showMessage(block_summary)
 
     def puzzle_set_blocks_changed(self):
+        if self.puzzle_set is None:
+            return
+
         blocks_text = self.ui.puzzle_set_blocks.toPlainText()
         if blocks_text == self.old_puzzle_set_blocks:
             return
