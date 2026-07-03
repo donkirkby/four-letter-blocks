@@ -50,6 +50,33 @@ def test_parse():
     assert puzzle.all_clues['EACH'].text == 'One at a time'
 
 
+def test_parse_square_numbers():
+    source_file = StringIO(dedent("""\
+        Basic Puzzle
+
+        WORD
+        I##A
+        N##S
+        EACH
+
+        -
+
+        CCAA
+        C##A
+        C##A
+        BBBB
+        """))
+    puzzle = Puzzle.parse(source_file)
+
+    block_square = puzzle.blocks[0].squares[1]
+    assert block_square.letter == 'D'
+    assert block_square.number == 1
+    grid_square = puzzle.grid.squares[1][4]
+    assert grid_square is not None
+    assert grid_square.letter == 'D'
+    assert grid_square.number == 1
+
+
 def test_parse_clue_with_reference():
     source_file = StringIO(dedent("""\
         Basic Puzzle

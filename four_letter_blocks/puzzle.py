@@ -174,12 +174,10 @@ class Puzzle:
     @square_size.setter
     def square_size(self, value: int):
         ratio = value / self.square_size
-        all_squares = chain((square
-                             for block in self.blocks
-                             for square in block.squares),
-                            (square
-                             for row in self.grid.squares
-                             for square in row))
+        all_squares = (square
+                       for row in self.grid.squares
+                       for square in row
+                       if square is not None)
         for square in all_squares:
             if square is not None:
                 square.size = round(value)

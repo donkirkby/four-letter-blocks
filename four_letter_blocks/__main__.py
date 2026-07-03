@@ -644,7 +644,7 @@ class FourLetterBlocksWindow(QMainWindow):
         puzzle_set = PuzzleSet(*puzzles,
                                page_packers=self.page_packers,
                                start_hue=self.ui.background_hue.value(),
-                               frame_lengths=[(9, 4), (9, 4, 2, 2)])
+                               frame_lengths=[(9, 2, 2), (9, 2, 2)])
         return puzzle_set
 
     def summarize_crossword_set(self):
@@ -927,7 +927,6 @@ class FourLetterBlocksWindow(QMainWindow):
             for i, puzzle in enumerate(puzzle_set.puzzles):
                 font = font_combo.itemData((i+first_font) % font_combo.count())
                 puzzle.font = font
-        background_colour = puzzle_set.puzzles[0].face_colour
         background_tile = None
         svg_buffers = []
         front_buffers = []
@@ -941,7 +940,7 @@ class FourLetterBlocksWindow(QMainWindow):
 
             deduper = LineDeduper(QPainter(generator))
             puzzle_set.square_size = generator.width() / 16
-            nick_radius = 5  # DPI is 1000
+            nick_radius = 0.36  # DPI is 72
             puzzle_set.draw_cuts(deduper, nick_radius)
             deduper.end()
             svg_buffers.append(svg_buffer)
@@ -952,8 +951,8 @@ class FourLetterBlocksWindow(QMainWindow):
             puzzle_set.square_size = round(front_image.width() / 16)
             tile_size = puzzle_set.square_size / 6
             background_tile = puzzle_set.create_background_tile(round(tile_size),
-                                                                background_colour)
-            painter.setBackground(background_colour)
+                                                                puzzle_set.front_background)
+            painter.setBackground(puzzle_set.front_background)
             puzzle_set.draw_background_pattern(painter,
                                                tile_size,
                                                x_offset=puzzle_set.square_size // 2,
@@ -967,12 +966,13 @@ class FourLetterBlocksWindow(QMainWindow):
             back_buffer = QBuffer()
             back_image = QImage(2475, 3150, QImage.Format.Format_RGB32)
             painter = QPainter(back_image)
-            painter.setBackground(background_colour)
+            painter.setBackground(puzzle_set.back_background)
             puzzle_set.draw_background_pattern(painter,
                                                tile_size,
                                                x_offset=puzzle_set.square_size // 2,
                                                y_offset=puzzle_set.square_size // 2)
             puzzle_set.draw_back(painter)
+            puzzle_set.square_size = 1  # Reset to avoid index errors.
             painter.end()
             success = back_image.save(back_buffer, 'PNG')  # type:ignore[call-overload]
             assert success
@@ -982,14 +982,16 @@ class FourLetterBlocksWindow(QMainWindow):
         every side. """
         page_buffers = []
         paper = QPixmap(':/paper.jpg')
+        clue_puzzles = sorted(puzzle_set.puzzles,
+                              key=lambda p: (p.grid.width, p.title))
         clue_painter = CluePainter(
-            *puzzle_set.puzzles,
+            *clue_puzzles,
             font_size=56,
             margin=75,
             intro_text='Solve each set of crossword clues with the pieces that '
                        'match the colour of its title. Good luck!\n',
             footer_text=puzzle_set.LINK_TEXT,
-            background=background_colour,
+            background=puzzle_set.front_background,
             background_tile=background_tile)
         page_image = QImage(1575, 2475, QImage.Format.Format_RGB32)
         while not clue_painter.is_finished:
@@ -1082,11 +1084,6 @@ class FourLetterBlocksWindow(QMainWindow):
             square_coefficient = 1 / (grid_size - 1)
         puzzle_pair.pack_puzzles()
         puzzle_pair.tab_count = 1
-        front_bg = puzzle_pair.puzzles[0].face_colour
-        puzzle_pair.puzzles[0].face_colour = QColor('transparent')
-        back_bg = puzzle_pair.puzzles[1].face_colour
-        puzzle_pair.puzzles[1].face_colour = QColor('transparent')
-
         zip_contents = {}  # {file_name: data}
         for puzzle_pair.slug_index in range(puzzle_pair.slug_count):
             front_buffer = QBuffer()
@@ -1098,7 +1095,7 @@ class FourLetterBlocksWindow(QMainWindow):
                                               square_coefficient)
                 grid_rect = puzzle_pair.draw_front(painter, font_size)
                 header_fraction = grid_rect.top() / front_image.width()
-                painter.setBackground(front_bg)
+                painter.setBackground(puzzle_pair.front_background)
                 puzzle_pair.draw_background_pattern(
                     painter,
                     puzzle_pair.square_size / 6,
@@ -1116,7 +1113,7 @@ class FourLetterBlocksWindow(QMainWindow):
             back_image = QImage(2475, 3150, QImage.Format.Format_RGB32)
             painter = QPainter(back_image)
             try:
-                painter.setBackground(back_bg)
+                painter.setBackground(puzzle_pair.back_background)
                 puzzle_pair.draw_background_pattern(
                     painter,
                     puzzle_pair.square_size / 6,
@@ -1151,6 +1148,7 @@ class FourLetterBlocksWindow(QMainWindow):
                 zip_file.writestr(name, data)
             zip_file.writestr('packing.txt', puzzle_pair.block_packer.display())
 
+        puzzle_pair.square_size = 1  # Reset to avoid index errors.
         self.statusBar().showMessage(f'Exported to {file_name}.')
 
     def export_pdf(self, file_path: Path):

@@ -1,7 +1,6 @@
 import math
 import typing
 from collections import defaultdict
-from copy import copy
 from functools import cache
 from operator import attrgetter
 from textwrap import dedent
@@ -167,7 +166,7 @@ class Block:
                     continue
                 old_row[x] = marker
                 unused_squares.remove(old_square)
-                square = copy(old_square)
+                square = old_square
                 square.x = x
                 square.y = y
                 square_list = square_lists[marker]
@@ -352,7 +351,7 @@ class Block:
 
     def transform_painter(self, painter, sign):
         x_change = y_change = rotation_change = 0
-        if self.display_x is not None:
+        if self.display_x is not None and self.display_y is not None:
             rotation_change = ((self.shape_rotation + 4 -
                                 self.display_rotation) % 4) * 90
             if rotation_change == 0:
@@ -374,10 +373,13 @@ class Block:
             painter.rotate(sign * rotation_change)
             painter.translate(sign * x_change, sign * y_change)
 
-    def set_display(self, x: int, y: int, rotation: int):
+    def set_display(self, x: int, y: int, rotation: int | None = None):
         self.display_x = x
         self.display_y = y
-        self.display_rotation = rotation
+        if rotation is None:
+            self.display_rotation = self.shape_rotation
+        else:
+            self.display_rotation = rotation
 
     def calculate_coordinates(self):
         return {(square.x, square.y) for square in self.squares}

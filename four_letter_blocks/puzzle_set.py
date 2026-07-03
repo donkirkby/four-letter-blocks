@@ -69,6 +69,7 @@ class PuzzleSet:
         self.start_hue: int = set_options.get('start_hue', start_hue)
         self.can_rotate: bool = set_options.get('can_rotate', True)
         self.black_positions: typing.List[typing.Tuple[int, int]] = []
+        self.front_background = self.back_background = QColor('transparent')
 
     def create_page_packers(self):
         page_packer = XPacker(16, 20)
@@ -87,15 +88,19 @@ class PuzzleSet:
         if not is_filled:
             raise RuntimeError("Blocks wouldn't fit in puzzles.")
 
+        front_puzzles: list[Puzzle] = []
+        back_puzzles: list[Puzzle] = []
         for puzzle, target in zip(self.puzzles, self.block_packer.packing_targets):
             if target.is_front:
                 puzzle.rotations_display = RotationsDisplay.FRONT
                 source_packer = self.block_packer.front_packer
                 side_blocks = self.front_blocks
+                front_puzzles.append(puzzle)
             else:
                 puzzle.rotations_display = RotationsDisplay.BACK
                 source_packer = self.block_packer.back_packer
                 side_blocks = self.back_blocks
+                back_puzzles.append(puzzle)
             puzzle.blocks = Block.parse(target.display(source_packer),
                                         puzzle.grid)
             if target.is_front:
@@ -144,7 +149,11 @@ class PuzzleSet:
             back_block.set_display(page_packer.width - block.x - block.width, block.y, 0)
 
         self.tab_count = 1
-        self.set_face_colours(self.puzzles, self.start_hue)
+        self.set_face_colours(front_puzzles + back_puzzles, self.start_hue)
+        if front_puzzles:
+            self.front_background = front_puzzles[0].face_colour
+        if back_puzzles:
+            self.back_background = back_puzzles[0].face_colour
         self.pack_black_positions()
 
     @staticmethod
