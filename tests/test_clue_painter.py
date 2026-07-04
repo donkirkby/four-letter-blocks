@@ -277,7 +277,7 @@ def test_draw_page(pixmap_differ: PixmapDiffer):
         clue_painter = CluePainter(puzzle, font_size=20, margin=margin)
         clue_painter.draw_page(actual)
 
-    assert clue_painter.is_finished
+    assert not clue_painter.is_finished  # Needs 3 blanks to make multiple of 4.
 
 
 # noinspection DuplicatedCode
@@ -460,6 +460,36 @@ def test_draw_clues_next_page(pixmap_differ: PixmapDiffer):
         clue_painter.draw_page(actual)
         actual.eraseRect(actual.window())
         clue_painter.draw_page(actual)
+
+
+# noinspection DuplicatedCode
+def test_draw_clues_blank_page(pixmap_differ: PixmapDiffer):
+    puzzle1 = parse_basic_puzzle()
+    puzzle1.across_clues[0].text = 'Part of an extremely long, run-on sentence'
+    puzzle2 = parse_basic_puzzle()
+    puzzle2.title = 'Next Puzzle'
+
+    width = 740
+    height = 190
+    margin = 10
+    with pixmap_differ.create_painters(width, height):
+        actual = pixmap_differ.actual.painter
+
+        clue_painter = CluePainter(puzzle1,
+                                   puzzle2,
+                                   font_size=20,
+                                   margin=margin)
+        clue_painter.draw_page(actual)  # First page of puzzle 1
+        assert not clue_painter.is_finished
+        actual.eraseRect(actual.window())
+        clue_painter.draw_page(actual)  # Second page of puzzle 1
+        assert not clue_painter.is_finished
+        actual.eraseRect(actual.window())
+        clue_painter.draw_page(actual)  # All of puzzle 2
+        assert not clue_painter.is_finished
+        actual.eraseRect(actual.window())
+        clue_painter.draw_page(actual)  # Blank page to make multiple of 4
+        assert clue_painter.is_finished
 
 
 # noinspection DuplicatedCode

@@ -312,23 +312,27 @@ def test_draw_back(pixmap_differ: PixmapDiffer):
     actual: QPainter
     expected: QPainter
     with pixmap_differ.create_painters(500, 260) as (actual, expected):
+        expected.fillRect(0, 0, 500, 300, 'cornsilk')
+        actual.fillRect(0, 0, 500, 300, 'cornsilk')
+        expected.setFont(QFont('NotoSansCJK'))
         # Weird interference from test_draw_front and antialiasing?
         # Work around it by increasing tolerance and radius.
         pixmap_differ.radius = 2
         pixmap_differ.tolerance = 4
 
         pair1 = parse_puzzle_pair()
-        pair1.square_size = 30
+        pair1.square_size = 32
         front_puzzle, back_puzzle = pair1.puzzles
-        grid_rect = pair1.draw_header(expected, back_puzzle, font_size=10)
-        pair1.draw_clues(expected, grid_rect, back_puzzle, font_size=10)
+        grid_rect = pair1.draw_header(expected, back_puzzle, font_size=8)
+        pair1.draw_clues(expected, grid_rect, back_puzzle, font_size=8)
         expected.translate(grid_rect.left() - pair1.square_size/2,
                            grid_rect.top() - pair1.square_size/2)
         pair1.draw_back_blocks(expected)
 
+        actual.setFont(QFont('NotoSansCJK'))
         pair2 = parse_puzzle_pair()
-        pair2.square_size = 30
-        pair2.draw_back(actual, font_size=10)
+        pair2.square_size = 32
+        pair2.draw_back(actual, font_size=8)
 
 
 def test_packing():

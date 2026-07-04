@@ -88,8 +88,9 @@ class PuzzlePair(PuzzleSet):
         self.draw_back_blocks(painter)
 
     def draw_back_blocks(self, painter: QPainter):
+        painter.translate(-self.square_size / 2, -self.square_size / 2)
         super().draw_back(painter)
-        self.draw_black_squares(painter, is_flipped=True)
+        painter.translate(self.square_size / 2, self.square_size / 2)
 
     def draw_cuts(self,
                   painter: QPainter,

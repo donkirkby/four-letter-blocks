@@ -34,7 +34,7 @@ from four_letter_blocks.puzzle_pair import PuzzlePair
 from four_letter_blocks.puzzle_set import PuzzleSet
 
 from four_letter_blocks import four_letter_blocks_rc
-from four_letter_blocks.set_loader import write_puzzle_set, read_puzzle_set
+from four_letter_blocks.set_loader import write_puzzle_set, read_puzzle_set, NotAPuzzleSetError
 from four_letter_blocks.x_packer import XPacker
 
 assert four_letter_blocks_rc  # Need to import this module to load resources.
@@ -147,6 +147,7 @@ class FourLetterBlocksWindow(QMainWindow):
         ui.blocks_text.textChanged.connect(self.blocks_changed)
         ui.blocks_text.focused.connect(self.blocks_changed)
         ui.clues_text.textChanged.connect(self.clues_changed)
+        ui.background_hue.textChanged.connect(self.background_hue_changed)
 
         self.old_puzzle_set_blocks = ''
         ui.puzzle_set_blocks.textChanged.connect(self.puzzle_set_blocks_changed)
@@ -685,7 +686,7 @@ class FourLetterBlocksWindow(QMainWindow):
             self.open_puzzle_set_file(file_path)
             self.file_path = file_path
             return
-        except ValueError:
+        except NotAPuzzleSetError:
             pass  # Not a puzzle set, so try opening a single puzzle file.
         puzzle = Puzzle.parse_path(file_path)
         self.file_path = file_path
@@ -712,11 +713,13 @@ class FourLetterBlocksWindow(QMainWindow):
             self.open_pair_puzzle_file(front_path, 0)
             self.open_pair_puzzle_file(back_path, 1)
             self.page_packers = puzzle_set.page_packers
+            ui.front_hue.setValue(puzzle_set.start_hue)
         else:
             ui.main_tabs.setCurrentWidget(ui.set_tab)
             ui.crossword_files.clear()
             self.page_packers = puzzle_set.page_packers
             self.add_crossword_objects(puzzle_set.puzzles)
+            ui.background_hue.setValue(puzzle_set.start_hue)
         self.select_tab()
 
     def remove_crossword(self):
@@ -997,8 +1000,9 @@ class FourLetterBlocksWindow(QMainWindow):
         while not clue_painter.is_finished:
             painter = QPainter(page_image)
             painter.drawPixmap(0, 0, paper)
-            puzzle = puzzle_set.puzzles[clue_painter.puzzle_index]
-            clue_painter.background = puzzle.face_colour
+            if clue_painter.puzzle_index < len(clue_puzzles):
+                puzzle = clue_puzzles[clue_painter.puzzle_index]
+                clue_painter.background = puzzle.face_colour
             clue_painter.draw_page(painter)
             painter.end()
             page_buffer = QBuffer()
@@ -1060,6 +1064,8 @@ class FourLetterBlocksWindow(QMainWindow):
                 min_font = font_size
             except ClueOverflow:
                 max_font = font_size - 1
+            for puzzle in self.pair_puzzles:
+                puzzle.square_size = 1  # Avoid index errors.
 
     def export_sized_pair_file(self, file_name: str, font_size: int) -> None:
         front_puzzle: Puzzle | None
@@ -1294,6 +1300,13 @@ class FourLetterBlocksWindow(QMainWindow):
     def title_changed(self):
         if not self.is_state_changed():
             return
+
+    def background_hue_changed(self):
+        ui = self.ui
+        if self.puzzle_set is None:
+            return
+
+        self.puzzle_set.start_hue = ui.background_hue.value()
 
     def choose_font(self):
         font_size = self.settings.value('font_size', 11, int)

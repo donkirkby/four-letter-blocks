@@ -16,6 +16,11 @@ def str_presenter(dumper, data):
 yaml.add_representer(str, str_presenter)
 
 
+class NotAPuzzleSetError(ValueError):
+    def __init__(self):
+        super().__init__('Not a puzzle set file.')
+
+
 def read_puzzle_set(file_path: Path) -> PuzzleSet:
     """ Read a puzzle set from a .flb file.
 
@@ -27,7 +32,7 @@ def read_puzzle_set(file_path: Path) -> PuzzleSet:
                  for line in set_text.splitlines()
                  if not line.strip().startswith('#')]
     if set_lines and not set_lines[0].strip().startswith('type:'):
-        raise ValueError('Not a puzzle set file.')
+        raise NotAPuzzleSetError()
 
     set_options = yaml.safe_load(set_text)
     set_types = {cls.__name__: cls for cls in (PuzzleSet,

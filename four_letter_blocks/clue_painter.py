@@ -21,7 +21,7 @@ class CluePainter:
         self.puzzles = puzzles
         self.font_size = font_size
         self.margin = margin
-        self.puzzle_index = self.across_index = self.down_index = 0
+        self.puzzle_index = self.across_index = self.down_index = self.page_count = 0
         self.intro_text = intro_text
         self.footer_text = footer_text
         self.background = background
@@ -29,7 +29,7 @@ class CluePainter:
 
     @property
     def is_finished(self):
-        return self.puzzle_index >= len(self.puzzles)
+        return self.puzzle_index >= len(self.puzzles) and self.page_count % 4 == 0
 
     def draw_page(self, painter: QPainter):
         """ Paint clues for a single page.
@@ -52,8 +52,9 @@ class CluePainter:
         header_rect = QRectF(margin, margin,
                              window_width - 2*margin,
                              window_height - 2*margin)
+        self.page_count += 1
 
-        while not self.is_finished:
+        while self.puzzle_index < len(self.puzzles):
             puzzle = self.puzzles[self.puzzle_index]
             puzzle_font: QFont | None = puzzle.font
             if puzzle_font is not None:
@@ -128,7 +129,7 @@ class CluePainter:
             rect = QRectF(header_rect)
             footer_height = self.find_text_height(self.footer_text,
                                                   painter,
-                                                  rect.width())
+                                                  round(rect.width()))
             rect.setTop(rect.bottom() - footer_height)
             header_rect.setBottom(rect.top())
             self.draw_text(rect,
