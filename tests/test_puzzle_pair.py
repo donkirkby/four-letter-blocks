@@ -4,15 +4,15 @@ from textwrap import dedent
 
 import pytest
 from PySide6.QtCore import QRectF
-from PySide6.QtGui import QPainter, QColor, QImage, QFont, Qt
+from PySide6.QtGui import QPainter, QColor, QImage, QFont, Qt, QPixmap
 
 from four_letter_blocks.block import Block
-from four_letter_blocks.block_packer import BlockPacker
+from four_letter_blocks.clue_overflow import ClueOverflow
 from four_letter_blocks.clue_painter import CluePainter
 from four_letter_blocks.puzzle import Puzzle, draw_rotated_tiles
 from four_letter_blocks.puzzle_pair import PuzzlePair
-from four_letter_blocks.square import draw_gradient_rect, Square
-from tests.pixmap_differ import PixmapDiffer
+from four_letter_blocks.square import Square
+from tests.pixmap_differ import PixmapDiffer, LiveQPainter
 
 
 def parse_puzzle_pair(packing_page: str|None = None) -> PuzzlePair:
@@ -237,6 +237,7 @@ def test_draw_clues(pixmap_differ: PixmapDiffer):
         pair2.draw_clues(actual, grid_rect, front_puzzle, font_size=8)
 
 
+# noinspection DuplicatedCode
 def test_draw_front(pixmap_differ: PixmapDiffer):
     actual: QPainter
     expected: QPainter
@@ -257,6 +258,28 @@ def test_draw_front(pixmap_differ: PixmapDiffer):
         pair2 = parse_puzzle_pair()
         pair2.square_size = 32
         pair2.draw_front(actual, font_size=8)
+
+
+# noinspection DuplicatedCode
+def test_draw_front_overflow(pixmap_differ: PixmapDiffer):
+    pixmap = QPixmap(500, 260)
+    live_painter = LiveQPainter(pixmap, QColor('cornsilk'))
+    try:
+        painter = live_painter.painter
+        painter.setFont(QFont('NotoSansCJK'))
+        pair1 = parse_puzzle_pair()
+        front_puzzle, back_puzzle = pair1.puzzles
+        pair1.square_size = 38
+        pair1.draw_header(painter, front_puzzle, font_size=8, is_dry_run=True)
+
+        pair1.square_size = 39
+        with pytest.raises(ClueOverflow):
+            pair1.draw_header(painter,
+                              front_puzzle,
+                              font_size=8,
+                              is_dry_run=True)
+    finally:
+        live_painter.end()
 
 
 def test_draw_cuts(pixmap_differ: PixmapDiffer):
@@ -308,6 +331,7 @@ def test_draw_cuts(pixmap_differ: PixmapDiffer):
         pair2.draw_cuts(actual, header_fraction=0.1)
 
 
+# noinspection DuplicatedCode
 def test_draw_back(pixmap_differ: PixmapDiffer):
     actual: QPainter
     expected: QPainter
@@ -315,10 +339,6 @@ def test_draw_back(pixmap_differ: PixmapDiffer):
         expected.fillRect(0, 0, 500, 300, 'cornsilk')
         actual.fillRect(0, 0, 500, 300, 'cornsilk')
         expected.setFont(QFont('NotoSansCJK'))
-        # Weird interference from test_draw_front and antialiasing?
-        # Work around it by increasing tolerance and radius.
-        pixmap_differ.radius = 2
-        pixmap_differ.tolerance = 4
 
         pair1 = parse_puzzle_pair()
         pair1.square_size = 32

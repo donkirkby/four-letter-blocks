@@ -79,7 +79,7 @@ class PixmapDiffer(LiveImageDiffer):
             self,
             width: int,
             height: int,
-            name: str = None,
+            name: str|None = None,
             max_diff: int = 0) -> typing.Iterator[typing.Tuple[QPainter, QPainter]]:
         self.tolerance = max_diff
         try:
@@ -91,7 +91,7 @@ class PixmapDiffer(LiveImageDiffer):
     def start(self,
               width: int,
               height: int,
-              name: str = None) -> typing.Tuple[QPainter, QPainter]:
+              name: str|None = None) -> typing.Tuple[QPainter, QPainter]:
         """ Create painters for the actual and expected images.
 
         Caller must either call end() or assert_equal() to properly clean up

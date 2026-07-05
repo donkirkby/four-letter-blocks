@@ -124,7 +124,11 @@ class PuzzlePair(PuzzleSet):
 
         width = painter.window().width()
         height = painter.window().height()
-        margin = math.ceil(height / 60)  # Covers cutter drift
+        if self.puzzles[0].grid.width == 7:
+            margin_ratio = 1/35
+        else:
+            margin_ratio = 1/60
+        margin = math.ceil(height * margin_ratio)  # Covers cutter drift
 
         block = Block(Square(' '))
         block.squares[0].size = self.square_size
@@ -154,7 +158,11 @@ class PuzzlePair(PuzzleSet):
         window = painter.window()
         if font_size is None:
             font_size = window.height() / 16
-        margin = window.width() / 55
+        if self.puzzles[0].grid.width == 7:
+            margin_ratio = 1/30
+        else:
+            margin_ratio = 1/55
+        margin = window.width() * margin_ratio  # Covers cutter drift
         grid_rect = QRectF(self.build_grid_rect(painter))
         grid_rect.moveTop(margin)
 
@@ -184,6 +192,9 @@ class PuzzlePair(PuzzleSet):
                               is_dry_run=is_dry_run)
         grid_rect.translate(0, margin)
         grid_rect.setHeight(grid_rect.width())
+        if grid_rect.bottom() > painter.window().height() - margin:
+            raise ClueOverflow(0, len(puzzle.all_clues))
+
         return grid_rect
 
     def draw_clues(self,

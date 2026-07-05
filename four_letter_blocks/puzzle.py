@@ -173,6 +173,9 @@ class Puzzle:
 
     @square_size.setter
     def square_size(self, value: int):
+        if value <= 0:
+            raise ValueError('Square size must be positive.')
+
         ratio = value / self.square_size
         all_squares = (square
                        for row in self.grid.squares

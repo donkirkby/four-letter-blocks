@@ -48,12 +48,12 @@ class BlockType(Enum):
     TRAVEL = auto()
 
 
-def create_svg_generator(svg_buffer):
+def create_svg_generator(svg_buffer, width: int=594, height: int=756):
     generator = QSvgGenerator()
     generator.setOutputDevice(svg_buffer)
-    generator.setSize(QSize(594, 756))
+    generator.setSize(QSize(width, height))
     generator.setResolution(72)  # dots per inch
-    generator.setViewBox(QRect(0, 0, 594, 756))
+    generator.setViewBox(QRect(0, 0, width, height))
     return generator
 
 
@@ -1051,21 +1051,27 @@ class FourLetterBlocksWindow(QMainWindow):
         self.settings.setValue('save_path', file_name)
         self.export_pair_file(file_name)
 
-    def export_pair_file(self, file_name: str) -> None:
+    def export_pair_file(self, file_name: str) -> bool:
         assert self.pair_puzzles is not None
         max_font = 2000
         min_font = 2
-        self.export_sized_pair_file(file_name, min_font)  # Save packing.
+        is_exported = False
 
         while min_font < max_font:
             font_size = (min_font + max_font + 1) // 2
             try:
                 self.export_sized_pair_file(file_name, font_size)
+                is_exported = True
                 min_font = font_size
             except ClueOverflow:
                 max_font = font_size - 1
             for puzzle in self.pair_puzzles:
+                assert puzzle is not None
                 puzzle.square_size = 1  # Avoid index errors.
+
+        if not is_exported:
+            self.statusBar().showMessage(f'Could not export.')
+        return is_exported
 
     def export_sized_pair_file(self, file_name: str, font_size: int) -> None:
         front_puzzle: Puzzle | None
@@ -1088,19 +1094,32 @@ class FourLetterBlocksWindow(QMainWindow):
                                         set_options={'page_packers': self.page_packers},
                                         start_hue=start_hue)
             square_coefficient = 1 / (grid_size - 1)
+        if grid_size <= 7:
+            png_width = 2400
+            png_height = 1350
+            svg_width = 576
+            svg_height = 324
+        else:
+            png_width = 2475
+            png_height = 3150
+            svg_width = 594
+            svg_height = 756
+
         puzzle_pair.pack_puzzles()
         puzzle_pair.tab_count = 1
         zip_contents = {}  # {file_name: data}
         for puzzle_pair.slug_index in range(puzzle_pair.slug_count):
             front_buffer = QBuffer()
-            front_image = QImage(2475, 3150, QImage.Format.Format_RGB32)
+            front_image = QImage(png_width, png_height, QImage.Format.Format_RGB32)
             painter = QPainter(front_image)
             try:
-                rotate_painter(painter)
-                puzzle_pair.square_size = int(front_image.width() *
-                                              square_coefficient)
+                if grid_size > 7:
+                    rotate_painter(painter)
+                puzzle_pair.square_size = max(int(painter.window().height() *
+                                                  square_coefficient),
+                                              1)
                 grid_rect = puzzle_pair.draw_front(painter, font_size)
-                header_fraction = grid_rect.top() / front_image.width()
+                header_fraction = grid_rect.top() / painter.window().height()
                 painter.setBackground(puzzle_pair.front_background)
                 puzzle_pair.draw_background_pattern(
                     painter,
@@ -1116,7 +1135,7 @@ class FourLetterBlocksWindow(QMainWindow):
             assert success
 
             back_buffer = QBuffer()
-            back_image = QImage(2475, 3150, QImage.Format.Format_RGB32)
+            back_image = QImage(png_width, png_height, QImage.Format.Format_RGB32)
             painter = QPainter(back_image)
             try:
                 painter.setBackground(puzzle_pair.back_background)
@@ -1126,7 +1145,8 @@ class FourLetterBlocksWindow(QMainWindow):
                     x_offset=round(grid_rect.top()),
                     y_offset=round(grid_rect.left()))
                 # painter.eraseRect(painter.window())
-                rotate_painter(painter, -90)
+                if grid_size > 7:
+                    rotate_painter(painter, -90)
                 puzzle_pair.draw_back(painter, font_size)
             finally:
                 painter.end()
@@ -1134,11 +1154,12 @@ class FourLetterBlocksWindow(QMainWindow):
             assert success
 
             svg_buffer = QBuffer()
-            generator = create_svg_generator(svg_buffer)
+            generator = create_svg_generator(svg_buffer, svg_width, svg_height)
             deduper: QPainter = LineDeduper(QPainter(generator))  # type:ignore[assignment]
             try:
-                rotate_painter(deduper)
-                puzzle_pair.square_size = int(generator.width() *
+                if grid_size > 7:
+                    rotate_painter(deduper)
+                puzzle_pair.square_size = int(deduper.window().height() *
                                               square_coefficient)
                 nick_radius = 0.36  # DPI is 72
                 puzzle_pair.draw_cuts(deduper, nick_radius, header_fraction)
@@ -1472,7 +1493,8 @@ def main():
             if window.puzzle_set is not None:
                 window.export_set_file(args.output)
             elif window.pair_puzzles is not None:
-                window.export_pair_file(args.output)
+                is_exported = window.export_pair_file(args.output)
+                print(f'{is_exported=}')
             else:
                 window.export_pdf(args.output)
             done = True
