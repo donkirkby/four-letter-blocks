@@ -149,3 +149,18 @@ options. See the [problems] folder for some example inputs of different sizes.
 [original DLX]: https://cs.stanford.edu/~knuth/programs.html
 [ideas]: https://github.com/miniexact/miniexact/issues/6#issuecomment-3567907089
 [problems]: problems/
+
+### Dec 2025
+Make it easier to start with manual packing, then finish with miniexact solver.
+Successfully packed a set of four puzzles from 9x9 to 13x13, a pair of 9x9
+puzzles, a pair of 13x13 puzzles, and a pair of 15x15 puzzles.
+
+### Jun 2026
+Work on a fill thread class, for packing in the UI. Switch SVG DPI to 72, since
+1000 DPI made it really hard to review on Game Crafter, and may have caused
+really bad drift. Add frame pieces to puzzle sets, which might be an easier
+alternative to puzzle pairs, particularly 11x11 and 13x13.
+
+### Jul 2026
+Merge the new packing code into the UI, and order the first prototype in almost
+a year.
