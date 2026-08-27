@@ -48,7 +48,7 @@ class BlockType(Enum):
     TRAVEL = auto()
 
 
-def create_svg_generator(svg_buffer, width: int=594, height: int=756):
+def create_svg_generator(svg_buffer, width: int=648, height: int=756):
     generator = QSvgGenerator()
     generator.setOutputDevice(svg_buffer)
     generator.setSize(QSize(width, height))
@@ -942,16 +942,16 @@ class FourLetterBlocksWindow(QMainWindow):
             generator = create_svg_generator(svg_buffer)
 
             deduper = LineDeduper(QPainter(generator))
-            puzzle_set.square_size = generator.width() / 16
+            puzzle_set.square_size = generator.width() / 17
             nick_radius = 0.36  # DPI is 72
             puzzle_set.draw_cuts(deduper, nick_radius)
             deduper.end()
             svg_buffers.append(svg_buffer)
 
             front_buffer = QBuffer()
-            front_image = QImage(2475, 3150, QImage.Format.Format_RGB32)
+            front_image = QImage(2700, 3150, QImage.Format.Format_RGB32)
             painter = QPainter(front_image)
-            puzzle_set.square_size = round(front_image.width() / 16)
+            puzzle_set.square_size = round(front_image.width() / 17)
             tile_size = puzzle_set.square_size / 6
             background_tile = puzzle_set.create_background_tile(round(tile_size),
                                                                 puzzle_set.front_background)
@@ -967,7 +967,7 @@ class FourLetterBlocksWindow(QMainWindow):
             front_buffers.append(front_buffer)
 
             back_buffer = QBuffer()
-            back_image = QImage(2475, 3150, QImage.Format.Format_RGB32)
+            back_image = QImage(2700, 3150, QImage.Format.Format_RGB32)
             painter = QPainter(back_image)
             painter.setBackground(puzzle_set.back_background)
             puzzle_set.draw_background_pattern(painter,
@@ -1096,13 +1096,13 @@ class FourLetterBlocksWindow(QMainWindow):
             square_coefficient = 1 / (grid_size - 1)
         if grid_size <= 7:
             png_width = 2400
-            png_height = 1350
+            png_height = 1200
             svg_width = 576
-            svg_height = 324
+            svg_height = 288
         else:
-            png_width = 2475
+            png_width = 2700
             png_height = 3150
-            svg_width = 594
+            svg_width = 648
             svg_height = 756
 
         puzzle_pair.pack_puzzles()

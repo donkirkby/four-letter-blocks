@@ -199,19 +199,26 @@ class DoubleBlockPacker:
 
         if not split_packers:
             if not has_valid_gap_counts:
-                extra_diff = extra_counts = ''
+                extra_diff = extra_counts_text = ''
             else:
                 extra_diff = ' and shape counts'
-                extra_counts = '; ' + '; '.join(
-                    ', '.join(
+                extra_counts = []
+                for packer, title in zip(start_packers,
+                                         self.titles):
+                    shape_items = packer.packed_shape_counts.items()
+                    packer_text = ', '.join(
                         f'{shape}: {n}'
-                        for shape, n in sorted(packer.packed_shape_counts.items()))
-                    for packer in start_packers)
-            start_counts = tuple(packer.unused_count
-                                 for packer in start_packers)
+                        for shape, n in sorted(shape_items))
+                    extra_counts.append(f'{packer_text} in {title}')
+
+                extra_counts_text = '; ' + '; '.join(extra_counts)
+            start_counts = tuple(
+                f'{packer.unused_count} in {title}'
+                for packer, title in zip(start_packers,
+                                         self.titles))
             raise ValueError(f'No combination of unused counts{extra_diff} '
-                             f'could be evenly split: {start_counts}'
-                             f'{extra_counts}.')
+                             f'could be evenly split: ({", ".join(start_counts)})'
+                             f'{extra_counts_text}.')
 
         all_packing_targets: list[PackingTarget|None] = [None] * len(start_packers)
         combined_start_texts = []

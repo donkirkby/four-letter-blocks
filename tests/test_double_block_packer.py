@@ -25,8 +25,11 @@ def test_different_space_count():
         #.....#""")
     with pytest.raises(ValueError,
                        match=r'No combination of unused counts could be evenly '
-                             r'split: \(40, 36\)\.'):
-        DoubleBlockPacker(front_text, back_text)
+                             r'split: \(40 in Front \(7x7\), '
+                             r'36 in Back \(7x7\)\)\.'):
+        DoubleBlockPacker(front_text,
+                          back_text,
+                          titles=['Front (7x7)', 'Back (7x7)'])
 
 
 def test_fill():
@@ -306,10 +309,14 @@ def test_validate_shapes():
         #B..#""")
 
     expected_error = (r'No combination of unused counts and shape counts could '
-                      r'be evenly split: \(12, 12\); '
-                      r'T2: 1, Z0: 1; S1: 1, T2: 1\.')
+                      r'be evenly split: \(12 in Front \(7x7\), '
+                      r'12 in Back \(7x7\)\); '
+                      r'T2: 1, Z0: 1 in Front \(7x7\); '
+                      r'S1: 1, T2: 1 in Back \(7x7\)\.')
     with pytest.raises(ValueError, match=expected_error):
-        DoubleBlockPacker(front_text, back_text)
+        DoubleBlockPacker(front_text,
+                          back_text,
+                          titles=['Front (7x7)', 'Back (7x7)'])
 
 
 def test_validate_block_sizes():
