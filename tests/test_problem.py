@@ -27,10 +27,10 @@ def test_add():
     problem.primary('b')
 
     problem.add('a')
-    a_option_num = problem.add(0)
+    a_option = problem.add(0)
 
-    ignored_option_num = problem.add('b')
-    b_option_num = problem.add(0)
+    partial_option = problem.add('b')
+    b_option = problem.add(0)
 
     problem_dlx = problem.format_problem()
 
@@ -41,9 +41,9 @@ def test_add():
         ''').replace('#', '')
 
     assert expected_dlx == problem_dlx
-    assert a_option_num == 1
-    assert ignored_option_num == 0
-    assert b_option_num == 2
+    assert a_option == ('a',)
+    assert partial_option is None
+    assert b_option == ('b',)
 
 
 def test_multiples():
@@ -163,6 +163,16 @@ def test_solve_fails():
 
     problem.add('a')
     problem.add(0)
+
+    selected_options = problem.solve()
+
+    assert selected_options is None
+
+def test_solve_fails_with_no_options():
+    problem = Problem(SolverAlgorithm.EXACT)
+
+    problem.primary('a')
+    problem.primary('b')
 
     selected_options = problem.solve()
 

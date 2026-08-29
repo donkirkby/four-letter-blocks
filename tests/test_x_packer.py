@@ -88,6 +88,44 @@ def test_fill_big_grid():
     assert packer.display() == expected_display
 
 
+def test_fill_slow_grid():
+    """ This grid takes almost a minute to solve as is, but well under a second
+    if you shuffle the options and get lucky.
+    """
+    start_text = dedent("""\
+        ......#....##
+        ....#....#.##
+        ....#......##
+        .#........###
+        ...###.##.###
+        .....#.....##
+        #.##.###...##
+        #........#.##
+        ......#....##
+        .#....#....##
+        ....#......##
+        #############
+        ....#...#....
+        ...#....#....
+        .....AA.#....
+        #....AA.....#
+        ....#....#...
+        .....#....##.
+        ......#......
+        .##....#.....
+        ...#....#....
+        #...........#
+        ....#........
+        ....#....#...
+        ....#...#....""")
+    packer = XPacker(start_text=start_text)
+    packer.retries = 10
+    packer.timeout = 1
+    is_filled = packer.fill()
+
+    assert is_filled
+
+
 def test_fill_travel_grid():
     start_text = dedent("""\
         .....

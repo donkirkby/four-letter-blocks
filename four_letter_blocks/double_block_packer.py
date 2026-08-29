@@ -34,10 +34,12 @@ class DoubleBlockPacker:
         self.packing_targets: list[PackingTarget] = []
         self.front_text, self.back_text = self.combine_start_texts(start_texts)
         self.front_packer = XPacker(start_text=self.front_text)
+        self.front_packer.timeout = 1
         self.width = self.front_packer.width
         self.height = self.front_packer.height
 
         self.back_packer = XPacker(start_text=self.back_text)
+        self.back_packer.timeout = 1
 
         self.validate_complete_words(start_texts)
         self.validate_block_sizes()

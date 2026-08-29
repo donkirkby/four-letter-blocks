@@ -35,15 +35,21 @@ class Problem:
     def primary(self, name: str, u: int=1, v: int=1):
         self.items.append((name, u, v))
 
-    def add(self, name: str | int) -> int:
+    def add(self, name: str | int) -> tuple[str, ...] | None:
+        """ Add a new primary item to the current option.
+
+        :param name: the name of the primary item, or 0 to end the option.
+        :return: a tuple of item names, when you end the option, otherwise None.
+        """
         if isinstance(name, str):
             self.current_option.append(name)
-            return 0
+            return None
         else:
             assert name == 0
-            self.options.append(tuple(self.current_option))
+            new_option = tuple(self.current_option)
+            self.options.append(new_option)
             self.current_option.clear()
-            return len(self.options)
+            return new_option
 
     def format_problem(self) -> str:
         solver, _ = self.create_solver()
@@ -66,6 +72,9 @@ class Problem:
         :return: a list of selected options, each of which is a tuple of item
         names. If the problem has no solution, return None.
         """
+        if not self.options:
+            return None
+
         if timeout > 0:
             self.queue = Queue()
             worker = Process(target=self.solve, daemon=True)

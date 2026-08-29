@@ -1,14 +1,13 @@
 import typing
 from dataclasses import dataclass
 from datetime import datetime
-from pathlib import Path
-from tempfile import NamedTemporaryFile
+from itertools import groupby
+from operator import attrgetter
 
 import numpy as np
-from miniexact import miniexacts_m, miniexacts_x
 
-from four_letter_blocks.block import Block
 from four_letter_blocks.block_packer import BlockPacker, build_masks
+from four_letter_blocks.problem import Problem, SolverAlgorithm
 from four_letter_blocks.puzzle import Puzzle
 
 
@@ -20,9 +19,6 @@ class PackingOption:
 
 
 class XPacker(BlockPacker):
-    SOLUTION_FOUND = 10
-    SOLUTION_NOT_FOUND = 20
-
     def __init__(self,
                  width=0,
                  height=0,
@@ -47,6 +43,8 @@ class XPacker(BlockPacker):
                          split_row=split_row)
         self.is_logging = False
         self.force_fours = True
+        self.timeout = 0  # timeout in ms for filling the grid. 0 means none.
+        self.retries = 0  # Number of times to retry with shuffle after timeout.
 
     def fill(self) -> bool:
         """ Fill in the current state with the given shapes.
@@ -76,7 +74,7 @@ class XPacker(BlockPacker):
                 yield start_state
             return
 
-        option_masks: dict[int, np.ndarray] = {}  # { option_num: [[flag]] }
+        option_masks: dict[tuple[str, ...], np.ndarray] = {}  # { option_num: [[flag]] }
         try:
             solver = self.prepare_solver(option_masks)
         except ValueError:
@@ -87,11 +85,22 @@ class XPacker(BlockPacker):
         width = self.width
         height = self.height
         solution_count = 0
+        retries = self.retries
         while True:
             solution_count += 1
             if self.is_logging:
                 print(datetime.now(), f'Finding solution {solution_count}...')
-            if solver.solve() != self.SOLUTION_FOUND:
+            while True:
+                try:
+                    selected_options = solver.solve(self.timeout)
+                    break
+                except TimeoutError:
+                    if retries <= 0:
+                        raise
+                    solver.shuffle()
+                    retries -= 1
+
+            if selected_options is None:
                 if self.is_logging:
                     print(datetime.now(), f'Solution {solution_count} not found.')
                 break
@@ -100,11 +109,10 @@ class XPacker(BlockPacker):
             if not yield_states:
                 yield None
             else:
-                selected_options = solver.selected_options()
                 new_state = start_state.copy()
                 block_num = max(int(new_state.max()), self.GAP) + 1
-                for option_num in selected_options:
-                    coverage_flags = option_masks[option_num][:height, :width]
+                for option_names in selected_options:
+                    coverage_flags = option_masks[option_names][:height, :width]
                     square_count = coverage_flags.sum()
                     if square_count == 1:
                         multiplier = np.uint8(self.GAP)
@@ -116,14 +124,14 @@ class XPacker(BlockPacker):
 
     def prepare_solver(
             self,
-            option_masks: dict[int, np.ndarray]|None = None) \
-            -> miniexacts_x | miniexacts_m:
+            option_masks: dict[tuple[str, ...], np.ndarray]|None = None) \
+            -> Problem:
         assert self.state is not None
         is_travel_packing = self.GAP not in self.state
         if not self.target_shape_counts:
-            solver = miniexacts_x()
+            solver = Problem(SolverAlgorithm.EXACT)
         else:
-            solver = miniexacts_m()
+            solver = Problem(SolverAlgorithm.MULTIPLES)
             for shape_name, shape_count in self.target_shape_counts.items():
                 solver.primary(shape_name, shape_count, shape_count)
 
@@ -132,7 +140,7 @@ class XPacker(BlockPacker):
             solver.primary(item_name)
 
         # Each option is a slot taking up four spaces, plus a shape name.
-        option_num = 0
+        option_names: tuple[str, ...] | None = ()
         for option in self.find_options():
             if self.target_shape_counts:
                 if option.rotated_shape_name not in self.target_shape_counts:
@@ -140,63 +148,36 @@ class XPacker(BlockPacker):
                 solver.add(option.rotated_shape_name)
             for item in option.space_items:
                 solver.add(item)
-            option_num = solver.add(0)
-            assert option_num != 0
+            option_names = solver.add(0)
+            assert option_names is not None
 
             # Save option mask to assemble state from solution.
             if option_masks is not None:
-                option_masks[option_num] = option.mask
+                option_masks[option_names] = option.mask
 
         if is_travel_packing:
             for item_option in self.find_open_space_options():
                 solver.add(item_option.space_items[0])
-                option_num = solver.add(0)
-                assert option_num != 0
+                option_names = solver.add(0)
+                assert option_names is not None
 
                 if option_masks is not None:
-                    option_masks[option_num] = item_option.mask
+                    option_masks[option_names] = item_option.mask
 
-        if option_num == 0:
+        if option_names is None:
             raise ValueError('No options found.')
         return solver
 
     def format_dlx(self, sorted_options: bool = False) -> str:
         solver = self.prepare_solver()
-        with NamedTemporaryFile(suffix='.dlx', delete_on_close=False) as tmp:
-            tmp.close()
-            filename = tmp.name
-            solver.write_to_dlx(filename)
-            dlx_text = Path(filename).read_text()
-            if not sorted_options:
-                return dlx_text
-            dlx_lines = dlx_text.splitlines()
-            sorted_lines = [' '.join(sorted(line.strip().split()))
-                            for line in dlx_lines]
-            sorted_lines[1:] = sorted(sorted_lines[1:])
-            return '\n'.join(sorted_lines) + '\n'
-
-    def add_shape_items(self, solver: miniexacts_x) -> None:
-        """ Add an item to the solver for each shape.
-
-        If self.required_shape_counts is set, then exact multiplicities will
-        be set for rotated shape names.
-        Otherwise, plain shape names will be set with multiplicity ranges.
-        :param solver: receives the items with multiplicity
-        :return: the set of used rotated shape names
-        """
-
-        if self.required_shape_counts:
-            for shape_name, shape_count in self.required_shape_counts.items():
-                solver.primary(shape_name, shape_count, shape_count)
-        else:
-            space_count = self.unused_count
-            block_count = space_count // 4
-            max_shape_count = block_count # // 7 + 2
-            min_shape_count = 0
-            # Shape items use the shape name, plus minimum and maximum counts.
-            # Shape items ignore rotation.
-            for shape_name in Block.shape_names():
-                solver.primary(shape_name, min_shape_count, max_shape_count)
+        dlx_text = solver.format_problem()
+        if not sorted_options:
+            return dlx_text
+        dlx_lines = dlx_text.splitlines()
+        sorted_lines = [' '.join(sorted(line.strip().split()))
+                        for line in dlx_lines]
+        sorted_lines[1:] = sorted(sorted_lines[1:])
+        return '\n'.join(sorted_lines) + '\n'
 
     def find_open_space_items(self):
         open_spaces = [
@@ -253,13 +234,38 @@ class XPacker(BlockPacker):
         filtered_options = []
         start_state = self.state
         options = list(self.find_options())
-        for option in options:
-            self.state = start_state
-            next_block = self.find_next_block()
-            self.state = start_state + next_block * option.mask[:self.height, :self.width]
-            is_filled = self.fill()
-            if is_filled:
-                filtered_options.append(option)
+        filtered_count = 0
+        total_count = 0
+        for rotated_shape_name, group_options in groupby(
+                options,
+                attrgetter('rotated_shape_name')):
+            if self.is_logging:
+                print(f'\n{rotated_shape_name}', end='', flush=True)
+            for option in group_options:
+                self.state = start_state
+                next_block = self.find_next_block()
+                self.state = start_state + next_block * option.mask[
+                    :self.height,
+                    :self.width]
+                try:
+                    is_filled = self.fill()
+                    if is_filled:
+                        status = '.'
+                    else:
+                        status = '!'
+                except TimeoutError:
+                    is_filled = True
+                    status = '?'
+                if self.is_logging:
+                    print(status, end='', flush=True)
+                if is_filled:
+                    filtered_options.append(option)
+                else:
+                    filtered_count += 1
+                total_count += 1
+        if self.is_logging:
+            print(f'\nFiltered {filtered_count} options out of {total_count}, '
+                  f'{total_count and filtered_count/total_count * 100 or 0:.2f}%')
         self.state = start_state
         return filtered_options
 
