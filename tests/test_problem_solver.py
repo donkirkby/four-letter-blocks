@@ -3,11 +3,11 @@ from textwrap import dedent
 
 import pytest
 
-from four_letter_blocks.problem import SolverAlgorithm, Problem
+from four_letter_blocks.problem_solver import SolverAlgorithm, ProblemSolver
 
 
 def test_primary():
-    problem = Problem(SolverAlgorithm.EXACT)
+    problem = ProblemSolver(SolverAlgorithm.EXACT)
 
     problem.primary('a')
 
@@ -21,7 +21,7 @@ def test_primary():
 
 
 def test_add():
-    problem = Problem(SolverAlgorithm.EXACT)
+    problem = ProblemSolver(SolverAlgorithm.EXACT)
 
     problem.primary('a')
     problem.primary('b')
@@ -47,7 +47,7 @@ def test_add():
 
 
 def test_multiples():
-    problem = Problem(SolverAlgorithm.MULTIPLES)
+    problem = ProblemSolver(SolverAlgorithm.MULTIPLES)
 
     problem.primary('a', 2, 3)
     problem.primary('b')
@@ -75,7 +75,7 @@ def test_multiples():
 
 
 def test_shuffle():
-    problem = Problem(SolverAlgorithm.EXACT)
+    problem = ProblemSolver(SolverAlgorithm.EXACT)
 
     problem.primary('a')
     problem.primary('b')
@@ -118,7 +118,7 @@ def test_shuffle():
     assert all_expected_dlx_texts == all_dlx_texts
 
 def test_solve():
-    problem = Problem(SolverAlgorithm.EXACT)
+    problem = ProblemSolver(SolverAlgorithm.EXACT)
 
     problem.primary('a')
     problem.primary('b')
@@ -135,7 +135,7 @@ def test_solve():
 
 
 def test_solve_multiples():
-    problem = Problem(SolverAlgorithm.MULTIPLES)
+    problem = ProblemSolver(SolverAlgorithm.MULTIPLES)
 
     problem.primary('a', 2, 3)
     problem.primary('b')
@@ -156,7 +156,7 @@ def test_solve_multiples():
     assert selected_options == expected_options
 
 def test_solve_fails():
-    problem = Problem(SolverAlgorithm.EXACT)
+    problem = ProblemSolver(SolverAlgorithm.EXACT)
 
     problem.primary('a')
     problem.primary('b')
@@ -169,7 +169,7 @@ def test_solve_fails():
     assert selected_options is None
 
 def test_solve_fails_with_no_options():
-    problem = Problem(SolverAlgorithm.EXACT)
+    problem = ProblemSolver(SolverAlgorithm.EXACT)
 
     problem.primary('a')
     problem.primary('b')
@@ -179,7 +179,7 @@ def test_solve_fails_with_no_options():
     assert selected_options is None
 
 def test_solve_with_timeout():
-    problem = Problem(SolverAlgorithm.EXACT)
+    problem = ProblemSolver(SolverAlgorithm.EXACT)
 
     problem.primary('a')
     problem.primary('b')
@@ -195,7 +195,7 @@ def test_solve_with_timeout():
     assert selected_options == [('a',), ('b',)]
 
 def test_solve_fails_with_timeout():
-    problem = Problem(SolverAlgorithm.EXACT)
+    problem = ProblemSolver(SolverAlgorithm.EXACT)
 
     problem.primary('a')
     problem.primary('b')
@@ -213,7 +213,7 @@ def test_solve_slow_problem_with_timeout():
     problem_text = problem_path.read_text()
     problem_lines = problem_text.splitlines()
     items = problem_lines[0].split()
-    problem = Problem(SolverAlgorithm.EXACT)
+    problem = ProblemSolver(SolverAlgorithm.EXACT)
     for item in items:
         problem.primary(item)
     for option in problem_lines[1:]:

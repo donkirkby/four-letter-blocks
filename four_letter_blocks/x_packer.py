@@ -7,7 +7,7 @@ from operator import attrgetter
 import numpy as np
 
 from four_letter_blocks.block_packer import BlockPacker, build_masks
-from four_letter_blocks.problem import Problem, SolverAlgorithm
+from four_letter_blocks.problem_solver import ProblemSolver, SolverAlgorithm
 from four_letter_blocks.puzzle import Puzzle
 
 
@@ -125,13 +125,13 @@ class XPacker(BlockPacker):
     def prepare_solver(
             self,
             option_masks: dict[tuple[str, ...], np.ndarray]|None = None) \
-            -> Problem:
+            -> ProblemSolver:
         assert self.state is not None
         is_travel_packing = self.GAP not in self.state
         if not self.target_shape_counts:
-            solver = Problem(SolverAlgorithm.EXACT)
+            solver = ProblemSolver(SolverAlgorithm.EXACT)
         else:
-            solver = Problem(SolverAlgorithm.MULTIPLES)
+            solver = ProblemSolver(SolverAlgorithm.MULTIPLES)
             for shape_name, shape_count in self.target_shape_counts.items():
                 solver.primary(shape_name, shape_count, shape_count)
 

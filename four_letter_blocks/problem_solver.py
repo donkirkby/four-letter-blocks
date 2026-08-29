@@ -9,7 +9,8 @@ class SolverAlgorithm(Enum):
     EXACT = auto()
     MULTIPLES = auto()
 
-class Problem:
+class ProblemSolver:
+    """ Holds the items and options for a problem, and solves the problem. """
     def __init__(self, algorithm: SolverAlgorithm) -> None:
         self.algorithm = algorithm
         self.items: list[tuple[str, int, int]] = []
