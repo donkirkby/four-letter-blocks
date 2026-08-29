@@ -310,7 +310,7 @@ class DoubleBlockPacker:
                 back_masks[option_num] = back_option.mask
 
         # solver.write_to_dlx('dump/problem.dlx')
-        if solver.solve() != XPacker.SOLUTION_FOUND:
+        if solver.solve() != 10:
             return False
 
         selected_options = solver.selected_options()

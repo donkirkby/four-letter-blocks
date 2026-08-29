@@ -407,9 +407,10 @@ def test_shape_counts_differ():
 
     with pytest.raises(ValueError,
                        match=r'No combination of unused counts and shape '
-                             r'counts could be evenly split: \(0, 0\); '
-                             r'O: 2, T0: 2, Z0: 1; '
-                             r'J3: 1, L2: 1, T0: 2, Z1: 1\.'):
+                             r'counts could be evenly split: '
+                             r'\(0 in 5x5 A, 0 in 5x5 B\); '
+                             r'O: 2, T0: 2, Z0: 1 in 5x5 A; '
+                             r'J3: 1, L2: 1, T0: 2, Z1: 1 in 5x5 B\.'):
         puzzle_pair = PuzzlePair(puzzle1, puzzle2)
         puzzle_pair.pack_puzzles()
 

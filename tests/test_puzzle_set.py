@@ -171,8 +171,10 @@ def test_summary_of_three():
         PuzzleSet(puzzle1, puzzle2, puzzle3)
 
     expected_message = ("No combination of unused counts and shape counts "
-                        "could be evenly split: (0, 0, 0); O: 4; O: 4; I0: 1, "
-                        "I1: 1, J3: 1, L0: 1, O: 1.")
+                        "could be evenly split: "
+                        "(0 in 4x4 A, 0 in 4x4 B, 0 in 5x5); "
+                        "O: 4 in 4x4 A; O: 4 in 4x4 B; "
+                        "I0: 1, I1: 1, J3: 1, L0: 1, O: 1 in 5x5.")
     assert info.value.args == (expected_message,)
 
 
