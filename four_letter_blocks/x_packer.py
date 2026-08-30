@@ -42,8 +42,9 @@ class XPacker(BlockPacker):
                          start_state=start_state,
                          split_row=split_row)
         self.is_logging = False
+        self.is_logging_filter = False
         self.force_fours = True
-        self.timeout = 0  # timeout in ms for filling the grid. 0 means none.
+        self.timeout: float | None = None  # seconds to fill the grid.
         self.retries = 0  # Number of times to retry with shuffle after timeout.
 
     def fill(self) -> bool:
@@ -239,7 +240,7 @@ class XPacker(BlockPacker):
         for rotated_shape_name, group_options in groupby(
                 options,
                 attrgetter('rotated_shape_name')):
-            if self.is_logging:
+            if self.is_logging_filter:
                 print(f'\n{rotated_shape_name}', end='', flush=True)
             for option in group_options:
                 self.state = start_state
@@ -256,14 +257,14 @@ class XPacker(BlockPacker):
                 except TimeoutError:
                     is_filled = True
                     status = '?'
-                if self.is_logging:
+                if self.is_logging_filter:
                     print(status, end='', flush=True)
                 if is_filled:
                     filtered_options.append(option)
                 else:
                     filtered_count += 1
                 total_count += 1
-        if self.is_logging:
+        if self.is_logging_filter:
             print(f'\nFiltered {filtered_count} options out of {total_count}, '
                   f'{total_count and filtered_count/total_count * 100 or 0:.2f}%')
         self.state = start_state

@@ -1,5 +1,7 @@
 from pathlib import Path
 from textwrap import dedent
+from threading import Thread
+from time import sleep
 
 import pytest
 
@@ -117,6 +119,18 @@ def test_shuffle():
 
     assert all_expected_dlx_texts == all_dlx_texts
 
+
+def test_copy():
+    solver1 = load_slow_problem()
+    original_dlx = solver1.format_problem()
+
+    solver2 = solver1.copy()
+    solver2.shuffle()
+
+    assert solver2.format_problem() != original_dlx
+    assert solver1.format_problem() == original_dlx
+
+
 def test_solve():
     problem = ProblemSolver(SolverAlgorithm.EXACT)
 
@@ -209,6 +223,18 @@ def test_solve_fails_with_timeout():
 
 
 def test_solve_slow_problem_with_timeout():
+    problem = load_slow_problem()
+
+    selected_options = problem.solve(timeout=60.0)  # Solvable, but takes ~4s.
+
+    assert selected_options is not None
+    assert len(selected_options) == 24
+
+    with pytest.raises(TimeoutError):
+        problem.solve(timeout=1.0)
+
+
+def load_slow_problem() -> ProblemSolver:
     problem_path = Path(__file__).with_name('slow_problem.dlx')
     problem_text = problem_path.read_text()
     problem_lines = problem_text.splitlines()
@@ -221,13 +247,17 @@ def test_solve_slow_problem_with_timeout():
         for item in option_items:
             problem.add(item)
         problem.add(0)
-
-    selected_options = problem.solve(timeout=60.0)  # Solvable, but slow.
-
-    assert selected_options is not None
-    assert len(selected_options) == 24
-
-    with pytest.raises(TimeoutError):
-        problem.solve(timeout=1.0)
+    return problem
 
 
+def test_solve_slow_problem_and_cancel():
+    problem = load_slow_problem()
+
+    thread = Thread(target=problem.solve, kwargs={'timeout': 60.0})
+    thread.start()
+
+    sleep(1.0)
+    problem.cancel()
+
+    thread.join(timeout=0.1)
+    assert not thread.is_alive()

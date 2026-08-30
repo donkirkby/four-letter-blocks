@@ -9,14 +9,18 @@ class SolverAlgorithm(Enum):
     EXACT = auto()
     MULTIPLES = auto()
 
+ProblemOption = tuple[str, ...]
+OptionList = list[tuple[str, ...]]
+
 class ProblemSolver:
     """ Holds the items and options for a problem, and solves the problem. """
     def __init__(self, algorithm: SolverAlgorithm) -> None:
         self.algorithm = algorithm
         self.items: list[tuple[str, int, int]] = []
         self.current_option: list[str] = []
-        self.options: list[tuple[str, ...]] = []
-        self.queue: Queue[None | list[tuple[str, ...]]] | None = None
+        self.options: OptionList = []
+        self.queue: Queue[None | OptionList] | None = None
+        self.worker: Process | None = None
 
     def create_solver(self):
         option_index = {}
@@ -36,7 +40,7 @@ class ProblemSolver:
     def primary(self, name: str, u: int=1, v: int=1):
         self.items.append((name, u, v))
 
-    def add(self, name: str | int) -> tuple[str, ...] | None:
+    def add(self, name: str | int) -> ProblemOption | None:
         """ Add a new primary item to the current option.
 
         :param name: the name of the primary item, or 0 to end the option.
@@ -64,23 +68,29 @@ class ProblemSolver:
         shuffle(self.items)
         shuffle(self.options)
 
-    def solve(self, timeout: float = 0) -> list[tuple[str, ...]] | None:
+    def solve(self, timeout: float | None = None) -> OptionList | None:
         """ Solve the problem.
 
         :param timeout: Timeout in seconds, before the worker process should be
-        killed. Defaults to 0, meaning no timeout, and run in the current
-        process.
+        killed. Defaults to None, meaning no timeout, and run in the current
+        process. If you pass a negative number, then it will run in a worker
+        process with an infinite timeout.
         :return: a list of selected options, each of which is a tuple of item
         names. If the problem has no solution, return None.
         """
         if not self.options:
             return None
 
-        if timeout > 0:
+        if timeout is not None:
+            if timeout < 0:
+                worker_timeout = None
+            else:
+                worker_timeout = timeout
             self.queue = Queue()
             worker = Process(target=self.solve, daemon=True)
             worker.start()
-            worker.join(timeout)
+            self.worker = worker
+            worker.join(worker_timeout)
             if worker.exitcode is None:
                 worker.kill()
                 self.queue = None
@@ -101,3 +111,15 @@ class ProblemSolver:
         if self.queue is not None:
             self.queue.put_nowait(selected_options)
         return selected_options
+
+    def cancel(self) -> None:
+        if self.worker is None:
+            return
+
+        self.worker.kill()
+
+    def copy(self) -> 'ProblemSolver':
+        other = ProblemSolver(self.algorithm)
+        other.items = self.items[:]
+        other.options = self.options[:]
+        return other

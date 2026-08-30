@@ -1,14 +1,18 @@
+import math
 import typing
 from collections import Counter, defaultdict
+from concurrent.futures import as_completed
+from concurrent.futures.thread import ThreadPoolExecutor
 from dataclasses import dataclass
+from datetime import datetime
 from itertools import permutations
 
 import numpy as np
-from miniexact import miniexacts_x
 from scipy.ndimage import label
 
 from four_letter_blocks.block import flipped_shapes
 from four_letter_blocks.block_packer import BlockPacker
+from four_letter_blocks.problem_solver import ProblemSolver, SolverAlgorithm, OptionList, ProblemOption
 from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
 from four_letter_blocks.x_packer import XPacker, PackingOption
 
@@ -29,6 +33,7 @@ class DoubleBlockPacker:
         start_texts.
         """
         self.is_logging = False
+        self.pool_size = 0
         self.titles = titles or []
         self.start_packers: list[XPacker] = []
         self.packing_targets: list[PackingTarget] = []
@@ -272,7 +277,7 @@ class DoubleBlockPacker:
         self.back_packer.is_logging = self.is_logging
         self.front_packer.is_logging = self.is_logging
 
-        solver = miniexacts_x()
+        solver = ProblemSolver(SolverAlgorithm.EXACT)
 
         for prefix, packer in (('b_', self.back_packer),
                                ('f_', self.front_packer)):
@@ -284,8 +289,8 @@ class DoubleBlockPacker:
             back_options[option.rotated_shape_name].append(option)
 
         flipped_shape_names = flipped_shapes()
-        front_masks: dict[int, np.ndarray] = {}
-        back_masks: dict[int, np.ndarray] = {}
+        front_masks: dict[ProblemOption, np.ndarray] = {}
+        back_masks: dict[ProblemOption, np.ndarray] = {}
 
         front_options = self.front_packer.find_filtered_options()
         if not front_options and not back_options:
@@ -302,18 +307,17 @@ class DoubleBlockPacker:
                     for space_name in items:
                         item_name = prefix + space_name
                         solver.add(item_name)
-                option_num = solver.add(0)
-                assert option_num != 0
+                option_names = solver.add(0)
+                assert option_names is not None
 
                 # Save option mask to assemble state from solution.
-                front_masks[option_num] = front_option.mask
-                back_masks[option_num] = back_option.mask
+                front_masks[option_names] = front_option.mask
+                back_masks[option_names] = back_option.mask
 
         # solver.write_to_dlx('dump/problem.dlx')
-        if solver.solve() != 10:
+        selected_options = self.solve(solver)
+        if selected_options is None:
             return False
-
-        selected_options = solver.selected_options()
 
         for packer, masks in ((self.back_packer, back_masks),
                               (self.front_packer, front_masks)):
@@ -321,8 +325,8 @@ class DoubleBlockPacker:
             assert start_state is not None
             new_state = start_state.copy()
             start_block = max(int(new_state.max()), packer.GAP) + 1
-            for block_num, option_num in enumerate(selected_options, start_block):
-                coverage_flags = masks[option_num][:packer.height, :packer.width]
+            for block_num, option_names in enumerate(selected_options, start_block):
+                coverage_flags = masks[option_names][:packer.height, :packer.width]
                 new_state += np.uint8(block_num) * coverage_flags
             packer.state = new_state
 
@@ -371,6 +375,51 @@ class DoubleBlockPacker:
             display = packing_target.display(source_packer)
             displays.append(display)
         return tuple(displays)
+
+    def solve(self, solver: ProblemSolver) -> OptionList | None:
+        if self.pool_size <= 0:
+            return solver.solve()
+
+        # Timeouts range from 1 minute to 24 hours
+        timeout_count = self.pool_size - 1  # One runs with no timeout.
+        if timeout_count <= 1:
+            base = 1.0
+        else:
+            base = math.pow(24*60, 1/(timeout_count-1))
+
+        executor = ThreadPoolExecutor(max_workers=self.pool_size)
+        solvers = []
+        futures = []
+        for thread_num in range(timeout_count):
+            timeout = 60 * math.pow(base, thread_num)
+            solver2 = solver.copy()
+            solver2.shuffle()
+            solvers.append(solver2)
+            futures.append(executor.submit(run_worker_loop,
+                                           solver2,
+                                           timeout))
+        infinite_timeout = -1
+        solver.shuffle()
+        solvers.append(solver)
+        futures.append(executor.submit(run_worker_loop,
+                                       solver,
+                                       infinite_timeout))
+        for future in as_completed(futures):
+            for solver2 in solvers:
+                solver2.cancel()
+            return future.result()
+
+        # Should never get here.
+        return None
+
+
+def run_worker_loop(solver: ProblemSolver, timeout: float) -> OptionList | None:
+    while True:
+        print(f'{datetime.now()}: Solving with timeout {timeout:0.2f}s.')
+        try:
+            return solver.solve(timeout)
+        except TimeoutError:
+            pass
 
 
 @dataclass
