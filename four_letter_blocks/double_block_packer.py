@@ -33,6 +33,7 @@ class DoubleBlockPacker:
         start_texts.
         """
         self.is_logging = False
+        self.is_logging_worker = False
         self.pool_size = 0
         self.titles = titles or []
         self.start_packers: list[XPacker] = []
@@ -397,13 +398,15 @@ class DoubleBlockPacker:
             solvers.append(solver2)
             futures.append(executor.submit(run_worker_loop,
                                            solver2,
-                                           timeout))
+                                           timeout,
+                                           self.is_logging_worker))
         infinite_timeout = -1
         solver.shuffle()
         solvers.append(solver)
         futures.append(executor.submit(run_worker_loop,
                                        solver,
-                                       infinite_timeout))
+                                       infinite_timeout,
+                                       self.is_logging_worker))
         for future in as_completed(futures):
             for solver2 in solvers:
                 solver2.cancel()
@@ -413,11 +416,21 @@ class DoubleBlockPacker:
         return None
 
 
-def run_worker_loop(solver: ProblemSolver, timeout: float) -> OptionList | None:
+def run_worker_loop(solver: ProblemSolver,
+                    timeout: float,
+                    is_logging: bool) -> OptionList | None:
     while True:
-        print(f'{datetime.now()}: Solving with timeout {timeout:0.2f}s.')
+        if is_logging:
+            print(f'{datetime.now()}: Solving with timeout {timeout:0.0f}s.')
         try:
-            return solver.solve(timeout)
+            selected_options = solver.solve(timeout)
+            if is_logging:
+                if selected_options is not None:
+                    result = 'Solved'
+                else:
+                    result = 'Search exhausted'
+                print(f'{datetime.now()}: {result} with timeout {timeout:0.0f}s.')
+            return selected_options
         except TimeoutError:
             pass
 

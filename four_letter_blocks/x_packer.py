@@ -232,6 +232,8 @@ class XPacker(BlockPacker):
                                             coverage_flags)
 
     def find_filtered_options(self) -> list[PackingOption]:
+        if self.is_logging_filter:
+            print(f'{datetime.now()}: Filtering options.')
         filtered_options = []
         start_state = self.state
         options = list(self.find_options())
@@ -265,7 +267,10 @@ class XPacker(BlockPacker):
                     filtered_count += 1
                 total_count += 1
         if self.is_logging_filter:
-            print(f'\nFiltered {filtered_count} options out of {total_count}, '
+            print(f'{datetime.now()}: Filtering options.')
+        if self.is_logging_filter:
+            print(f'\n{datetime.now()}: Filtered {filtered_count} options out '
+                  f'of {total_count}, '
                   f'{total_count and filtered_count/total_count * 100 or 0:.2f}%')
         self.state = start_state
         return filtered_options
