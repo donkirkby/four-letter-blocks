@@ -57,3 +57,9 @@ class Grid:
         return sum(square is not None
                    for row in self.squares
                    for square in row)
+
+    @property
+    def space_flags(self) -> list[list[bool]]:
+        """ Flags for whether each space is a letter square. """
+        return [[square is not None for square in row[1:-1]]
+                for row in self.squares[1:-1]]

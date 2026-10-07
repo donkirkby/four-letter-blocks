@@ -86,3 +86,20 @@ EXIT
     grid = Grid(text)
 
     assert grid.letter_count == 12
+
+
+def test_space_flags():
+    text = """\
+W##D
+I##R
+R##A
+E##T
+"""
+    expected_space_flags = [[True, False, False, True],
+                            [True, False, False, True],
+                            [True, False, False, True],
+                            [True, False, False, True]]
+
+    grid = Grid(text)
+
+    assert grid.space_flags == expected_space_flags

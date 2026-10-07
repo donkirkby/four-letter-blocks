@@ -164,3 +164,43 @@ alternative to puzzle pairs, particularly 11x11 and 13x13.
 ### Jul 2026
 Merge the new packing code into the UI, and order the first prototype in almost
 a year.
+
+### Aug 2026
+The prototype came, but the new die cut technique leaves the pieces too tight,
+so they're hard to pull apart. The acrylic pieces are still laser cut, so I'll
+try those. Unfortunately, the sizes are slightly different from punchboard, so I
+have to generate new packings.
+
+I found that shuffling the order of the packing options can change the length of
+time to find the first solution, so I tried running multiple searches in
+parallel, with different option orders. Not a huge improvement.
+
+### Oct 2026
+I had the idea to switch to pairs of letters, instead of tetrominoes, so it
+might be possible to increase from 4 puzzles in a set to 20 or 100 by repacking
+the same tiles into multiple grids.
+
+In order to do that, I thought I should try to automatically generate several
+thousand grids and look for the most common letter pairs. I started by looking
+at several crossword libraries:
+
+* [pycrossword] - Might work. It runs on Python 3.8, has a Qt GUI.
+* [crossword-generator] - Might work. Generates crossword grids using MCTS. Much
+  slower than [Qxw]'s autofill.
+* [Qxw] - Might work. Not a library, but can be run in batch mode to fill a grid.
+* [pycrossword-generator] - Generates a grid, but without specifying where black
+  squares go.
+* [crossword] - Can't generate grids. Seems to read and write grids, but not
+  generate them.
+* [puzpy] - Can't generate grids. Seems to read and write grids, but not
+  generate them.
+* [xword-dl] - Can't generate grids, but does download them from several
+  publishers. Try generating random grids first.
+
+[pycrossword]: https://github.com/S0mbre/crossword
+[crossword-generator]: https://github.com/jonas-schumacher/crossword-generator
+[Qxw]: https://www.quinapalus.com/qxw.html
+[crossword]: https://github.com/svisser/crossword
+[pycrossword-generator]: https://github.com/fabelx/pycrossword
+[puzpy]: https://github.com/alexdej/puzpy
+[xword-dl]: https://pypi.org/project/xword-dl/

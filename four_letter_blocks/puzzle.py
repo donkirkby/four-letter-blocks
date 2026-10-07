@@ -8,12 +8,16 @@ from html import escape
 from itertools import chain
 from operator import attrgetter
 from pathlib import Path
-from random import shuffle
+from random import shuffle, randrange
+from subprocess import run
+from tempfile import NamedTemporaryFile
 from textwrap import dedent
 
+import numpy as np
 from PySide6.QtCore import QRectF
 from PySide6.QtGui import QPainter, QTextDocument, QTextCursor, QPixmap, \
     QTransform, QFont
+from scipy.ndimage import label
 
 from four_letter_blocks.block_packer import BlockPacker
 from four_letter_blocks.clue import Clue
@@ -43,6 +47,7 @@ class Puzzle:
     is_packed: bool = False
     rotations_display: RotationsDisplay = RotationsDisplay.OFF
     _source_path: Path | None = None
+    are_unkeyed_squares_allowed: bool = False
 
     @staticmethod
     def parse(source_file: typing.IO) -> 'Puzzle':
@@ -317,6 +322,29 @@ class Puzzle:
                 rows[y][x] = block_letter
         return '\n'.join(''.join(row) for row in rows)
 
+    def format_deck(self) -> str:
+        deck_entries: list[str] = []
+        for y in range(self.grid.height):
+            for x in range(self.grid.width):
+                square = self.grid[x, y]
+                if square is None:
+                    continue
+
+                for word, dx, dy in ((square.across_word, 1, 0),
+                                     (square.down_word, 0, 1)):
+                    if word is None:
+                        continue
+
+                    word_entries: list[str] = []
+                    for i, letter in enumerate(word):
+                        x2 = x + i*dx
+                        y2 = y + i*dy
+                        word_entries.append(f'{x2}_{y2}')
+                        if letter != '.':
+                            word_entries.append(f'={letter}')
+                    deck_entries.append(' '.join(word_entries))
+        return '\n'.join(deck_entries)
+
     def display_block_summary(self) -> str:
         sections = []
         block_sizes = self.display_block_sizes()
@@ -330,6 +358,7 @@ class Puzzle:
 
     def check_style(self) -> typing.List[str]:
         warnings = list(self.check_symmetry())
+        warnings.extend(self.check_connection())
         warnings.extend(self.check_repeats())
         warnings.extend(self.check_word_length())
         return warnings
@@ -379,7 +408,9 @@ class Puzzle:
                     word_counts[square.across_word] += 1
                     word_counts[square.down_word] += 1
         word_counts[None] = 0
-        repeats = [word for word, count in word_counts.items() if count > 1]
+        repeats = [word
+                   for word, count in word_counts.items()
+                   if count > 1 and '.' not in word]
         repeats.sort()
         yield from (f'repeated word {word}' for word in repeats)
 
@@ -399,6 +430,44 @@ class Puzzle:
                 if is_block1 != is_block2:
                     yield (f'symmetry broken at {(x1 + 1, y1 + 1)} and '
                            f'{(x2 + 1, y2 + 1)}')
+
+    def check_connection(self):
+        grid = self.grid
+        spaces = grid.space_flags
+        space_array = np.zeros((grid.height + 2, grid.width + 2), np.short)
+        space_array[1:-1, 1:-1] = spaces
+        labelled_spaces, group_count = label(space_array)
+        if 1 < group_count:
+            group_starts: list[tuple[int, int]] = []
+            for group_num in range(1, group_count+1):
+                i_s, j_s = np.where(labelled_spaces == group_num)
+                x = int(j_s[0])
+                y = int(i_s[0])
+                group_starts.append((x, y))
+            group_starts.sort()
+            squares_text = ', '.join(str(square) for square in group_starts)
+            yield f'disconnected sections at {squares_text}'
+
+        if not self.are_unkeyed_squares_allowed:
+            horizontal_neighbour_count = (space_array[:,:-2] +
+                                          space_array[:,1:-1] +
+                                          space_array[:,2:])
+            i_s, j_s = np.where(np.logical_and(horizontal_neighbour_count == 1,
+                                               space_array[:, 1:-1]))
+            unchecked_squares: set[tuple[int, int]] = set()
+            for i, j in zip(i_s, j_s):
+                unchecked_squares.add((int(j+1), int(i)))
+            vertical_neighbour_count = (space_array[:-2,:] +
+                                        space_array[1:-1,:] +
+                                        space_array[2:,:])
+            i_s, j_s = np.where(np.logical_and(vertical_neighbour_count == 1,
+                                               space_array[1:-1, :]))
+            for i, j in zip(i_s, j_s):
+                unchecked_squares.add((int(j), int(i+1)))
+            if unchecked_squares:
+                squares_text = ', '.join(str(square)
+                                         for square in sorted(unchecked_squares))
+                yield f'unkeyed squares at {squares_text}'
 
     @property
     def shape_counts(self) -> typing.Counter[str]:
@@ -516,14 +585,14 @@ class Puzzle:
 
         font_size = document.defaultFont().pixelSize()
         padding = font_size // 5
-        document.setDefaultStyleSheet(f"""\
-h1 {{text-align: center}}
-hr.footer {{line-height:10px}}
-p.footer {{page-break-after: always}}
-td {{padding: {padding} }}
-td.num {{text-align: right}}
-a {{color: black}}
-""")
+        document.setDefaultStyleSheet(dedent(f"""\
+            h1 {{text-align: center}}
+            hr.footer {{line-height:10px}}
+            p.footer {{page-break-after: always}}
+            td {{padding: {padding} }}
+            td.num {{text-align: right}}
+            a {{color: black}}
+            """))
         across_table = build_clue_table(self.across_clues)
         down_table = build_clue_table(self.down_clues)
         hints = self.build_hints()
@@ -557,6 +626,40 @@ a {{color: black}}
             hints += self.SUIT_HINT
         hints += f' {len(self.blocks)} pieces.'
         return hints
+
+    def generate(self, random_level: int = 2) -> Puzzle:
+        with NamedTemporaryFile('w', suffix='.qxd', prefix='puzzle') as f:
+            f.write(f'.RANDOM {random_level}\n')
+            deck_text = self.format_deck()
+            f.write(deck_text)
+            f.flush()
+            result = run(['qxw', '-b', f.name], capture_output=True)
+            if result.stderr:
+                raise RuntimeError('Qxw failed: ' + result.stderr.decode())
+
+            new_grid = [list(line)
+                        for line in self.format_grid().splitlines()]
+            generated_text = result.stdout.decode()
+            deck_words = deck_text.splitlines()
+            for line in generated_text.splitlines():
+                if line.startswith('#'):
+                    continue
+                word_label, word = line.split()
+                i = int(word_label[1:])
+                deck_word = deck_words[i]
+                deck_letters = deck_word.split()
+                for coordinates_text, letter in zip(deck_letters,
+                                                    word):
+                    x_text, y_text = coordinates_text.split('_')
+                    x = int(x_text)
+                    y = int(y_text)
+                    new_grid[y][x] = letter
+        new_grid_text = '\n'.join(''.join(row) for row in new_grid)
+        new_puzzle = Puzzle.parse_sections(self.title,
+                                           new_grid_text,
+                                           self.format_clues(),
+                                           self.format_blocks())
+        return new_puzzle
 
 
 def build_clue_table(clues: typing.Sequence[Clue]) -> str:
@@ -666,3 +769,87 @@ def draw_rotated_tiles(tile: QPixmap,
                                source,
                                source_x, source_y,
                                source_width, source_height)
+
+
+def calculate_max_black(size: int) -> int:
+    """ Default value for maximum number of black squares in a layout.
+
+    1/6 of the grid.
+    :param size: the width and height of the layouts
+    """
+    return size*size // 6
+
+def count_layout_numbers(size: int, max_black: int = -1) -> int:
+    """ Count how many layout numbers are possible for a size.
+
+    A layout number chooses a location for each black square, or 0 to skip
+    that black square. The locations are anywhere up to the middle square of the
+    layout, because the second half is a mirror of the first half.
+
+    :param size: the width and height of the layouts
+    :param max_black: maximum number of black squares. Defaults to 1/6 of the
+        grid if you pass in -1.
+    """
+    if max_black == -1:
+        max_black = calculate_max_black(size)
+    location_count = (size*size + 3) // 2
+    return location_count ** (max_black//2)
+
+
+def generate_layout(size: int, layout_number: int) -> str:
+    """ Generate a layout for a given layout number.
+
+    :param size: width and height of the layout.
+    :param layout_number: layout number up to count_layout_numbers(size)
+    :return: layout text with black squares placed according to the layout
+    number. Some layout numbers are duplicates of other layout numbers, and some
+    layouts are invalid. Check for valid layouts with Puzzle.check_style().
+    """
+    location_count = (size*size + 3) // 2
+    layout = [['.'] * size for _ in range(size)]
+    location_choices = layout_number
+    while location_choices:
+        i = location_choices % location_count - 1
+        if 0 <= i:
+            x = i % size
+            y = i // size
+            x2 = size - 1 - x
+            y2 = size - 1 - y
+            layout [y][x] = '#'
+            layout [y2][x2] = '#'
+        location_choices = location_choices // location_count
+    grid_text = '\n'.join(''.join(row) for row in layout)
+
+    return grid_text
+
+    # puzzle = Puzzle.parse_sections('', grid_text, '', '')
+    # if not any(puzzle.check_word_length()):
+    #     return grid_text
+    #
+    # return generate_layout(size, layout_number + 1)
+
+
+def main():
+    size = 9
+    success_count = 0
+    max_black = calculate_max_black(size)
+    for i in range(100_000):
+        max_black2 = randrange(max_black//2, max_black+1)
+        layout_count = count_layout_numbers(size, max_black2)
+        layout_number = randrange(layout_count)
+        grid_text = generate_layout(size, layout_number)
+        puzzle = Puzzle.parse_sections('', grid_text, '', '')
+        warnings = puzzle.check_style()
+        if not warnings:
+            success_count += 1
+            print(f'{success_count}: {layout_number}')
+            # print(puzzle.format_grid())
+            # puzzle = puzzle.generate()
+            # print(f'{i}: layout {layout_number}, max {max_black2} black, {len(warnings)} warnings.')
+            print(puzzle.format_grid())
+            # print('\n  '.join(warnings))
+            print()
+
+
+if __name__ in ('__main__', '__live_coding__'):
+    main()

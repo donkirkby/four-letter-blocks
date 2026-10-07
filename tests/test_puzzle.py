@@ -1,3 +1,4 @@
+import re
 from collections import Counter
 from io import StringIO
 from textwrap import dedent
@@ -6,7 +7,7 @@ import pytest
 from PySide6.QtGui import QTextDocument, QPainter
 
 from four_letter_blocks.clue import Clue
-from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
+from four_letter_blocks.puzzle import Puzzle, RotationsDisplay, generate_layout, count_layout_numbers
 import four_letter_blocks.puzzle
 from tests.pixmap_differ import PixmapDiffer
 
@@ -679,6 +680,7 @@ def test_warning_complete_across():
         BBCC
         """))
     puzzle = Puzzle.parse(source_file)
+    puzzle.are_unkeyed_squares_allowed = True
 
     warnings = puzzle.check_style()
 
@@ -702,6 +704,7 @@ def test_warning_complete_down():
         BBBC
         """))
     puzzle = Puzzle.parse(source_file)
+    puzzle.are_unkeyed_squares_allowed = True
 
     warnings = puzzle.check_style()
 
@@ -718,6 +721,7 @@ def test_warning_complete_unused():
         EACH
         """))
     puzzle = Puzzle.parse(source_file)
+    puzzle.are_unkeyed_squares_allowed = True
 
     warnings = puzzle.check_style()
 
@@ -734,6 +738,7 @@ def test_warning_two_letter():
         ENDS
         """))
     puzzle = Puzzle.parse(source_file)
+    puzzle.are_unkeyed_squares_allowed = True
 
     warnings = puzzle.check_style()
 
@@ -753,6 +758,7 @@ def test_warning_square():
         END
         """))
     puzzle = Puzzle.parse(source_file)
+    puzzle.are_unkeyed_squares_allowed = True
 
     warnings = puzzle.check_style()
 
@@ -771,6 +777,7 @@ def test_warning_symmetry():
         ENDS
         """))
     puzzle = Puzzle.parse(source_file)
+    puzzle.are_unkeyed_squares_allowed = True
 
     warnings = puzzle.check_style()
 
@@ -788,6 +795,7 @@ def test_warning_symmetry_diagonal():
         END#
         """))
     puzzle = Puzzle.parse(source_file)
+    puzzle.are_unkeyed_squares_allowed = True
 
     warnings = puzzle.check_style()
 
@@ -803,6 +811,7 @@ def test_warning_symmetry_vertical():
         N#D
         """))
     puzzle = Puzzle.parse(source_file)
+    puzzle.are_unkeyed_squares_allowed = True
 
     warnings = puzzle.check_style()
 
@@ -819,10 +828,63 @@ def test_warning_repeat():
         DEED
         """))
     puzzle = Puzzle.parse(source_file)
+    puzzle.are_unkeyed_squares_allowed = True
 
     warnings = puzzle.check_style()
 
     assert warnings == ['repeated word REED']
+
+
+def test_warning_repeat_ignores_spaces():
+    source_file = StringIO(dedent("""\
+        Title
+        
+        .EED
+        E##E
+        E##A
+        DEED
+        """))
+    puzzle = Puzzle.parse(source_file)
+    puzzle.are_unkeyed_squares_allowed = True
+
+    warnings = puzzle.check_style()
+
+    assert warnings == []
+
+
+def test_warning_diconnected_sections():
+    source_file = StringIO(dedent("""\
+        Title
+
+        .#...
+        #....
+        .....
+        ....#
+        ...#.
+        """))
+    puzzle = Puzzle.parse(source_file)
+
+    warnings = puzzle.check_style()
+
+    assert warnings == ['disconnected sections at (1, 1), (3, 1), (5, 5)',
+                        'unkeyed squares at (1, 1), (5, 5)']
+
+
+def test_warning_unkeyed_squares():
+    source_file = StringIO(dedent("""\
+        Title
+
+        .#...
+        ....#
+        .....
+        #....
+        ...#.
+        """))
+    puzzle = Puzzle.parse(source_file)
+
+    warnings = puzzle.check_style()
+
+    assert warnings == ['unkeyed squares at (1, 1), (1, 5), (5, 1), (5, 5)']
 
 
 def test_draw_blocks(pixmap_differ: PixmapDiffer):
@@ -1094,7 +1156,7 @@ def test_format_blocks_unused():
 
 
 def test_shuffle(monkeypatch):
-    monkeypatch.setattr(four_letter_blocks.puzzle, 'shuffle', reverse)
+    monkeypatch.setattr(four_letter_blocks.puzzle, 'shuffle', reverse)  # noqa
     puzzle = parse_basic_puzzle()
     expected_text = dedent("""\
         CCBB
@@ -1119,3 +1181,141 @@ def test_extras():
     puzzle = Puzzle.parse_sections('', text, '', text)
 
     assert puzzle.extras == expected_extras
+
+
+def test_format_deck():
+    grid_text = dedent("""\
+        ....
+        .##.
+        .##.
+        ....
+        """)
+    expected_deck = dedent("""\
+        0_0 1_0 2_0 3_0
+        0_0 0_1 0_2 0_3
+        3_0 3_1 3_2 3_3
+        0_3 1_3 2_3 3_3""")
+    puzzle = Puzzle.parse_sections('', grid_text, '', '')
+
+    deck_text = puzzle.format_deck()
+
+    assert deck_text == expected_deck
+
+
+def test_format_deck_with_constraints():
+    grid_text = dedent("""\
+        WORD
+        .##.
+        .##.
+        ....
+        """)
+    expected_deck = dedent("""\
+        0_0 =W 1_0 =O 2_0 =R 3_0 =D
+        0_0 =W 0_1 0_2 0_3
+        3_0 =D 3_1 3_2 3_3
+        0_3 1_3 2_3 3_3""")
+    puzzle = Puzzle.parse_sections('', grid_text, '', '')
+
+    deck_text = puzzle.format_deck()
+
+    assert deck_text == expected_deck
+
+
+def test_generate():
+    grid_text = dedent("""\
+        .....#...
+        .....#...
+        .........
+        .###....#
+        ....#....
+        #....###.
+        .........
+        ...#.....
+        ...#.....""")
+    puzzle = Puzzle.parse_sections('', grid_text, '', '')
+
+    new_puzzle = puzzle.generate()
+
+    new_grid_text = new_puzzle.format_grid()
+
+    assert '.' not in new_grid_text
+    assert re.sub(r'[A-Z]', '.', new_grid_text) == grid_text
+
+
+def test_generate_bad_random():
+    grid_text = dedent("""\
+        .....#...
+        .....#...
+        .........
+        .###....#
+        ....#....
+        #....###.
+        .........
+        ...#.....
+        ...#.....""")
+    puzzle = Puzzle.parse_sections('', grid_text, '', '')
+
+    with pytest.raises(RuntimeError,
+                       match=r'Qxw failed: Error at line 1: Syntax error in '
+                             r'random fill directive'):
+        puzzle.generate(random_level=3)
+
+
+def test_count_layout_numbers():
+    size = 5
+    expected_count = 14 ** 2  # (25 + 3) // 2 ^ max_black//2
+
+    grid_count = count_layout_numbers(size)
+
+    assert grid_count == expected_count
+
+
+@pytest.mark.parametrize('layout_number,expected_layout',
+                         [(0, dedent("""\
+                            .....
+                            .....
+                            .....
+                            .....
+                            .....""")),
+                          (1, dedent("""\
+                            #....
+                            .....
+                            .....
+                            .....
+                            ....#""")),
+                           (2, dedent("""\
+                            .#...
+                            .....
+                            .....
+                            .....
+                            ...#.""")),
+                           (6, dedent("""\
+                            .....
+                            #....
+                            .....
+                            ....#
+                            .....""")),
+                           (13, dedent("""\
+                            .....
+                            .....
+                            ..#..
+                            .....
+                            .....""")),
+                           (14, dedent("""\
+                            #....
+                            .....
+                            .....
+                            .....
+                            ....#""")),
+                           (6*14+2, dedent("""\
+                            .#...
+                            #....
+                            .....
+                            ....#
+                            ...#.""")),
+                          ])
+def test_generate_layout(layout_number: int, expected_layout: str):
+    size = 5
+    layout = generate_layout(size, layout_number)
+
+    assert layout == expected_layout
