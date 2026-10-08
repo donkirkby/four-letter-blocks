@@ -13,11 +13,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - name: Install uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
-          python-version: "3.12"
+          version: "0.11.33"
+          enable-cache: true
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -31,24 +33,22 @@ jobs:
             xvfb
           wget -O qxw.deb https://www.quinapalus.com/qxw_20200708-1_amd64.deb
           sudo gdebi qxw.deb
-          python -m pip install --upgrade pip
-          pip install pipenv
-          pipenv install --dev
-          pip install coverage # Extra copy for codecov upload.
+          uv sync --locked --dev
+          uv pip install coverage # Extra copy for codecov upload.
       - name: Scan with mypy
         run: |
-          pipenv run mypy four_letter_blocks
+          uv run mypy four_letter_blocks
       - name: Test with pytest
         id: test
         run: |
           # Add QT_DEBUG_PLUGINS=1 before xvfb-run to debug Qt library problems.
-          xvfb-run -a pipenv run python -m coverage run --source=four_letter_blocks -m pytest
+          xvfb-run -a uv run python -m coverage run --source=four_letter_blocks -m pytest
       - name: Upload code coverage
         run: |
-          pipenv install codecov
-          pipenv run codecov
+          uv pip install codecov
+          uv run codecov
       - name: Upload image diffs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: ${{ always() && steps.test.outcome == 'failure' }}
         with:
           name: image-diffs
