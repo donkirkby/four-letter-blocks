@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "beautifulsoup4>=4.15.0",
+    "colorspacious>=1.1.2",
     "crossword-generator>=0.2.2",
     "miniexact>=1.6.1",
     "pyside6>=6.11.2",
@@ -16,7 +17,9 @@ dependencies = [
 [dependency-groups]
 dev = [
     "mypy>=2.4.0",
+    "pytest>=9.1.1",
     "scipy-stubs>=1.18.1.1",
+    "space-tracer>=4.13.0",
     "types-pyyaml>=6.0.12.20260906",
 ]
 

@@ -3,6 +3,7 @@ import re
 import typing
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum, auto
 from html import escape
 from itertools import chain
@@ -627,7 +628,7 @@ class Puzzle:
         hints += f' {len(self.blocks)} pieces.'
         return hints
 
-    def generate(self, random_level: int = 2) -> Puzzle:
+    def generate(self, random_level: int = 2) -> 'Puzzle':
         with NamedTemporaryFile('w', suffix='.qxd', prefix='puzzle') as f:
             f.write(f'.RANDOM {random_level}\n')
             deck_text = self.format_deck()
@@ -830,10 +831,11 @@ def generate_layout(size: int, layout_number: int) -> str:
 
 
 def main():
-    size = 9
+    size = 7
     success_count = 0
     max_black = calculate_max_black(size)
-    for i in range(100_000):
+
+    while True:
         max_black2 = randrange(max_black//2, max_black+1)
         layout_count = count_layout_numbers(size, max_black2)
         layout_number = randrange(layout_count)
@@ -842,10 +844,12 @@ def main():
         warnings = puzzle.check_style()
         if not warnings:
             success_count += 1
-            print(f'{success_count}: {layout_number}')
-            # print(puzzle.format_grid())
-            # puzzle = puzzle.generate()
+            start_time = datetime.now()
+            print(f'{success_count}: {layout_number} {start_time}')
+            print(puzzle.format_grid())
+            puzzle = puzzle.generate()
             # print(f'{i}: layout {layout_number}, max {max_black2} black, {len(warnings)} warnings.')
+            print(datetime.now() - start_time)
             print(puzzle.format_grid())
             # print('\n  '.join(warnings))
             print()
