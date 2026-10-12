@@ -33,6 +33,12 @@ jobs:
             xvfb
           wget -O qxw.deb https://www.quinapalus.com/qxw_20200708-1_amd64.deb
           sudo gdebi qxw.deb
+          echo $?
+          echo $PATH
+          which qxw
+          ls /usr/games
+          qxw -h
+          echo $?
           uv sync --locked --dev
           uv pip install coverage # Extra copy for codecov upload.
       - name: Scan with mypy

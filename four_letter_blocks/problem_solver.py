@@ -38,6 +38,7 @@ class ProblemSolver:
         return solver, option_index
 
     def primary(self, name: str, u: int=1, v: int=1):
+        """ Add a primary item with lower limit u and upper limit v."""
         self.items.append((name, u, v))
 
     def add(self, name: str | int) -> ProblemOption | None:

@@ -364,7 +364,7 @@ class Puzzle:
         warnings.extend(self.check_word_length())
         return warnings
 
-    def check_word_length(self):
+    def check_word_length(self) -> typing.Iterable[str]:
         short_warnings = []
         complete_warnings = []
         for block in self.blocks:
@@ -400,22 +400,23 @@ class Puzzle:
         complete_warnings.sort()
         yield from (warning for start, end, warning in complete_warnings)
 
-    def check_repeats(self):
-        word_counts = Counter()
+    def check_repeats(self) -> typing.Iterable[str]:
+        word_counts: Counter[str] = Counter()
         for x in range(self.grid.width):
             for y in range(self.grid.height):
                 square = self.grid[x, y]
                 if square is not None:
-                    word_counts[square.across_word] += 1
-                    word_counts[square.down_word] += 1
-        word_counts[None] = 0
+                    if square.across_word is not None:
+                        word_counts[square.across_word] += 1
+                    if square.down_word is not None:
+                        word_counts[square.down_word] += 1
         repeats = [word
                    for word, count in word_counts.items()
                    if count > 1 and '.' not in word]
         repeats.sort()
         yield from (f'repeated word {word}' for word in repeats)
 
-    def check_symmetry(self):
+    def check_symmetry(self) -> typing.Iterable[str]:
         grid = self.grid
         if grid.width != grid.height:
             yield 'not square'
@@ -432,7 +433,7 @@ class Puzzle:
                     yield (f'symmetry broken at {(x1 + 1, y1 + 1)} and '
                            f'{(x2 + 1, y2 + 1)}')
 
-    def check_connection(self):
+    def check_connection(self) -> typing.Iterable[str]:
         grid = self.grid
         spaces = grid.space_flags
         space_array = np.zeros((grid.height + 2, grid.width + 2), np.short)
@@ -834,7 +835,9 @@ def main():
     size = 7
     success_count = 0
     max_black = calculate_max_black(size)
-
+    dump_folder = Path(__file__).parent.parent / 'dump'
+    log_path = dump_folder / f'generated{size}x{size}.log'
+    f = open(log_path, 'a')
     while True:
         max_black2 = randrange(max_black//2, max_black+1)
         layout_count = count_layout_numbers(size, max_black2)
@@ -844,15 +847,30 @@ def main():
         warnings = puzzle.check_style()
         if not warnings:
             success_count += 1
+            if f.tell():
+                # Not at start, write a divider.
+                divider = '\n' + '=' * 10
+                print(divider)
+                print(divider, file=f)
             start_time = datetime.now()
-            print(f'{success_count}: {layout_number} {start_time}')
+            header = f'{success_count}: {layout_number} {start_time}'
+            print(header)
+            print(header, file=f)
             print(puzzle.format_grid())
-            puzzle = puzzle.generate()
+            try:
+                puzzle = puzzle.generate()
+            except RuntimeError as ex:
+                print(ex)
+                print(puzzle.format_grid(), file=f)
+                print(ex, file=f)
+                continue
             # print(f'{i}: layout {layout_number}, max {max_black2} black, {len(warnings)} warnings.')
             print(datetime.now() - start_time)
-            print(puzzle.format_grid())
+            print(datetime.now() - start_time, file=f)
+            grid_text = puzzle.format_grid()
+            print(grid_text)
+            print(grid_text, file=f)
             # print('\n  '.join(warnings))
-            print()
 
 
 if __name__ in ('__main__', '__live_coding__'):
