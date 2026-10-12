@@ -29,16 +29,11 @@ jobs:
             libxcb-cursor0 \
             libxcb-xinerama0 \
             libxkbcommon-x11-0 \
+            wamerican \
             xserver-xephyr \
             xvfb
           wget -O qxw.deb https://www.quinapalus.com/qxw_20200708-1_amd64.deb
           sudo gdebi --non-interactive qxw.deb
-          echo $?
-          echo $PATH
-          which qxw
-          ls /usr/games
-          qxw -h
-          echo $?
           uv sync --locked --dev
           uv pip install coverage # Extra copy for codecov upload.
       - name: Scan with mypy
