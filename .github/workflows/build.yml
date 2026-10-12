@@ -32,7 +32,7 @@ jobs:
             xserver-xephyr \
             xvfb
           wget -O qxw.deb https://www.quinapalus.com/qxw_20200708-1_amd64.deb
-          sudo gdebi qxw.deb
+          sudo gdebi --non-interactive qxw.deb
           echo $?
           echo $PATH
           which qxw
