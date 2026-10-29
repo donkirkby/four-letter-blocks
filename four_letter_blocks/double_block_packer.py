@@ -20,7 +20,8 @@ from four_letter_blocks.x_packer import XPacker, PackingOption
 class DoubleBlockPacker:
     def __init__(self,
                  *start_texts: str,
-                 titles: list[str] | None = None) -> None:
+                 titles: list[str] | None = None,
+                 validation_timeout_seconds: float = 60) -> None:
         """ Initialise a double block packer.
 
         It generates all valid combinations of a front block and a back block
@@ -31,10 +32,14 @@ class DoubleBlockPacker:
         with blocks. It will split them up evenly between front and back.
         :param titles: the titles of the puzzles to pack, in the same order as
         start_texts.
+        :param validation_timeout_seconds: Number of seconds to wait while
+        confirming that each grid can be packed on its own.
         """
         self.is_logging = False
         self.is_logging_worker = False
         self.pool_size = 0
+        self.max_timeout_minutes: float | None = None
+        self.validation_timeout_seconds: float = validation_timeout_seconds
         self.titles = titles or []
         self.start_packers: list[XPacker] = []
         self.packing_targets: list[PackingTarget] = []
@@ -62,9 +67,9 @@ class DoubleBlockPacker:
                                            '',
                                            start_text)
             complete_word_messages.extend(
-                f'{message} in {title}'
-                for message in puzzle.check_word_length()
-                if 'complete' in message)
+                f'{warning.message} in {title}'
+                for warning in puzzle.score_word_length()
+                if warning.warning_type == puzzle.COMPLETE_WORD_WARNING)
         if complete_word_messages:
             raise ValueError(f'Found {", ".join(complete_word_messages)}.')
 
@@ -92,15 +97,27 @@ class DoubleBlockPacker:
 
     def validate_fill_sides(self) -> None:
         fill_failure_messages = []
+        fill_timeout_messages = []
         for packer, title in zip(self.start_packers, self.titles):
             assert packer.state is not None
             start_state = packer.state.copy()
-            is_filled = packer.fill()
-            if not is_filled:
-                fill_failure_messages.append(f'in {title}')
+            old_timeout = packer.timeout
+            packer.timeout = self.validation_timeout_seconds
+            try:
+                is_filled = packer.fill()
+                if not is_filled:
+                    fill_failure_messages.append(f'in {title}')
+            except TimeoutError:
+                fill_timeout_messages.append(f'in {title}')
             packer.state = start_state
+            packer.timeout = old_timeout
+        reasons = []
         if fill_failure_messages:
-            raise ValueError(f'Fill failed {" and ".join(fill_failure_messages)}.')
+            reasons.append(f'failed {" and ".join(fill_failure_messages)}')
+        if fill_timeout_messages:
+            reasons.append(f'timed out {" and ".join(fill_timeout_messages)}')
+        if reasons:
+            raise ValueError(f'Fill {" and ".join(reasons)}.')
 
     def validate_unused_sizes(self) -> None:
         group_messages: list[str] = []
@@ -378,58 +395,75 @@ class DoubleBlockPacker:
         return tuple(displays)
 
     def solve(self, solver: ProblemSolver) -> OptionList | None:
-        if self.pool_size <= 0:
+        if self.pool_size <= 0 and self.max_timeout_minutes is None:
             return solver.solve()
 
         # Timeouts range from 1 minute to 24 hours
-        timeout_count = self.pool_size - 1  # One runs with no timeout.
+        timeout_count = self.pool_size
+        if self.max_timeout_minutes is None:
+            timeout_count -= 1  # One runs with infinite timeout.
+
         if timeout_count <= 1:
             base = 1.0
         else:
-            base = math.pow(24*60, 1/(timeout_count-1))
+            if self.max_timeout_minutes is None:
+                max_timeout = 24*60.0
+            else:
+                max_timeout = self.max_timeout_minutes
+            base = math.pow(max_timeout, 1/(timeout_count-1))
 
         executor = ThreadPoolExecutor(max_workers=self.pool_size)
         solvers = []
         futures = []
         for thread_num in range(timeout_count):
-            timeout = 60 * math.pow(base, thread_num)
+            timeout_seconds = 60 * math.pow(base, thread_num)
             solver2 = solver.copy()
             solver2.shuffle()
             solvers.append(solver2)
             futures.append(executor.submit(run_worker_loop,
                                            solver2,
-                                           timeout,
+                                           timeout_seconds,
                                            self.is_logging_worker))
-        infinite_timeout = -1
-        solver.shuffle()
-        solvers.append(solver)
-        futures.append(executor.submit(run_worker_loop,
-                                       solver,
-                                       infinite_timeout,
-                                       self.is_logging_worker))
-        for future in as_completed(futures):
+        if self.max_timeout_minutes is not None:
+            completion_timeout_seconds = self.max_timeout_minutes * 60
+        else:
+            completion_timeout_seconds = None
+            infinite_timeout = -1
+            solver.shuffle()
+            solvers.append(solver)
+            futures.append(executor.submit(run_worker_loop,
+                                           solver,
+                                           infinite_timeout,
+                                           self.is_logging_worker))
+        try:
+            future = next(as_completed(futures, completion_timeout_seconds))
+        except TimeoutError:
+            future = None
+        finally:
             for solver2 in solvers:
                 solver2.cancel()
+        if future is not None:
             return future.result()
 
-        # Should never get here.
         return None
 
 
 def run_worker_loop(solver: ProblemSolver,
-                    timeout: float,
+                    timeout_seconds: float,
                     is_logging: bool) -> OptionList | None:
     while True:
         if is_logging:
-            print(f'{datetime.now()}: Solving with timeout {timeout:0.0f}s.')
+            print(f'{datetime.now()}: Solving with '
+                  f'timeout {timeout_seconds:0.0f}s.')
         try:
-            selected_options = solver.solve(timeout)
+            selected_options = solver.solve(timeout_seconds)
             if is_logging:
                 if selected_options is not None:
                     result = 'Solved'
                 else:
                     result = 'Search exhausted'
-                print(f'{datetime.now()}: {result} with timeout {timeout:0.0f}s.')
+                print(f'{datetime.now()}: {result} with '
+                      f'timeout {timeout_seconds:0.0f}s.')
             return selected_options
         except TimeoutError:
             pass

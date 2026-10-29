@@ -7,7 +7,7 @@ import pytest
 from PySide6.QtGui import QTextDocument, QPainter
 
 from four_letter_blocks.clue import Clue
-from four_letter_blocks.puzzle import Puzzle, RotationsDisplay, generate_layout, count_layout_numbers
+from four_letter_blocks.puzzle import Puzzle, RotationsDisplay
 import four_letter_blocks.puzzle
 from tests.pixmap_differ import PixmapDiffer
 
@@ -667,17 +667,23 @@ def test_warning_complete_across():
     source_file = StringIO(dedent("""\
         Title
         
-        WORD
-        I##A
-        N##S
-        EACH
+        ....###
+        ......#
+        .......
+        ...#...
+        .......
+        #......
+        ###....
         
         -
         
-        AAAA
-        B##C
-        B##C
-        BBCC
+        IIII###
+        ......#
+        .......
+        ...#...
+        .......
+        #......
+        ###....
         """))
     puzzle = Puzzle.parse(source_file)
     puzzle.are_unkeyed_squares_allowed = True
@@ -691,34 +697,43 @@ def test_warning_complete_down():
     source_file = StringIO(dedent("""\
         Title
         
-        WORD
-        I##A
-        N##S
-        EACH
+        .....##
+        ......#
+        ......#
+        ...#...
+        #......
+        #......
+        ##.....
         
         -
         
-        AAAC
-        A##C
-        B##C
-        BBBC
+        .....##
+        ......#
+        ......#
+        ...#..I
+        #.....I
+        #.....I
+        ##....I
         """))
     puzzle = Puzzle.parse(source_file)
     puzzle.are_unkeyed_squares_allowed = True
 
     warnings = puzzle.check_style()
 
-    assert warnings == ['complete word on one block from (4, 1) to (4, 4)']
+    assert warnings == ['complete word on one block from (7, 4) to (7, 7)']
 
 
 def test_warning_complete_unused():
     source_file = StringIO(dedent("""\
         Title
         
-        WORD
-        I##A
-        N##S
-        EACH
+        .....##
+        ......#
+        ......#
+        ...#...
+        #......
+        #......
+        ##.....
         """))
     puzzle = Puzzle.parse(source_file)
     puzzle.are_unkeyed_squares_allowed = True
@@ -732,20 +747,47 @@ def test_warning_two_letter():
     source_file = StringIO(dedent("""\
         Title
         
-        WORD
-        I#OA
-        NO#S
-        ENDS
+        .....##
+        ......#
+        ......#
+        #..#..#
+        #......
+        #......
+        ##.....
         """))
     puzzle = Puzzle.parse(source_file)
     puzzle.are_unkeyed_squares_allowed = True
 
     warnings = puzzle.check_style()
 
-    assert warnings == ['two-letter word at (1, 3) and (2, 3)',
-                        'two-letter word at (2, 3) and (2, 4)',
-                        'two-letter word at (3, 1) and (3, 2)',
-                        'two-letter word at (3, 2) and (4, 2)']
+    assert warnings == ['two-letter word at (2, 4) and (3, 4)',
+                        'two-letter word at (5, 4) and (6, 4)']
+
+
+def test_warning_four_themes():
+    source_file = StringIO(dedent("""\
+        Title
+        
+        #...#....
+        #........
+        .........
+        ......###
+        ....#....
+        ###......
+        .........
+        ........#
+        ....#...#
+        """))
+    puzzle = Puzzle.parse(source_file)
+    puzzle.are_unkeyed_squares_allowed = True
+
+    warnings = puzzle.check_style()
+
+    assert warnings == ['too many theme entries at (1, 3), (1, 7), '
+                        '(4, 1), (6, 1)']
+
+    total_cost = sum(warning.total_cost for warning in puzzle.score_style())
+    assert total_cost == puzzle.MANY_THEMES_WARNING.cost * 2
 
 
 def test_warning_square():
@@ -771,18 +813,20 @@ def test_warning_symmetry():
     source_file = StringIO(dedent("""\
         Title
         
-        WE#D
-        I##A
-        N##D
-        ENDS
+        #....##
+        ......#
+        ......#
+        ...#...
+        #......
+        #......
+        ##.....
         """))
     puzzle = Puzzle.parse(source_file)
     puzzle.are_unkeyed_squares_allowed = True
 
     warnings = puzzle.check_style()
 
-    assert warnings == ['symmetry broken at (2, 4) and (3, 1)',
-                        'two-letter word at (1, 1) and (2, 1)']
+    assert warnings == ['symmetry broken at (1, 1) and (7, 7)']
 
 
 def test_warning_symmetry_diagonal():
@@ -802,47 +846,37 @@ def test_warning_symmetry_diagonal():
     assert warnings == ['symmetry broken at (1, 1) and (4, 4)']
 
 
-def test_warning_symmetry_vertical():
-    source_file = StringIO(dedent("""\
-        Title
-        
-        WED
-        I#A
-        N#D
-        """))
-    puzzle = Puzzle.parse(source_file)
-    puzzle.are_unkeyed_squares_allowed = True
-
-    warnings = puzzle.check_style()
-
-    assert warnings == ['symmetry broken at (2, 1) and (2, 3)']
-
-
 def test_warning_repeat():
     source_file = StringIO(dedent("""\
         Title
         
-        REED
-        E##E
-        E##A
-        DEED
+        ...B.##
+        ...A..#
+        ...D..#
+        BIG#...
+        #..B...
+        #..I...
+        ##.G...
         """))
     puzzle = Puzzle.parse(source_file)
     puzzle.are_unkeyed_squares_allowed = True
 
     warnings = puzzle.check_style()
 
-    assert warnings == ['repeated word REED']
+    assert warnings == ['repeated word BIG']
 
 
 def test_warning_repeat_ignores_spaces():
     source_file = StringIO(dedent("""\
         Title
         
-        .EED
-        E##E
-        E##A
-        DEED
+        ...B.##
+        ...A..#
+        ...D..#
+        .IG#...
+        #......
+        #..I...
+        ##.G...
         """))
     puzzle = Puzzle.parse(source_file)
     puzzle.are_unkeyed_squares_allowed = True
@@ -850,6 +884,24 @@ def test_warning_repeat_ignores_spaces():
     warnings = puzzle.check_style()
 
     assert warnings == []
+
+
+def test_messages_diconnected_sections():
+    source_file = StringIO(dedent("""\
+        Title
+
+        .#...
+        #....
+        .....
+        ....#
+        ...#.
+        """))
+    puzzle = Puzzle.parse(source_file)
+
+    messages = puzzle.check_style()
+
+    assert messages == ['disconnected sections at (1, 1), (3, 1), (5, 5)',
+                        'unkeyed squares at (1, 1), (5, 5)']
 
 
 def test_warning_diconnected_sections():
@@ -864,10 +916,11 @@ def test_warning_diconnected_sections():
         """))
     puzzle = Puzzle.parse(source_file)
 
-    warnings = puzzle.check_style()
+    warnings = puzzle.score_style()
 
-    assert warnings == ['disconnected sections at (1, 1), (3, 1), (5, 5)',
-                        'unkeyed squares at (1, 1), (5, 5)']
+    total_cost = sum(warning.total_cost for warning in warnings)
+    assert total_cost == (3*puzzle.CONNECTION_WARNING.cost +
+                          2*puzzle.UNKEYED_LETTER_WARNING.cost)
 
 
 def test_warning_unkeyed_squares():
@@ -1259,63 +1312,3 @@ def test_generate_bad_random():
                        match=r'Qxw failed: Error at line 1: Syntax error in '
                              r'random fill directive'):
         puzzle.generate(random_level=3)
-
-
-def test_count_layout_numbers():
-    size = 5
-    expected_count = 14 ** 2  # (25 + 3) // 2 ^ max_black//2
-
-    grid_count = count_layout_numbers(size)
-
-    assert grid_count == expected_count
-
-
-@pytest.mark.parametrize('layout_number,expected_layout',
-                         [(0, dedent("""\
-                            .....
-                            .....
-                            .....
-                            .....
-                            .....""")),
-                          (1, dedent("""\
-                            #....
-                            .....
-                            .....
-                            .....
-                            ....#""")),
-                           (2, dedent("""\
-                            .#...
-                            .....
-                            .....
-                            .....
-                            ...#.""")),
-                           (6, dedent("""\
-                            .....
-                            #....
-                            .....
-                            ....#
-                            .....""")),
-                           (13, dedent("""\
-                            .....
-                            .....
-                            ..#..
-                            .....
-                            .....""")),
-                           (14, dedent("""\
-                            #....
-                            .....
-                            .....
-                            .....
-                            ....#""")),
-                           (6*14+2, dedent("""\
-                            .#...
-                            #....
-                            .....
-                            ....#
-                            ...#.""")),
-                          ])
-def test_generate_layout(layout_number: int, expected_layout: str):
-    size = 5
-    layout = generate_layout(size, layout_number)
-
-    assert layout == expected_layout

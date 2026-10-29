@@ -3,13 +3,12 @@ import re
 import typing
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import Enum, auto
 from html import escape
 from itertools import chain
 from operator import attrgetter
 from pathlib import Path
-from random import shuffle, randrange
+from random import shuffle
 from subprocess import run
 from tempfile import NamedTemporaryFile
 from textwrap import dedent
@@ -33,10 +32,31 @@ class RotationsDisplay(Enum):
 
 
 @dataclass
+class GridWarningType:
+    cost: int
+
+
+@dataclass
+class GridWarning:
+    warning_type: GridWarningType
+    total_cost: int  # type's cost times number of instances
+    message: str
+
+
+@dataclass
 class Puzzle:
     HINT = 'Clue numbers are shuffled: 1 Across might not be the top left.'
     SUIT_HINT = "Each corner has its own suit."
     DEFAULT_ROW_LENGTH = 16  # Number of squares across a diagram.
+
+    CONNECTION_WARNING = GridWarningType(101)
+    SYMMETRY_WARNING = GridWarningType(97)
+    REPEATED_WORD_WARNING = GridWarningType(13)
+    TWO_LETTER_WARNING = GridWarningType(11)
+    COMPLETE_WORD_WARNING = GridWarningType(7)
+    UNKEYED_LETTER_WARNING = GridWarningType(5)
+    BLACK_CLUMP_WARNING = GridWarningType(3)
+    MANY_THEMES_WARNING = GridWarningType(2)
 
     title: str
     grid: Grid
@@ -357,16 +377,24 @@ class Puzzle:
             sections.append('Shapes: ' + shape_count_text)
         return ', '.join(sections)
 
-    def check_style(self) -> typing.List[str]:
-        warnings = list(self.check_symmetry())
-        warnings.extend(self.check_connection())
-        warnings.extend(self.check_repeats())
-        warnings.extend(self.check_word_length())
+    def score_style(self) -> list[GridWarning]:
+        warnings: list[GridWarning] = []
+        warnings.extend(self.score_symmetry())
+        warnings.extend(self.score_word_length())
+        warnings.extend(self.score_connection())
+        warnings.extend(self.score_repeats())
         return warnings
 
-    def check_word_length(self) -> typing.Iterable[str]:
+    def check_style(self) -> typing.List[str]:
+        warnings = self.score_style()
+        messages = [warning.message for warning in warnings]
+        return messages
+
+    def score_word_length(self) -> typing.Iterable[GridWarning]:
         short_warnings = []
         complete_warnings = []
+        theme_positions: list[tuple[int, int]] = []
+        theme_length = 0
         for block in self.blocks:
             for square1 in block.squares:
                 for word, dx, dy in ((square1.across_word, 1, 0),
@@ -378,11 +406,19 @@ class Puzzle:
                     word_length = len(word)
                     start = (x1 + 1, y1 + 1)
                     end = (x1 + word_length * dx + dy, y1 + word_length * dy + dx)
+                    if word_length > theme_length:
+                        theme_length = word_length
+                        theme_positions.clear()
+                    if word_length == theme_length:
+                        theme_positions.append((x1+1, y1+1))
                     if word_length == 2:
                         short_warnings.append(
                             (start,
                              end,
-                             f'two-letter word at {start} and {end}'))
+                             GridWarning(
+                                 self.TWO_LETTER_WARNING,
+                                 self.TWO_LETTER_WARNING.cost,
+                                 f'two-letter word at {start} and {end}')))
                     if block.marker == Block.UNUSED:
                         continue
                     block_coordinates = block.calculate_coordinates()
@@ -394,13 +430,31 @@ class Puzzle:
                         complete_warnings.append((
                             start,
                             end,
-                            f'complete word on one block from {start} to {end}'))
+                            GridWarning(
+                                self.COMPLETE_WORD_WARNING,
+                                self.COMPLETE_WORD_WARNING.cost,
+                                f'complete word on one block from {start} to {end}')))
+        if self.grid.width > 9:
+            max_theme_count = 4
+        else:
+            max_theme_count = 2
+        theme_count = len(theme_positions)
+        if theme_count > max_theme_count:
+            warning_cost = (theme_count -
+                            max_theme_count) * self.MANY_THEMES_WARNING.cost
+            theme_positions.sort()
+            position_text = ', '.join(str(position)
+                                      for position in theme_positions)
+            warning = GridWarning(self.MANY_THEMES_WARNING,
+                                  warning_cost,
+                                  f'too many theme entries at {position_text}')
+            yield warning
         short_warnings.sort()
         yield from (warning for start, end, warning in short_warnings)
         complete_warnings.sort()
         yield from (warning for start, end, warning in complete_warnings)
 
-    def check_repeats(self) -> typing.Iterable[str]:
+    def score_repeats(self) -> typing.Iterable[GridWarning]:
         word_counts: Counter[str] = Counter()
         for x in range(self.grid.width):
             for y in range(self.grid.height):
@@ -414,12 +468,17 @@ class Puzzle:
                    for word, count in word_counts.items()
                    if count > 1 and '.' not in word]
         repeats.sort()
-        yield from (f'repeated word {word}' for word in repeats)
+        yield from (GridWarning(self.REPEATED_WORD_WARNING,
+                                self.REPEATED_WORD_WARNING.cost,
+                                f'repeated word {word}')
+                    for word in repeats)
 
-    def check_symmetry(self) -> typing.Iterable[str]:
+    def score_symmetry(self) -> typing.Iterable[GridWarning]:
         grid = self.grid
         if grid.width != grid.height:
-            yield 'not square'
+            yield GridWarning(self.SYMMETRY_WARNING,
+                              self.SYMMETRY_WARNING.cost,
+                              'not square')
             return
         x_limit = (grid.width + 1) // 2
         for x1 in range(x_limit):
@@ -430,10 +489,13 @@ class Puzzle:
                 y2 = grid.height - y1 - 1
                 is_block2 = grid[x2, y2] is None
                 if is_block1 != is_block2:
-                    yield (f'symmetry broken at {(x1 + 1, y1 + 1)} and '
-                           f'{(x2 + 1, y2 + 1)}')
+                    yield GridWarning(
+                        self.SYMMETRY_WARNING,
+                        self.SYMMETRY_WARNING.cost,
+                        f'symmetry broken at {(x1 + 1, y1 + 1)} and '
+                        f'{(x2 + 1, y2 + 1)}')
 
-    def check_connection(self) -> typing.Iterable[str]:
+    def score_connection(self) -> typing.Iterable[GridWarning]:
         grid = self.grid
         spaces = grid.space_flags
         space_array = np.zeros((grid.height + 2, grid.width + 2), np.short)
@@ -448,7 +510,9 @@ class Puzzle:
                 group_starts.append((x, y))
             group_starts.sort()
             squares_text = ', '.join(str(square) for square in group_starts)
-            yield f'disconnected sections at {squares_text}'
+            yield GridWarning(self.CONNECTION_WARNING,
+                              len(group_starts) * self.CONNECTION_WARNING.cost,
+                              f'disconnected sections at {squares_text}')
 
         if not self.are_unkeyed_squares_allowed:
             horizontal_neighbour_count = (space_array[:,:-2] +
@@ -469,7 +533,10 @@ class Puzzle:
             if unchecked_squares:
                 squares_text = ', '.join(str(square)
                                          for square in sorted(unchecked_squares))
-                yield f'unkeyed squares at {squares_text}'
+                yield GridWarning(
+                    self.UNKEYED_LETTER_WARNING,
+                    len(unchecked_squares) * self.UNKEYED_LETTER_WARNING.cost,
+                    f'unkeyed squares at {squares_text}')
 
     @property
     def shape_counts(self) -> typing.Counter[str]:
@@ -771,107 +838,3 @@ def draw_rotated_tiles(tile: QPixmap,
                                source,
                                source_x, source_y,
                                source_width, source_height)
-
-
-def calculate_max_black(size: int) -> int:
-    """ Default value for maximum number of black squares in a layout.
-
-    1/6 of the grid.
-    :param size: the width and height of the layouts
-    """
-    return size*size // 6
-
-def count_layout_numbers(size: int, max_black: int = -1) -> int:
-    """ Count how many layout numbers are possible for a size.
-
-    A layout number chooses a location for each black square, or 0 to skip
-    that black square. The locations are anywhere up to the middle square of the
-    layout, because the second half is a mirror of the first half.
-
-    :param size: the width and height of the layouts
-    :param max_black: maximum number of black squares. Defaults to 1/6 of the
-        grid if you pass in -1.
-    """
-    if max_black == -1:
-        max_black = calculate_max_black(size)
-    location_count = (size*size + 3) // 2
-    return location_count ** (max_black//2)
-
-
-def generate_layout(size: int, layout_number: int) -> str:
-    """ Generate a layout for a given layout number.
-
-    :param size: width and height of the layout.
-    :param layout_number: layout number up to count_layout_numbers(size)
-    :return: layout text with black squares placed according to the layout
-    number. Some layout numbers are duplicates of other layout numbers, and some
-    layouts are invalid. Check for valid layouts with Puzzle.check_style().
-    """
-    location_count = (size*size + 3) // 2
-    layout = [['.'] * size for _ in range(size)]
-    location_choices = layout_number
-    while location_choices:
-        i = location_choices % location_count - 1
-        if 0 <= i:
-            x = i % size
-            y = i // size
-            x2 = size - 1 - x
-            y2 = size - 1 - y
-            layout [y][x] = '#'
-            layout [y2][x2] = '#'
-        location_choices = location_choices // location_count
-    grid_text = '\n'.join(''.join(row) for row in layout)
-
-    return grid_text
-
-    # puzzle = Puzzle.parse_sections('', grid_text, '', '')
-    # if not any(puzzle.check_word_length()):
-    #     return grid_text
-    #
-    # return generate_layout(size, layout_number + 1)
-
-
-def main():
-    size = 7
-    success_count = 0
-    max_black = calculate_max_black(size)
-    dump_folder = Path(__file__).parent.parent / 'dump'
-    log_path = dump_folder / f'generated{size}x{size}.log'
-    f = open(log_path, 'a')
-    while True:
-        max_black2 = randrange(max_black//2, max_black+1)
-        layout_count = count_layout_numbers(size, max_black2)
-        layout_number = randrange(layout_count)
-        grid_text = generate_layout(size, layout_number)
-        puzzle = Puzzle.parse_sections('', grid_text, '', '')
-        warnings = puzzle.check_style()
-        if not warnings:
-            success_count += 1
-            if f.tell():
-                # Not at start, write a divider.
-                divider = '\n' + '=' * 10
-                print(divider)
-                print(divider, file=f)
-            start_time = datetime.now()
-            header = f'{success_count}: {layout_number} {start_time}'
-            print(header)
-            print(header, file=f)
-            print(puzzle.format_grid())
-            try:
-                puzzle = puzzle.generate()
-            except RuntimeError as ex:
-                print(ex)
-                print(puzzle.format_grid(), file=f)
-                print(ex, file=f)
-                continue
-            # print(f'{i}: layout {layout_number}, max {max_black2} black, {len(warnings)} warnings.')
-            print(datetime.now() - start_time)
-            print(datetime.now() - start_time, file=f)
-            grid_text = puzzle.format_grid()
-            print(grid_text)
-            print(grid_text, file=f)
-            # print('\n  '.join(warnings))
-
-
-if __name__ in ('__main__', '__live_coding__'):
-    main()
