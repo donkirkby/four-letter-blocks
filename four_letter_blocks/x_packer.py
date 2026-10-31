@@ -1,4 +1,5 @@
 import typing
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime
 from itertools import groupby
@@ -183,14 +184,14 @@ class XPacker(BlockPacker):
     def find_open_space_items(self):
         open_spaces = [
             (int(i), int(j))
-            for i, j in zip(*np.where(self.state == self.UNUSED))]
+            for i, j in zip(*np.where(self.state == self.UNUSED))]  # noqa
         for i, j in open_spaces:
             yield f'{i}_{j}'
 
     def find_open_space_options(self):
         open_spaces = [
             (int(i), int(j))
-            for i, j in zip(*np.where(self.state == self.UNUSED))]
+            for i, j in zip(*np.where(self.state == self.UNUSED))]  # noqa
         no_coverage = np.zeros(shape=(self.height, self.width), dtype=bool)
         for i, j in open_spaces:
             coverage_flags = no_coverage.copy()
@@ -231,25 +232,17 @@ class XPacker(BlockPacker):
                                             list(block_items),
                                             coverage_flags)
 
-    def find_filtered_options(self) -> list[PackingOption]:
+    def find_filtered_options(self, pool_size: int = 1) -> list[PackingOption]:
         if self.is_logging_filter:
             print(f'{datetime.now()}: Filtering options.')
         filtered_options = []
         start_state = self.state
-        options = list(self.find_options())
         filtered_count = 0
         total_count = 0
-        for rotated_shape_name, group_options in groupby(
-                options,
-                attrgetter('rotated_shape_name')):
-            if self.is_logging_filter:
-                print(f'\n{rotated_shape_name}', end='', flush=True)
-            for option in group_options:
-                self.state = start_state
-                next_block = self.find_next_block()
-                self.state = start_state + next_block * option.mask[
-                    :self.height,
-                    :self.width]
+        all_options = self.prepare_options()
+        if pool_size <= 1:
+            for state, option, timeout in all_options:
+                self.state = state
                 try:
                     is_filled = self.fill()
                     if is_filled:
@@ -266,14 +259,49 @@ class XPacker(BlockPacker):
                 else:
                     filtered_count += 1
                 total_count += 1
-        if self.is_logging_filter:
-            print(f'{datetime.now()}: Filtering options.')
+        else:
+            with ProcessPoolExecutor(pool_size) as executor:
+                for option2 in executor.map(filter_option_state,
+                                           all_options,
+                                           chunksize=100):
+                    if option2 is not None:
+                        filtered_options.append(option2)
+                    else:
+                        filtered_count += 1
+                    total_count += 1
         if self.is_logging_filter:
             print(f'\n{datetime.now()}: Filtered {filtered_count} options out '
                   f'of {total_count}, '
                   f'{total_count and filtered_count/total_count * 100 or 0:.2f}%')
         self.state = start_state
         return filtered_options
+
+    def prepare_options(
+            self) -> typing.Iterator[tuple[np.ndarray, PackingOption, float | None]]:
+        """ Yields all options for this packer.
+
+        :return: an iterator over (state, option, timeout) that can either be
+        processed in this thread or in a worker pool. The timeout is just
+        self.timeout, but the worker pool doesn't have access to self.
+        """
+        start_state = self.state
+        options = list(self.find_options())
+        for rotated_shape_name, group_options in groupby(
+                options,
+                attrgetter('rotated_shape_name')):
+            if self.is_logging_filter:
+                print(f'\n{rotated_shape_name}', end='', flush=True)
+            for option in group_options:
+                self.state = start_state
+                next_block = self.find_next_block()
+                self.state = start_state + next_block * option.mask[
+                    :self.height,
+                    :self.width]
+
+                assert self.state is not None
+                yield self.state, option, self.timeout
+
+        self.state = start_state
 
     def find_word_items(self) -> list[set[str]]:
         all_word_items: list[set[str]] = []
@@ -304,3 +332,18 @@ class XPacker(BlockPacker):
                     word_item_set = set(word_items)
                     all_word_items.append(word_item_set)
         return all_word_items
+
+
+def filter_option_state(
+        state_combo: tuple[np.ndarray, PackingOption, float | None]) -> PackingOption | None:
+    state, option, timeout = state_combo
+    packer = XPacker(start_state=state)
+    packer.timeout = timeout
+    try:
+        is_filled = packer.fill()
+        if not is_filled:
+            return None
+    except TimeoutError:
+        pass
+
+    return option

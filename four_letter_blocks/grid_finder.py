@@ -1,10 +1,10 @@
 import argparse
 from datetime import datetime
 from itertools import count
+from multiprocessing import Process, Queue
 
 from four_letter_blocks.double_block_packer import DoubleBlockPacker
-from four_letter_blocks.grid_generator import GridGenerator
-from four_letter_blocks.puzzle import Puzzle
+from four_letter_blocks.grid_generator import generator_loop
 
 
 def parse_args() -> argparse.Namespace:
@@ -35,31 +35,17 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    queue: Queue[list[str]] = Queue(maxsize=1)
+    generator_process = Process(target=generator_loop,
+                                args=(args.sizes, args.letter_counts, queue))
+    generator_process.start()
     for _ in count():
-        print(f'{datetime.now()}: Generating layouts.')
-        layouts = []
-        for size, letter_count in zip(args.sizes, args.letter_counts):
-            black_count = (size * size - letter_count)
-            generator = GridGenerator(size, black_count)
-            generator.is_logging = True
-            generator.epochs = 1000
-            is_generated = generator.generate()
-            if not is_generated:
-                raise RuntimeError(f'Could not generate a {size}x{size} grid.')
-            layout = generator.top_grid
-            layout_letter_count = layout.count('.')
-            assert layout_letter_count == letter_count
-
-            puzzle = Puzzle.parse_sections('',
-                                           layout,
-                                           '',
-                                           '')
-            warnings = puzzle.check_style()
-            assert not warnings, warnings
-
-            layouts.append(layout)
+        start_time = datetime.now()
+        print(f'{start_time}: Generating layouts.')
+        layouts = queue.get()
+        duration = datetime.now() - start_time
         print('\n===\n'.join(layouts))
-        print(f'{datetime.now()}: Solving...')
+        print(f'{datetime.now()}: Generated in {duration}, solving...')
         try:
             packer = DoubleBlockPacker(*layouts)
         except ValueError:
@@ -67,13 +53,15 @@ def main() -> None:
             continue
 
         packer.is_logging_worker = True
-        packer.pool_size = 8
-        packer.max_timeout_minutes = 30
+        packer.pool_size = 7  # Leave 1 core for generating grids.
+        packer.max_timeout_minutes = 60
         is_filled = packer.fill()
         if is_filled:
             print(packer.display())
             break
         print(f'{datetime.now()}: Solving failed.')
+
+    generator_process.terminate()
 
 
 main()

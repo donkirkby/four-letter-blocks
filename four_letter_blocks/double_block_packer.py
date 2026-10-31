@@ -303,14 +303,14 @@ class DoubleBlockPacker:
                 solver.primary(prefix + item_name)
 
         back_options: dict[str, list[PackingOption]] = defaultdict(list)
-        for option in self.back_packer.find_filtered_options():
+        for option in self.back_packer.find_filtered_options(self.pool_size):
             back_options[option.rotated_shape_name].append(option)
 
         flipped_shape_names = flipped_shapes()
         front_masks: dict[ProblemOption, np.ndarray] = {}
         back_masks: dict[ProblemOption, np.ndarray] = {}
 
-        front_options = self.front_packer.find_filtered_options()
+        front_options = self.front_packer.find_filtered_options(self.pool_size)
         if not front_options and not back_options:
             if self.back_packer.unused_count == 0:
                 # Unused counts on front and back must match.

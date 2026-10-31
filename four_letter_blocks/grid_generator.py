@@ -1,7 +1,9 @@
 import typing
 from dataclasses import dataclass
+from multiprocessing import Queue
 from random import randrange, choice
 
+from four_letter_blocks.double_block_packer import DoubleBlockPacker
 from four_letter_blocks.evo import Individual, Evolution
 from four_letter_blocks.puzzle import Puzzle
 
@@ -201,15 +203,61 @@ class GridGenerator:
         self.top_fitness = top_fitness
         self.top_grid = top_individual.generate_grid_text()
         if top_fitness.score == 0:
-            print('**** Generation successful ****')
             return True
 
         evo.step()
 
         new_top_individual = evo.pool.individuals[-1]
         new_top_fitness = evo.pool.fitness(new_top_individual)
-        if new_top_fitness.score != top_fitness.score:
+        if new_top_fitness.score != top_fitness.score and self.is_logging:
             print(new_top_individual.generate_grid_text())
 
         self.current_epoch += 1
         return False
+
+
+def generator_loop(sizes: list[int],
+                   letter_counts: list[int],
+                   queue: Queue):
+    """ Run an infinite loop, generating sets of grids.
+
+    :param sizes: list of grid sizes for each grid in each set
+    :param letter_counts: list of letter counts in each grid in each set
+    :param queue: Queue to add new sets of grid texts to. It usually has a size
+    limit, so this loop will pause between generating sets until the main
+    process needs another grid set.
+    """
+
+    assert len(sizes) == len(letter_counts)
+
+    while True:
+        layouts: list[str] = []
+        for size, letter_count in zip(sizes, letter_counts):
+            black_count = (size * size - letter_count)
+            generator = GridGenerator(size, black_count)
+            generator.is_logging = False
+            generator.epochs = 1000
+            is_generated = generator.generate()
+            if not is_generated:
+                break
+            layout = generator.top_grid
+            layout_letter_count = layout.count('.')
+            assert layout_letter_count == letter_count
+
+            puzzle = Puzzle.parse_sections('',
+                                           layout,
+                                           '',
+                                           '')
+            warnings = puzzle.check_style()
+            assert not warnings, warnings
+
+            layouts.append(layout)
+        if len(layouts) != len(sizes):
+            # Something went wrong, try again.
+            continue
+        try:
+            DoubleBlockPacker(*layouts)
+        except ValueError:
+            # Can't use this set, try again.
+            continue
+        queue.put(layouts)
